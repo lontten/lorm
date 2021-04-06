@@ -2,8 +2,8 @@ package lorm
 
 import (
 	"errors"
+	"github.com/lontten/lorm/utils"
 	"log"
-	"lontten.com/lorm/utils"
 	"reflect"
 	"strings"
 	"unicode"
