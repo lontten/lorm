@@ -1,4 +1,4 @@
-module github.com/lorm
+module github.com/lontten/lorm
 
 go 1.16
 
