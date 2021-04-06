@@ -4,7 +4,7 @@ import "log"
 
 
 type EngineBase struct {
-	db *DB
+	db *DbPool
 }
 
 

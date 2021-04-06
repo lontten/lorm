@@ -10,7 +10,7 @@ import (
 )
 
 type EngineTable struct {
-	db *DB
+	db *DbPool
 
 	idName string
 	//当前表名

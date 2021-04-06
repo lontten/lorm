@@ -1,23 +1,102 @@
 package lorm
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"strings"
+	"time"
 )
 
-type DB struct {
+type DbConfig interface {
+	DriverName() string
+}
+
+type DbPoolConfig interface {
+	PoolDriverName() string
+}
+
+type MysqlConfig struct {
+	Host     string
+	Port     string
+	DbName   string
+	User     string
+	Password string
+}
+
+type MysqlPoolConfig struct {
+	maxIdleCount      int           // zero means defaultMaxIdleConns; negative means 0
+	maxOpen           int           // <= 0 means unlimited
+	maxLifetime       time.Duration // maximum amount of time a connection may be reused
+	maxIdleTime       time.Duration // maximum amount of time a connection may be idle before being closed
+	cleanerCh         chan struct{}
+	waitCount         int64 // Total number of connections waited for.
+	maxIdleClosed     int64 // Total number of connections closed due to idle count.
+	maxIdleTimeClosed int64 // Total number of connections closed due to idle time.
+	maxLifetimeClosed int64 // Total number of connections closed due to max connection lifetime limit.
+}
+
+func (c *MysqlConfig) DriverName() string {
+	return "mysql"
+}
+
+func (c *MysqlPoolConfig) PoolDriverName() string {
+	return "mysql"
+}
+
+type PgConfig struct {
+	Host     string
+	Port     string
+	DbName   string
+	User     string
+	Password string
+	Other    string
+}
+
+type PgPoolConfig struct {
+
+	// MaxConnLifetime is the duration since creation after which a connection will be automatically closed.
+	MaxConnLifetime time.Duration
+
+	// MaxConnIdleTime is the duration after which an idle connection will be automatically closed by the health check.
+	MaxConnIdleTime time.Duration
+
+	// MaxConns is the maximum size of the pool.
+	MaxConns int32
+
+	// MinConns is the minimum size of the pool. The health check will increase the number of connections to this
+	// amount if it had dropped below.
+	MinConns int32
+
+	// HealthCheckPeriod is the duration between checks of the health of idle connections.
+	HealthCheckPeriod time.Duration
+
+	// If set to true, pool doesn't do any I/O operation on initialization.
+	// And connects to the server only when the pool starts to be used.
+	// The default is false.
+	LazyConnect bool
+}
+
+func (c *PgConfig) DriverName() string {
+	return "postgresql"
+}
+
+func (c *PgPoolConfig) PoolDriverName() string {
+	return "postgresql"
+}
+
+type DbPool struct {
 	context   *OrmContext
-	db        *sql.DB
+	db        interface{}
+	dbConfig  DbConfig
 	ormConfig OrmConfig
 }
+
 type OrmConfig struct {
-	//驱动名称
-	DriverName string
-
-	DbConfig string
-
 	//po生成文件目录
 	PoDir string
 	//是否覆盖，默认true
@@ -59,33 +138,94 @@ type Engine struct {
 	Classic *EngineClassic
 }
 
-func (db *DB) DriverName() string {
-	return db.ormConfig.DriverName
-}
-
-func (db *DB) Exec(query string, args ...interface{}) (int64, error) {
+func (db *DbPool) Exec(query string, args ...interface{}) (int64, error) {
 	log.Println(query, args)
-	exec, err := db.db.Exec(query, args...)
-	if err != nil {
-		return 0, err
+	switch db.dbConfig.DriverName() {
+	case "mysql":
+		exec, err := db.db.(*sql.DB).Exec(query, args...)
+		if err != nil {
+			return 0, err
+		}
+		return exec.RowsAffected()
+	case "postgresql":
+		exec, err := db.db.(*pgxpool.Pool).Exec(context.Background(), query, args...)
+		if err != nil {
+			return 0, err
+		}
+		return exec.RowsAffected(), nil
+	default:
+		return 0, errors.New("无此db 类型")
 	}
-	return exec.RowsAffected()
-}
-
-func open(driverName, dataSourceName string) (*DB, error) {
-	db, err := sql.Open(driverName, dataSourceName)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	return &DB{db: db,
-		context: &OrmContext{
-			query:  &strings.Builder{},
-			startd: false,
-		},
-	}, nil
 
 }
+
+func open(c DbConfig, pc DbPoolConfig) (*DbPool, error) {
+	switch c.DriverName() {
+	case "mysql":
+		c := c.(*MysqlConfig)
+		pc := pc.(*MysqlPoolConfig)
+
+		dsn := c.User + ":" + c.Password +
+			"@tcp(" + c.Host +
+			":" + c.Port +
+			")/" + c.DbName
+		db, err := sql.Open("mysql", dsn)
+		if err != nil {
+			panic(err)
+		}
+		db.SetConnMaxLifetime(pc.maxLifetime)
+		db.SetConnMaxIdleTime(pc.maxIdleTime)
+		db.SetMaxOpenConns(pc.maxOpen)
+		db.SetMaxIdleConns(pc.maxIdleCount)
+		return &DbPool{
+			db:        db,
+			dbConfig:  c,
+			ormConfig: OrmConfig{},
+		}, nil
+	case "postgresql":
+		c := c.(*PgConfig)
+		pc := pc.(*PgPoolConfig)
+
+		dsn := "user=" + c.User +
+			" password=" + c.Password +
+			" dbname=" + c.DbName +
+			" host=" + c.Host +
+			" port= " + c.Port
+		if c.Other == "" {
+			dsn += " sslmode=disable TimeZone=Asia/Shanghai"
+		}
+		dsn += c.Other
+
+		config, err := pgx.ParseConfig(dsn)
+		if err != nil {
+			return nil, err
+		}
+
+		pgpc := pgxpool.Config{
+			ConnConfig:        config,
+			MaxConnLifetime:   pc.MaxConnLifetime,
+			MaxConnIdleTime:   pc.MaxConnIdleTime,
+			MaxConns:          pc.MaxConns,
+			MinConns:          pc.MinConns,
+			HealthCheckPeriod: pc.HealthCheckPeriod,
+			LazyConnect:       pc.LazyConnect,
+		}
+		pool, err := pgxpool.ConnectConfig(context.Background(), &pgpc)
+		if err != nil {
+			return nil, err
+		}
+		return &DbPool{
+			db:        pool,
+			dbConfig:  c,
+			ormConfig: OrmConfig{},
+		}, nil
+
+	default:
+		return nil, errors.New("无此db 类型")
+
+	}
+}
+
 
 func MustConnect(config OrmConfig) *Engine {
 	db, err := Connect(config)
@@ -96,6 +236,7 @@ func MustConnect(config OrmConfig) *Engine {
 }
 
 func Connect(config OrmConfig) (*Engine, error) {
+
 	db, err := open(config.DriverName, config.DbConfig)
 	if err != nil {
 		return nil, err
@@ -140,17 +281,17 @@ type OrmContext struct {
 }
 
 type OrmSelect struct {
-	db      *DB
+	db      *DbPool
 	context *OrmContext
 }
 
 type OrmFrom struct {
-	db      *DB
+	db      *DbPool
 	context *OrmContext
 }
 
 type OrmWhere struct {
-	db      *DB
+	db      *DbPool
 	context *OrmContext
 }
 

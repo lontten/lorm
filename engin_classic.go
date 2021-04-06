@@ -3,7 +3,7 @@ package lorm
 import "log"
 
 type EngineClassic struct {
-	db *DB
+	db *DbPool
 }
 
 type ClassicQuery struct {
