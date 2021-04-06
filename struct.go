@@ -2,8 +2,8 @@ package lorm
 
 import (
 	"errors"
-	"github.com/lorm/types"
-	"github.com/lorm/utils"
+	"github.com/lontten/lorm/types"
+	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
 	"sync"
