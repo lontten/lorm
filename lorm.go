@@ -1,23 +1,21 @@
 package lorm
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"strings"
 	"time"
 )
 
+const (
+	MYSQL    = "mysql"
+	POSTGRES = "postgres"
+)
+
 type DbConfig interface {
 	DriverName() string
-}
-
-type DbPoolConfig interface {
-	PoolDriverName() string
 }
 
 type MysqlConfig struct {
@@ -28,7 +26,7 @@ type MysqlConfig struct {
 	Password string
 }
 
-type MysqlPoolConfig struct {
+type PoolConfig struct {
 	maxIdleCount      int           // zero means defaultMaxIdleConns; negative means 0
 	maxOpen           int           // <= 0 means unlimited
 	maxLifetime       time.Duration // maximum amount of time a connection may be reused
@@ -41,11 +39,7 @@ type MysqlPoolConfig struct {
 }
 
 func (c *MysqlConfig) DriverName() string {
-	return "mysql"
-}
-
-func (c *MysqlPoolConfig) PoolDriverName() string {
-	return "mysql"
+	return MYSQL
 }
 
 type PgConfig struct {
@@ -57,41 +51,13 @@ type PgConfig struct {
 	Other    string
 }
 
-type PgPoolConfig struct {
-
-	// MaxConnLifetime is the duration since creation after which a connection will be automatically closed.
-	MaxConnLifetime time.Duration
-
-	// MaxConnIdleTime is the duration after which an idle connection will be automatically closed by the health check.
-	MaxConnIdleTime time.Duration
-
-	// MaxConns is the maximum size of the pool.
-	MaxConns int32
-
-	// MinConns is the minimum size of the pool. The health check will increase the number of connections to this
-	// amount if it had dropped below.
-	MinConns int32
-
-	// HealthCheckPeriod is the duration between checks of the health of idle connections.
-	HealthCheckPeriod time.Duration
-
-	// If set to true, pool doesn't do any I/O operation on initialization.
-	// And connects to the server only when the pool starts to be used.
-	// The default is false.
-	LazyConnect bool
-}
-
 func (c *PgConfig) DriverName() string {
-	return "postgresql"
-}
-
-func (c *PgPoolConfig) PoolDriverName() string {
-	return "postgresql"
+	return POSTGRES
 }
 
 type DbPool struct {
 	context   *OrmContext
-	db        interface{}
+	db        *sql.DB
 	dbConfig  DbConfig
 	ormConfig OrmConfig
 }
@@ -122,8 +88,8 @@ type OrmConfig struct {
 
 	//逻辑删除 logicDeleteFieldName不为零值，即开启
 	LogicDeleteFieldName string
-	LogicDeleteValue     interface{}
-	LogicNotDeleteValue  interface{}
+	LogicDeleteValue     func() interface{}
+	LogicNotDeleteValue  func() interface{}
 
 	//多租户 tenantIdFieldName不为零值，即开启
 	TenantIdFieldName      string
@@ -138,54 +104,26 @@ type Engine struct {
 	Classic *EngineClassic
 }
 
-func (db *DbPool) Exec(query string, args ...interface{}) (int64, error) {
-	log.Println(query, args)
-	switch db.dbConfig.DriverName() {
-	case "mysql":
-		exec, err := db.db.(*sql.DB).Exec(query, args...)
-		if err != nil {
-			return 0, err
-		}
-		return exec.RowsAffected()
-	case "postgresql":
-		exec, err := db.db.(*pgxpool.Pool).Exec(context.Background(), query, args...)
-		if err != nil {
-			return 0, err
-		}
-		return exec.RowsAffected(), nil
-	default:
-		return 0, errors.New("无此db 类型")
+func open(c DbConfig, pc *PoolConfig) (dp *DbPool, err error) {
+	if c == nil {
+		fmt.Println("dbconfig canot be nil")
+		panic(errors.New("dbconfig canot be nil"))
 	}
 
-}
-
-func open(c DbConfig, pc DbPoolConfig) (*DbPool, error) {
+	var db *sql.DB
 	switch c.DriverName() {
-	case "mysql":
+	case MYSQL:
 		c := c.(*MysqlConfig)
-		pc := pc.(*MysqlPoolConfig)
-
 		dsn := c.User + ":" + c.Password +
 			"@tcp(" + c.Host +
 			":" + c.Port +
 			")/" + c.DbName
-		db, err := sql.Open("mysql", dsn)
+		db, err = sql.Open("mysql", dsn)
 		if err != nil {
 			panic(err)
 		}
-		db.SetConnMaxLifetime(pc.maxLifetime)
-		db.SetConnMaxIdleTime(pc.maxIdleTime)
-		db.SetMaxOpenConns(pc.maxOpen)
-		db.SetMaxIdleConns(pc.maxIdleCount)
-		return &DbPool{
-			db:        db,
-			dbConfig:  c,
-			ormConfig: OrmConfig{},
-		}, nil
-	case "postgresql":
+	case POSTGRES:
 		c := c.(*PgConfig)
-		pc := pc.(*PgPoolConfig)
-
 		dsn := "user=" + c.User +
 			" password=" + c.Password +
 			" dbname=" + c.DbName +
@@ -195,74 +133,100 @@ func open(c DbConfig, pc DbPoolConfig) (*DbPool, error) {
 			dsn += " sslmode=disable TimeZone=Asia/Shanghai"
 		}
 		dsn += c.Other
-
-		config, err := pgx.ParseConfig(dsn)
+		db, err = sql.Open("pgx", dsn)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
-
-		pgpc := pgxpool.Config{
-			ConnConfig:        config,
-			MaxConnLifetime:   pc.MaxConnLifetime,
-			MaxConnIdleTime:   pc.MaxConnIdleTime,
-			MaxConns:          pc.MaxConns,
-			MinConns:          pc.MinConns,
-			HealthCheckPeriod: pc.HealthCheckPeriod,
-			LazyConnect:       pc.LazyConnect,
-		}
-		pool, err := pgxpool.ConnectConfig(context.Background(), &pgpc)
-		if err != nil {
-			return nil, err
-		}
-		return &DbPool{
-			db:        pool,
-			dbConfig:  c,
-			ormConfig: OrmConfig{},
-		}, nil
-
 	default:
 		return nil, errors.New("无此db 类型")
-
 	}
+	if pc != nil {
+		db.SetConnMaxLifetime(pc.maxLifetime)
+		db.SetConnMaxIdleTime(pc.maxIdleTime)
+		db.SetMaxOpenConns(pc.maxOpen)
+		db.SetMaxIdleConns(pc.maxIdleCount)
+	}
+	return &DbPool{
+		db:        db,
+		dbConfig:  c,
+		ormConfig: OrmConfig{},
+	}, nil
+
 }
 
-
-func MustConnect(config OrmConfig) *Engine {
-	db, err := Connect(config)
+func MustConnect(c DbConfig, pc *PoolConfig) *DbPool {
+	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
 	}
 	return db
 }
 
-func Connect(config OrmConfig) (*Engine, error) {
-
-	db, err := open(config.DriverName, config.DbConfig)
+func Connect(c DbConfig, pc *PoolConfig) (*DbPool, error) {
+	pool, err := open(c, pc)
 	if err != nil {
 		return nil, err
 	}
-
-	err = db.db.Ping()
+	err = pool.db.Ping()
 	if err != nil {
 		return nil, err
 	}
+	return pool, err
+}
 
-	db.ormConfig = config
-
-	return &Engine{
-		Base:    &EngineBase{db},
-		Extra:   &EngineExtra{db},
-		Classic: &EngineClassic{db},
+func (pool *DbPool) GetEngine() Engine {
+	return Engine{
+		Base:    &EngineBase{pool},
+		Extra:   &EngineExtra{pool},
+		Classic: &EngineClassic{pool},
 		Table: &EngineTable{
-			db:           db,
+			db:           pool,
 			idName:       "",
 			tableName:    "",
 			dest:         nil,
 			columns:      nil,
 			columnValues: nil,
 		},
-	}, nil
+	}
+}
 
+func (dp *DbPool) OrmConfig(c OrmConfig) {
+	dp.ormConfig = c
+}
+
+func (db *DbPool) Exec(query string, args ...interface{}) (int64, error) {
+	log.Println(query, args)
+	switch db.dbConfig.DriverName() {
+	case MYSQL:
+		exec, err := db.db.Exec(query, args...)
+		if err != nil {
+			return 0, err
+		}
+		return exec.RowsAffected()
+	case POSTGRES:
+		exec, err := db.db.Exec(query, args...)
+		if err != nil {
+			return 0, err
+		}
+		return exec.RowsAffected()
+	default:
+		return 0, errors.New("无此db 类型")
+	}
+}
+
+func (db *DbPool) Query(query string, args ...interface{}) (Rows, error) {
+	log.Println(query, args)
+	switch db.dbConfig.DriverName() {
+	case MYSQL:
+		rows, err := db.db.Query(query, args...)
+		return Rows{Rows: rows}, err
+
+	case POSTGRES:
+		rows, err := db.db.Query(query, args...)
+		return Rows{Rows: rows}, err
+	default:
+		return Rows{}, errors.New("无此db 类型")
+	}
 }
 
 func (e *Engine) Begin() *Tx {

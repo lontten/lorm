@@ -8,6 +8,6 @@ type Tx struct {
 }
 
 func (tx *Tx) DriverName() string {
-	return tx.Base.db.DriverName()
+	return tx.Base.db.dbConfig.DriverName()
 }
 

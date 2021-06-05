@@ -29,7 +29,8 @@ func (r *Row) StructScan(dest interface{}) error {
 }
 
 func (r *Rows) StructScan(dest interface{}) (int64, error) {
-	return StructScan(r.Rows, dest)
+	//return StructScan(r.Rows, dest)
+	return 0, nil
 }
 
 func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
@@ -86,7 +87,9 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	return num, nil
 }
 
-func StructScanLn(rows *sql.Rows, dest interface{}) (int64, error) {
+//只有一个结果的row
+func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
+
 	defer rows.Close()
 	value := reflect.ValueOf(dest)
 	if value.Kind() != reflect.Ptr {
@@ -96,7 +99,7 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (int64, error) {
 	typ := reflect.TypeOf(dest)
 	base, err := baseStructType(typ)
 	if err != nil {
-		return 0, err
+		return
 	}
 	isNullable := checkNullStruct(base)
 	if !isNullable {
@@ -105,20 +108,19 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (int64, error) {
 
 	columns, err := rows.Columns()
 	if err != nil {
-		return 0, err
+		return
 	}
 	rsFM, err := getRowStructFieldMap(columns, base)
 	if err != nil {
-		return 0, err
+		return
 	}
-	var num int64=0
 	if rows.Next() {
 		num++
 		box, _, p := getRowFieldBox(columns, base, rsFM)
 		err = rows.Scan(box...)
 		if err != nil {
 			fmt.Println(err)
-			return 0, err
+			return
 		}
 		value.Elem().Set(p)
 	}
@@ -126,7 +128,7 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (int64, error) {
 		return 0, errors.New("result to many for one")
 	}
 
-	return num, nil
+	return
 }
 
 //用来存放row中值得 引用
