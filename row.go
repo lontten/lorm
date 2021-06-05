@@ -96,9 +96,11 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 		return 0, errors.New("dest need a struct pointer")
 	}
 
+
 	typ := reflect.TypeOf(dest)
 	base, err := baseStructType(typ)
 	if err != nil {
+		fmt.Println("this is err")
 		return
 	}
 	isNullable := checkNullStruct(base)

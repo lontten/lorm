@@ -198,10 +198,11 @@ func checkNullStruct(typ reflect.Type) bool {
 }
 
 func baseStructType(t reflect.Type) (structType reflect.Type, e error) {
+base:
 	switch t.Kind() {
 	case reflect.Ptr:
 		t = t.Elem()
-		fallthrough
+		goto base
 	case reflect.Struct:
 	default:
 		return nil, errors.New("is not a struct type")
@@ -233,26 +234,26 @@ func baseSliceType(t reflect.Type) (structType reflect.Type, e error) {
 	return t, nil
 }
 
-func baseSlicePtrType(t reflect.Type) (typ int,structType reflect.Type, e error) {
+func baseSlicePtrType(t reflect.Type) (typ int, structType reflect.Type, e error) {
 base:
 	switch t.Kind() {
 	case reflect.Ptr:
 		if typ == 0 {
-			typ=1
+			typ = 1
 		}
 		t = t.Elem()
 		goto base
 	case reflect.Slice:
 		if typ == 0 {
-			typ=2
+			typ = 2
 		}
 		t = t.Elem()
 		goto base
 	case reflect.Struct:
 	default:
-		return 0,nil, errors.New("is base not a  type")
+		return 0, nil, errors.New("is base not a  type")
 	}
-	return typ,t, nil
+	return typ, t, nil
 }
 
 func newStruct(structTyp reflect.Type) reflect.Value {
