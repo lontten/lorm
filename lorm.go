@@ -56,7 +56,6 @@ func (c *PgConfig) DriverName() string {
 }
 
 type DbPool struct {
-	context   *OrmContext
 	db        *sql.DB
 	dbConfig  DbConfig
 	ormConfig OrmConfig
@@ -98,10 +97,10 @@ type OrmConfig struct {
 }
 
 type Engine struct {
-	Base    *EngineBase
-	Extra   *EngineExtra
-	Table   *EngineTable
-	Classic *EngineClassic
+	Base    EngineBase
+	Extra   EngineExtra
+	Table   EngineTable
+	Classic EngineClassic
 }
 
 func open(c DbConfig, pc *PoolConfig) (dp *DbPool, err error) {
@@ -174,13 +173,14 @@ func Connect(c DbConfig, pc *PoolConfig) (*DbPool, error) {
 	return pool, err
 }
 
-func (pool *DbPool) GetEngine() Engine {
+func (dp DbPool) GetEngine() Engine {
 	return Engine{
-		Base:    &EngineBase{pool},
-		Extra:   &EngineExtra{pool},
-		Classic: &EngineClassic{pool},
-		Table: &EngineTable{
-			db:           pool,
+		Base:    EngineBase{db: dp, context: OrmContext{}},
+		Extra:   EngineExtra{db: dp, context: OrmContext{}},
+		Classic: EngineClassic{db: dp, context: OrmContext{}},
+		Table: EngineTable{
+			context:      OrmContext{},
+			db:           dp,
 			idName:       "",
 			tableName:    "",
 			dest:         nil,
@@ -194,7 +194,7 @@ func (dp *DbPool) OrmConfig(c OrmConfig) {
 	dp.ormConfig = c
 }
 
-func (db *DbPool) Exec(query string, args ...interface{}) (int64, error) {
+func (db DbPool) Exec(query string, args ...interface{}) (int64, error) {
 	log.Println(query, args)
 	switch db.dbConfig.DriverName() {
 	case MYSQL:
@@ -214,29 +214,21 @@ func (db *DbPool) Exec(query string, args ...interface{}) (int64, error) {
 	}
 }
 
-func (db *DbPool) Query(query string, args ...interface{}) (Rows, error) {
+func (dp DbPool) Query(query string, args ...interface{}) (Rows, error) {
 	log.Println(query, args)
-	switch db.dbConfig.DriverName() {
-	case MYSQL:
-		rows, err := db.db.Query(query, args...)
-		return Rows{Rows: rows}, err
-
-	case POSTGRES:
-		rows, err := db.db.Query(query, args...)
-		return Rows{Rows: rows}, err
-	default:
-		return Rows{}, errors.New("无此db 类型")
-	}
+	rows, err := dp.db.Query(query, args...)
+	return Rows{Rows: rows}, err
 }
 
-func (e *Engine) Begin() *Tx {
-	return &Tx{
-		Base:    e.Base,
-		Extra:   e.Extra,
-		Classic: e.Classic,
-		Table:   e.Table,
-	}
-}
+//
+//func (e *Engine) Begin() *Tx {
+//	return &Tx{
+//		Base:    e.Base,
+//		Extra:   e.Extra,
+//		Classic: e.Classic,
+//		Table:   e.Table,
+//	}
+//}
 
 type OrmContext struct {
 	query  *strings.Builder
@@ -245,21 +237,21 @@ type OrmContext struct {
 }
 
 type OrmSelect struct {
-	db      *DbPool
-	context *OrmContext
+	db      DbPool
+	context OrmContext
 }
 
 type OrmFrom struct {
-	db      *DbPool
-	context *OrmContext
+	db      DbPool
+	context OrmContext
 }
 
 type OrmWhere struct {
-	db      *DbPool
-	context *OrmContext
+	db      DbPool
+	context OrmContext
 }
 
-func selectArgsArr2SqlStr(context *OrmContext, args []string) {
+func selectArgsArr2SqlStr(context OrmContext, args []string) {
 	query := context.query
 	if context.startd {
 		for _, name := range args {

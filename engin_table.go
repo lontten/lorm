@@ -10,7 +10,9 @@ import (
 )
 
 type EngineTable struct {
-	db *DbPool
+	context   OrmContext
+
+	db DbPool
 
 	idName string
 	//当前表名
@@ -22,7 +24,7 @@ type EngineTable struct {
 	columnValues []interface{}
 }
 
-func (e *EngineTable) query(query string, args ...interface{}) (int64, error) {
+func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	log.Println(query, args)
 	rows, err := e.db.db.Query(query, args...)
 	if err != nil {
@@ -32,37 +34,37 @@ func (e *EngineTable) query(query string, args ...interface{}) (int64, error) {
 	return StructScan(rows, e.dest)
 }
 
-func (e *EngineTable) setDest(v interface{}) {
+func (e EngineTable) setDest(v interface{}) {
 	e.dest = v
 	e.initTableName()
 }
 
 type OrmTableCreate struct {
-	base *EngineTable
+	base EngineTable
 }
 
 type OrmTableSelect struct {
-	base *EngineTable
+	base EngineTable
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableSelectWhere struct {
-	base *EngineTable
+	base EngineTable
 }
 
 type OrmTableUpdate struct {
-	base *EngineTable
+	base EngineTable
 }
 
 type OrmTableDelete struct {
-	base *EngineTable
+	base EngineTable
 }
 
 
 //create
-func (engine *EngineTable) Create(v interface{}) (int64, error) {
+func (engine EngineTable) Create(v interface{}) (int64, error) {
 	engine.setDest(v)
 	engine.initColumnsValue()
 
@@ -76,15 +78,15 @@ func (engine *EngineTable) Create(v interface{}) (int64, error) {
 	return engine.db.Exec(sb.String(), engine.columnValues)
 }
 
-func (engine *EngineTable) CreateOrUpdate(v interface{}) *OrmTableCreate {
+func (engine EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 	engine.setDest(v)
 	engine.initColumnsValue()
-	return &OrmTableCreate{
+	return OrmTableCreate{
 		base: engine,
 	}
 }
 
-func (orm *OrmTableCreate) ByModel(v interface{}) (int64, error) {
+func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
@@ -128,7 +130,7 @@ func (orm *OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	return orm.base.db.Exec(sb.String(), cv...)
 }
 
-func (orm *OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
+func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
@@ -184,12 +186,12 @@ func (orm *OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //delete
-func (engine *EngineTable) Delete(v interface{}) *OrmTableDelete {
+func (engine EngineTable) Delete(v interface{}) OrmTableDelete {
 	engine.setDest(v)
-	return &OrmTableDelete{base: engine}
+	return OrmTableDelete{base: engine}
 }
 
-func (orm *OrmTableDelete) ById() (int64, error) {
+func (orm OrmTableDelete) ById() (int64, error) {
 	orm.base.initIdName()
 
 	var sb strings.Builder
@@ -203,7 +205,7 @@ func (orm *OrmTableDelete) ById() (int64, error) {
 	return orm.base.db.Exec(sb.String(), orm.base.dest)
 }
 
-func (orm *OrmTableDelete) ByModel() (int64, error) {
+func (orm OrmTableDelete) ByModel() (int64, error) {
 	columns, values, err := getStructMappingColumnsValue(orm.base.dest, orm.base.db.ormConfig)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -221,7 +223,7 @@ func (orm *OrmTableDelete) ByModel() (int64, error) {
 	return orm.base.db.Exec(sb.String(), values)
 }
 
-func (orm *OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
+func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 	if w == nil {
 		return 0, nil
 	}
@@ -244,13 +246,13 @@ func (orm *OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //update
-func (engine *EngineTable) Update(v interface{}) *OrmTableUpdate {
+func (engine EngineTable) Update(v interface{}) OrmTableUpdate {
 	engine.setDest(v)
 	engine.initColumnsValue()
-	return &OrmTableUpdate{base: engine}
+	return OrmTableUpdate{base: engine}
 }
 
-func (orm *OrmTableUpdate) ById(v interface{}) (int64, error) {
+func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	orm.base.initIdName()
 
 	tableName := orm.base.tableName
@@ -270,7 +272,7 @@ func (orm *OrmTableUpdate) ById(v interface{}) (int64, error) {
 	return orm.base.db.Exec(sb.String(), cv...)
 }
 
-func (orm *OrmTableUpdate) ByModel(v interface{}) (int64, error) {
+func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
@@ -296,7 +298,7 @@ func (orm *OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	return orm.base.db.Exec(sb.String(), cv...)
 }
 
-func (orm *OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
+func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 	if w == nil {
 		return 0, nil
 	}
@@ -327,13 +329,13 @@ func (orm *OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //select
-func (engine *EngineTable) Select(v interface{}) *OrmTableSelect {
+func (engine EngineTable) Select(v interface{}) OrmTableSelect {
 	engine.setDest(v)
 
-	return &OrmTableSelect{base: engine}
+	return OrmTableSelect{base: engine}
 }
 
-func (orm *OrmTableSelect) ById(v interface{}) (int64, error) {
+func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 
 	orm.base.initColumnsValue()
 	orm.base.initIdName()
@@ -364,7 +366,7 @@ func (orm *OrmTableSelect) ById(v interface{}) (int64, error) {
 	return StructScanLn(rows, orm.base.dest)
 }
 
-func (orm *OrmTableSelectWhere) getOne() (int64, error) {
+func (orm OrmTableSelectWhere) getOne() (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
@@ -387,7 +389,7 @@ func (orm *OrmTableSelectWhere) getOne() (int64, error) {
 	return orm.base.query(sb.String(), orm.base.dest)
 }
 
-func (orm *OrmTableSelectWhere) getList() (int64, error) {
+func (orm OrmTableSelectWhere) getList() (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
@@ -410,7 +412,7 @@ func (orm *OrmTableSelectWhere) getList() (int64, error) {
 	return orm.base.query(sb.String(), orm.base.dest)
 }
 
-func (orm *OrmTableSelect) ByModel(v interface{}) (int64, error) {
+func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
@@ -439,7 +441,7 @@ func (orm *OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	return orm.base.query(sb.String(), values)
 }
 
-func (orm *OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
+func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 	if w == nil {
 		return 0, errors.New("table select where can't nil")
 	}
@@ -474,7 +476,7 @@ func (orm *OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //init
-func (e *EngineTable) initIdName() {
+func (e EngineTable) initIdName() {
 	idNameFun := e.db.ormConfig.IdNameFun
 	idName := e.db.ormConfig.IdName
 	if idNameFun != nil {
@@ -486,7 +488,7 @@ func (e *EngineTable) initIdName() {
 	e.idName = "id"
 }
 
-func (e *EngineTable) initTableName() {
+func (e EngineTable) initTableName() {
 	typ := reflect.TypeOf(e.dest)
 	base, err := baseStructType(typ)
 	if err != nil {
@@ -508,7 +510,7 @@ func (e *EngineTable) initTableName() {
 }
 
 //获取struct对应的字段名 和 其值   有效部分
-func (e *EngineTable) initColumnsValue() {
+func (e EngineTable) initColumnsValue() {
 	dest := e.dest
 	config := e.db.ormConfig
 
@@ -541,7 +543,7 @@ func (e *EngineTable) initColumnsValue() {
 }
 
 //获取struct对应的字段名 有效部分
-func (e *EngineTable) initColumns() {
+func (e EngineTable) initColumns() {
 	dest := e.dest
 	typ := reflect.TypeOf(dest)
 	base, err := baseStructType(typ)

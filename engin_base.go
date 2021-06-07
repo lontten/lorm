@@ -4,23 +4,24 @@ import "log"
 
 
 type EngineBase struct {
-	db *DbPool
+	context   OrmContext
+	db DbPool
 }
 
 
-func (engine *EngineBase) Select(args ...string) *OrmSelect {
-	context := engine.db.context
+func (engine EngineBase) Select(args ...string) OrmSelect {
+	context := engine.context
 	selectArgsArr2SqlStr(context, args)
-	return &OrmSelect{db: engine.db, context: context}
+	return OrmSelect{db: engine.db, context: context}
 }
 
-func (orm *OrmSelect) SelectModel(v interface{}) *OrmSelect {
+func (orm OrmSelect) SelectModel(v interface{}) OrmSelect {
 	if v == nil {
 		return orm
 	}
 	context := orm.context
 
-	return &OrmSelect{db: orm.db, context: context}
+	return OrmSelect{db: orm.db, context: context}
 }
 
 func (orm *OrmSelect) From(arg string) *OrmFrom {

@@ -2,5 +2,7 @@ package lorm
 
 
 type EngineExtra struct {
-	db *DbPool
+	context   OrmContext
+
+	db DbPool
 }
