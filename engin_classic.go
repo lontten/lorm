@@ -44,5 +44,5 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 }
 
 func (engine EngineClassic) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	return engine.db.Exec(query, args)
+	return engine.db.Exec(query, args...)
 }
