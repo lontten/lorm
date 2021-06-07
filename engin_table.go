@@ -5,12 +5,13 @@ import (
 	"github.com/lontten/lorm/utils"
 	"log"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
 type EngineTable struct {
-	context   OrmContext
+	context OrmContext
 
 	db DbPool
 
@@ -34,7 +35,7 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	return StructScan(rows, e.dest)
 }
 
-func (e EngineTable) setDest(v interface{}) {
+func (e *EngineTable) setDest(v interface{}) {
 	e.dest = v
 	e.initTableName()
 }
@@ -61,7 +62,6 @@ type OrmTableUpdate struct {
 type OrmTableDelete struct {
 	base EngineTable
 }
-
 
 //create
 func (engine EngineTable) Create(v interface{}) (int64, error) {
@@ -336,8 +336,7 @@ func (engine EngineTable) Select(v interface{}) OrmTableSelect {
 }
 
 func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
-
-	orm.base.initColumnsValue()
+	orm.base.initColumns()
 	orm.base.initIdName()
 	tableName := orm.base.tableName
 	c := orm.base.columns
@@ -356,10 +355,25 @@ func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" WHERE ")
 	sb.WriteString(orm.base.idName)
-	sb.WriteString(" = ?")
+	sb.WriteString(" = ? ")
+	sql := sb.String()
 
-	log.Println(sb.String(), v)
-	rows, err := orm.base.db.db.Query(sb.String(), v)
+	driverName := orm.base.db.dbConfig.DriverName()
+
+	if driverName == POSTGRES {
+		var i = 1
+		for {
+			t := strings.Replace(sql, " ? ", " $"+strconv.Itoa(i)+" ", 1)
+			if t == sql {
+				break
+			}
+			i++
+			sql = t
+		}
+	}
+
+	log.Println(sql, v)
+	rows, err := orm.base.db.db.Query(sql, v)
 	if err != nil {
 		return 0, err
 	}
@@ -476,7 +490,7 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //init
-func (e EngineTable) initIdName() {
+func (e *EngineTable) initIdName() {
 	idNameFun := e.db.ormConfig.IdNameFun
 	idName := e.db.ormConfig.IdName
 	if idNameFun != nil {
@@ -488,7 +502,7 @@ func (e EngineTable) initIdName() {
 	e.idName = "id"
 }
 
-func (e EngineTable) initTableName() {
+func (e *EngineTable) initTableName() {
 	typ := reflect.TypeOf(e.dest)
 	base, err := baseStructType(typ)
 	if err != nil {
@@ -510,7 +524,7 @@ func (e EngineTable) initTableName() {
 }
 
 //获取struct对应的字段名 和 其值   有效部分
-func (e EngineTable) initColumnsValue() {
+func (e *EngineTable) initColumnsValue() {
 	dest := e.dest
 	config := e.db.ormConfig
 
@@ -543,7 +557,7 @@ func (e EngineTable) initColumnsValue() {
 }
 
 //获取struct对应的字段名 有效部分
-func (e EngineTable) initColumns() {
+func (e *EngineTable) initColumns() {
 	dest := e.dest
 	typ := reflect.TypeOf(dest)
 	base, err := baseStructType(typ)
