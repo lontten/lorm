@@ -60,6 +60,7 @@ type OrmTableDelete struct {
 	base *EngineTable
 }
 
+
 //create
 func (engine *EngineTable) Create(v interface{}) (int64, error) {
 	engine.setDest(v)
@@ -332,18 +333,12 @@ func (engine *EngineTable) Select(v interface{}) *OrmTableSelect {
 	return &OrmTableSelect{base: engine}
 }
 
-func (orm *OrmTableSelect) ById() (int64, error) {
+func (orm *OrmTableSelect) ById(v interface{}) (int64, error) {
+
 	orm.base.initColumnsValue()
 	orm.base.initIdName()
 	tableName := orm.base.tableName
 	c := orm.base.columns
-	cv := orm.base.columnValues
-	var idValue interface{}
-	for i, s := range c {
-		if s == "id" {
-			idValue = cv[i]
-		}
-	}
 
 	var sb strings.Builder
 	sb.WriteString("SELECT ")
@@ -361,8 +356,8 @@ func (orm *OrmTableSelect) ById() (int64, error) {
 	sb.WriteString(orm.base.idName)
 	sb.WriteString(" = ?")
 
-	log.Println(sb.String(), idValue)
-	rows, err := orm.base.db.db.Query(sb.String(), idValue)
+	log.Println(sb.String(), v)
+	rows, err := orm.base.db.db.Query(sb.String(), v)
 	if err != nil {
 		return 0, err
 	}
