@@ -5,7 +5,6 @@ import (
 	"github.com/lontten/lorm/utils"
 	"log"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode"
 )
@@ -25,19 +24,19 @@ type EngineTable struct {
 	columnValues []interface{}
 }
 
-func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
-	log.Println(query, args)
-	rows, err := e.db.db.Query(query, args...)
+func (engine EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
+	rows, err := engine.db.Query(query, args...)
 	if err != nil {
 		return 0, err
 	}
 
-	return StructScan(rows, e.dest)
+	return StructScanLn(rows, engine.dest)
 }
 
-func (e *EngineTable) setDest(v interface{}) {
-	e.dest = v
-	e.initTableName()
+func (engine *EngineTable) setDest(v interface{}) {
+	engine.dest = v
+	engine.initTableName()
+
 }
 
 type OrmTableCreate struct {
@@ -260,13 +259,13 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	cv := orm.base.columnValues
 
 	var sb strings.Builder
-	sb.WriteString("UPDATE ")
+	sb.WriteString(" UPDATE ")
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
-	sb.WriteString("WHERE ")
+	sb.WriteString(" WHERE ")
 	sb.WriteString(orm.base.idName)
-	sb.WriteString(" = ?")
+	sb.WriteString(" = ? ")
 	cv = append(cv, v)
 
 	return orm.base.db.Exec(sb.String(), cv...)
@@ -278,7 +277,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	cv := orm.base.columnValues
 
 	var sb strings.Builder
-	sb.WriteString("UPDATE ")
+	sb.WriteString(" UPDATE ")
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
@@ -310,7 +309,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 	cv := orm.base.columnValues
 
 	var sb strings.Builder
-	sb.WriteString("UPDATE ")
+	sb.WriteString(" UPDATE ")
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
@@ -342,7 +341,7 @@ func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 	c := orm.base.columns
 
 	var sb strings.Builder
-	sb.WriteString("SELECT ")
+	sb.WriteString(" SELECT ")
 	for i, column := range c {
 		if i == 0 {
 			sb.WriteString(column)
@@ -358,22 +357,8 @@ func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 	sb.WriteString(" = ? ")
 	sql := sb.String()
 
-	driverName := orm.base.db.dbConfig.DriverName()
 
-	if driverName == POSTGRES {
-		var i = 1
-		for {
-			t := strings.Replace(sql, " ? ", " $"+strconv.Itoa(i)+" ", 1)
-			if t == sql {
-				break
-			}
-			i++
-			sql = t
-		}
-	}
-
-	log.Println(sql, v)
-	rows, err := orm.base.db.db.Query(sql, v)
+	rows, err := orm.base.db.Query(sql, v)
 	if err != nil {
 		return 0, err
 	}
@@ -385,7 +370,7 @@ func (orm OrmTableSelectWhere) getOne() (int64, error) {
 	c := orm.base.columns
 
 	var sb strings.Builder
-	sb.WriteString("SELECT ")
+	sb.WriteString(" SELECT ")
 	for i, column := range c {
 		if i == 0 {
 			sb.WriteString(column)
@@ -396,11 +381,11 @@ func (orm OrmTableSelectWhere) getOne() (int64, error) {
 	}
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
-	sb.WriteString("WHERE ")
+	sb.WriteString(" WHERE ")
 	sb.WriteString(orm.base.idName)
-	sb.WriteString(" = ?")
+	sb.WriteString(" = ? ")
 
-	return orm.base.query(sb.String(), orm.base.dest)
+	return orm.base.queryLn(sb.String(), orm.base.dest)
 }
 
 func (orm OrmTableSelectWhere) getList() (int64, error) {
@@ -421,12 +406,15 @@ func (orm OrmTableSelectWhere) getList() (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString("WHERE ")
 	sb.WriteString(orm.base.idName)
-	sb.WriteString(" = ?")
+	sb.WriteString(" = ? ")
 
-	return orm.base.query(sb.String(), orm.base.dest)
+	return orm.base.queryLn(sb.String(), orm.base.dest)
 }
 
 func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
+	orm.base.initColumns()
+	orm.base.initIdName()
+
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
@@ -452,13 +440,16 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(tableWhereArgs2SqlStr(columns))
 
-	return orm.base.query(sb.String(), values)
+	return orm.base.queryLn(sb.String(), values...)
 }
 
 func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 	if w == nil {
 		return 0, errors.New("table select where can't nil")
 	}
+	orm.base.initColumns()
+	orm.base.initIdName()
+
 	wheres := w.context.wheres
 	args := w.context.args
 
@@ -486,7 +477,7 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 		sb.WriteString(" AND " + where)
 	}
 
-	return orm.base.query(sb.String(), args)
+	return orm.base.queryLn(sb.String(), args...)
 }
 
 //init

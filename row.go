@@ -7,31 +7,6 @@ import (
 	"reflect"
 )
 
-type Rows struct {
-	*sql.Rows
-	started bool
-	base    reflect.Type
-	fields  []int
-	values  []interface{}
-}
-
-type Row struct {
-	rows *sql.Rows
-	err  error
-}
-
-func (r *Row) Scan(dest ...interface{}) error {
-	return nil
-}
-
-func (r *Row) StructScan(dest interface{}) error {
-	return nil
-}
-
-func (r *Rows) StructScan(dest interface{}) (int64, error) {
-	//return StructScan(r.Rows, dest)
-	return 0, nil
-}
 
 func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	defer rows.Close()

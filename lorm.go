@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -194,30 +195,50 @@ func (dp *DbPool) OrmConfig(c OrmConfig) {
 	dp.ormConfig = c
 }
 
-func (db DbPool) Exec(query string, args ...interface{}) (int64, error) {
-	log.Println(query, args)
-	switch db.dbConfig.DriverName() {
+func (dp DbPool) Exec(query string, args ...interface{}) (int64, error) {
+	switch dp.dbConfig.DriverName() {
 	case MYSQL:
-		exec, err := db.db.Exec(query, args...)
-		if err != nil {
-			return 0, err
-		}
-		return exec.RowsAffected()
 	case POSTGRES:
-		exec, err := db.db.Exec(query, args...)
-		if err != nil {
-			return 0, err
+		var i = 1
+		for {
+			t := strings.Replace(query, " ? ", " $"+strconv.Itoa(i)+" ", 1)
+			if t == query {
+				break
+			}
+			i++
+			query = t
 		}
-		return exec.RowsAffected()
 	default:
-		return 0, errors.New("无此db 类型")
+		return 0, errors.New("无此db drive 类型")
 	}
+	log.Println(query, args)
+
+	exec, err := dp.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return exec.RowsAffected()
 }
 
-func (dp DbPool) Query(query string, args ...interface{}) (Rows, error) {
+func (dp DbPool) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	switch dp.dbConfig.DriverName() {
+	case POSTGRES:
+		var i = 1
+		for {
+			t := strings.Replace(query, " ? ", " $"+strconv.Itoa(i)+" ", 1)
+			if t == query {
+				break
+			}
+			i++
+			query = t
+		}
+	default:
+		return &sql.Rows{}, errors.New("无此db drive 类型")
+	}
 	log.Println(query, args)
-	rows, err := dp.db.Query(query, args...)
-	return Rows{Rows: rows}, err
+
+	return dp.db.Query(query, args...)
+
 }
 
 //
@@ -304,25 +325,25 @@ func tableSelectArgs2SqlStr(args []string) string {
 
 func tableCreateArgs2SqlStr(args []string) string {
 	var sb strings.Builder
-	sb.WriteString("( ")
+	sb.WriteString(" ( ")
 	for i, v := range args {
 		if i == 0 {
 			sb.WriteString(v)
 		} else {
-			sb.WriteString(", " + v)
+			sb.WriteString(" , " + v)
 		}
 	}
-	sb.WriteString(" )")
+	sb.WriteString(" ) ")
 	sb.WriteString(" VALUES ")
 	sb.WriteString("( ")
 	for i := range args {
 		if i == 0 {
 			sb.WriteString(" ? ")
 		} else {
-			sb.WriteString(", ?")
+			sb.WriteString(", ? ")
 		}
 	}
-	sb.WriteString(" )")
+	sb.WriteString(" ) ")
 	return sb.String()
 }
 
