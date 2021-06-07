@@ -74,7 +74,7 @@ func (engine EngineTable) Create(v interface{}) (int64, error) {
 	sb.WriteString(engine.tableName + " ")
 	sb.WriteString(createSqlStr)
 
-	return engine.db.Exec(sb.String(), engine.columnValues)
+	return engine.db.Exec(sb.String(), engine.columnValues...)
 }
 
 func (engine EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
@@ -102,8 +102,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
 	sb.WriteString(whereArgs2SqlStr)
-	log.Println(sb.String(), values)
-	rows, err := orm.base.db.db.Query(sb.String(), values...)
+	rows, err := orm.base.db.Query(sb.String(), values...)
 	if err != nil {
 		return 0, err
 	}
@@ -115,7 +114,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 		sb.WriteString(" SET ")
 		sb.WriteString(tableUpdateArgs2SqlStr(c))
 		sb.WriteString(whereArgs2SqlStr)
-		cv = append(cv, values)
+		cv = append(cv, values...)
 
 		return orm.base.db.Exec(sb.String(), cv...)
 	}
@@ -190,7 +189,7 @@ func (engine EngineTable) Delete(v interface{}) OrmTableDelete {
 	return OrmTableDelete{base: engine}
 }
 
-func (orm OrmTableDelete) ById() (int64, error) {
+func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 	orm.base.initIdName()
 
 	var sb strings.Builder
@@ -199,18 +198,18 @@ func (orm OrmTableDelete) ById() (int64, error) {
 	sb.WriteString(orm.base.tableName)
 	sb.WriteString("WHERE ")
 	sb.WriteString(orm.base.idName)
-	sb.WriteString(" = ?")
+	sb.WriteString(" = ? ")
 
-	return orm.base.db.Exec(sb.String(), orm.base.dest)
+	return orm.base.db.Exec(sb.String(), v)
 }
 
-func (orm OrmTableDelete) ByModel() (int64, error) {
-	columns, values, err := getStructMappingColumnsValue(orm.base.dest, orm.base.db.ormConfig)
+func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
+	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.ormConfig)
+	if err != nil {
+		return 0, err
+	}
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
-	}
-	if err != nil {
-		panic(err)
 	}
 	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns)
 	var sb strings.Builder
@@ -219,7 +218,7 @@ func (orm OrmTableDelete) ByModel() (int64, error) {
 	sb.WriteString(orm.base.tableName)
 	sb.WriteString(whereArgs2SqlStr)
 
-	return orm.base.db.Exec(sb.String(), values)
+	return orm.base.db.Exec(sb.String(), values...)
 }
 
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
@@ -287,12 +286,12 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 		return 0, errors.New("where model valid field need ")
 	}
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns)
 	sb.WriteString(whereArgs2SqlStr)
 
-	cv = append(cv, values)
+	cv = append(cv, values...)
 
 	return orm.base.db.Exec(sb.String(), cv...)
 }
@@ -322,7 +321,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 		sb.WriteString(" AND " + where)
 	}
 
-	cv = append(cv, args)
+	cv = append(cv, args...)
 
 	return orm.base.db.Exec(sb.String(), cv...)
 }
@@ -355,14 +354,8 @@ func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 	sb.WriteString(" WHERE ")
 	sb.WriteString(orm.base.idName)
 	sb.WriteString(" = ? ")
-	sql := sb.String()
 
-
-	rows, err := orm.base.db.Query(sql, v)
-	if err != nil {
-		return 0, err
-	}
-	return StructScanLn(rows, orm.base.dest)
+	return orm.base.queryLn(sb.String(), v)
 }
 
 func (orm OrmTableSelectWhere) getOne() (int64, error) {
