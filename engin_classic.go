@@ -14,7 +14,7 @@ type ClassicQuery struct {
 }
 
 type ClassicExec struct {
-	base *EngineClassic
+	base EngineClassic
 }
 
 func (engine EngineClassic) Query(query string, args ...interface{}) *ClassicQuery {

@@ -108,7 +108,7 @@ type OrmConfig struct {
 }
 
 type Engine struct {
-	db      *DB
+	db      DB
 	Base    EngineBase
 	Extra   EngineExtra
 	Table   EngineTable
@@ -184,7 +184,7 @@ func Connect(c DbConfig, pc *PoolConfig) (*DB, error) {
 	return pool, err
 }
 
-func (db *DB) GetEngine() Engine {
+func (db DB) GetEngine() Engine {
 	return Engine{
 		db:      db,
 		Base:    EngineBase{db: db, context: OrmContext{}},

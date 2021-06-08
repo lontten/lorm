@@ -56,7 +56,7 @@ type OrmTableSelectWhere struct {
 }
 
 type OrmTableUpdate struct {
-	base *EngineTable
+	base EngineTable
 }
 
 type OrmTableDelete struct {
@@ -245,27 +245,14 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //update
-func (engine *EngineTable) Update(v interface{}) OrmTableUpdate {
-	defer fmt.Println("hello defer")
-	defer engine.Nu()
-	fmt.Println(engine==nil)
-	engine.Nu()
-	fmt.Println(engine==nil)
-	fmt.Println("nnnnn")
+func (engine EngineTable) Update(v interface{}) OrmTableUpdate {
 	engine.setDest(v)
 	engine.initColumnsValue()
 	return OrmTableUpdate{base: engine}
 }
 
-//update
-func (engine *EngineTable) Nu() {
-	  engine = nil
-	fmt.Println("nu")
-}
 
 func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
-	fmt.Println("id a")
-	fmt.Println(orm.base==nil)
 	orm.base.initIdName()
 
 	tableName := orm.base.tableName
