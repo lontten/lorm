@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"errors"
+	"fmt"
 	"github.com/lontten/lorm/utils"
 	"log"
 	"reflect"
@@ -12,7 +13,7 @@ import (
 type EngineTable struct {
 	context OrmContext
 
-	db DbPool
+	db DBer
 
 	idName string
 	//当前表名
@@ -55,7 +56,7 @@ type OrmTableSelectWhere struct {
 }
 
 type OrmTableUpdate struct {
-	base EngineTable
+	base *EngineTable
 }
 
 type OrmTableDelete struct {
@@ -89,7 +90,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.ormConfig)
+	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -157,7 +158,7 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	sb.WriteString(whereSql)
 
 	log.Println(sb.String(), args)
-	rows, err := orm.base.db.db.Query(sb.String(), args...)
+	rows, err := orm.base.db.Query(sb.String(), args...)
 	if err != nil {
 		return 0, err
 	}
@@ -204,7 +205,7 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.ormConfig)
+	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
 	if err != nil {
 		return 0, err
 	}
@@ -244,13 +245,27 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //update
-func (engine EngineTable) Update(v interface{}) OrmTableUpdate {
+func (engine *EngineTable) Update(v interface{}) OrmTableUpdate {
+	defer fmt.Println("hello defer")
+	defer engine.Nu()
+	fmt.Println(engine==nil)
+	engine.Nu()
+	fmt.Println(engine==nil)
+	fmt.Println("nnnnn")
 	engine.setDest(v)
 	engine.initColumnsValue()
 	return OrmTableUpdate{base: engine}
 }
 
+//update
+func (engine *EngineTable) Nu() {
+	  engine = nil
+	fmt.Println("nu")
+}
+
 func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
+	fmt.Println("id a")
+	fmt.Println(orm.base==nil)
 	orm.base.initIdName()
 
 	tableName := orm.base.tableName
@@ -266,7 +281,7 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	sb.WriteString(orm.base.idName)
 	sb.WriteString(" = ? ")
 	cv = append(cv, v)
-
+	fmt.Println("id b")
 	return orm.base.db.Exec(sb.String(), cv...)
 }
 
@@ -281,7 +296,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
 
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.ormConfig)
+	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -411,7 +426,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.ormConfig)
+	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -475,8 +490,8 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 
 //init
 func (e *EngineTable) initIdName() {
-	idNameFun := e.db.ormConfig.IdNameFun
-	idName := e.db.ormConfig.IdName
+	idNameFun := e.db.OrmConfig().IdNameFun
+	idName := e.db.OrmConfig().IdName
 	if idNameFun != nil {
 		e.idName = idNameFun(e.tableName, e.dest)
 	}
@@ -499,18 +514,18 @@ func (e *EngineTable) initTableName() {
 	}
 	name = utils.Camel2Case(name)
 
-	tableNameFun := e.db.ormConfig.TableNameFun
+	tableNameFun := e.db.OrmConfig().TableNameFun
 	if tableNameFun != nil {
 		e.tableName = tableNameFun(name, base)
 	}
-	tableNamePrefix := e.db.ormConfig.TableNamePrefix
+	tableNamePrefix := e.db.OrmConfig().TableNamePrefix
 	e.tableName = tableNamePrefix + name
 }
 
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() {
 	dest := e.dest
-	config := e.db.ormConfig
+	config := e.db.OrmConfig()
 
 	t := reflect.TypeOf(dest)
 	base, err := baseStructType(t)
@@ -547,7 +562,7 @@ func (e *EngineTable) initColumns() {
 	base, err := baseStructType(typ)
 	panicErr(err)
 
-	config := e.db.ormConfig
+	config := e.db.OrmConfig()
 
 	cMap := make(map[string]int)
 

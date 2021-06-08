@@ -56,11 +56,21 @@ func (c *PgConfig) DriverName() string {
 	return POSTGRES
 }
 
-type DbPool struct {
+type DB struct {
 	db        *sql.DB
 	dbConfig  DbConfig
 	ormConfig OrmConfig
 }
+
+func (db DB) OrmConfig() OrmConfig {
+	return db.ormConfig
+}
+
+
+func (db *DB) SetOrmConfig(c OrmConfig) {
+	db.ormConfig = c
+}
+
 
 type OrmConfig struct {
 	//po生成文件目录
@@ -98,13 +108,14 @@ type OrmConfig struct {
 }
 
 type Engine struct {
+	db      *DB
 	Base    EngineBase
 	Extra   EngineExtra
 	Table   EngineTable
 	Classic EngineClassic
 }
 
-func open(c DbConfig, pc *PoolConfig) (dp *DbPool, err error) {
+func open(c DbConfig, pc *PoolConfig) (dp *DB, err error) {
 	if c == nil {
 		fmt.Println("dbconfig canot be nil")
 		panic(errors.New("dbconfig canot be nil"))
@@ -146,15 +157,14 @@ func open(c DbConfig, pc *PoolConfig) (dp *DbPool, err error) {
 		db.SetMaxOpenConns(pc.maxOpen)
 		db.SetMaxIdleConns(pc.maxIdleCount)
 	}
-	return &DbPool{
+	return &DB{
 		db:        db,
 		dbConfig:  c,
 		ormConfig: OrmConfig{},
 	}, nil
-
 }
 
-func MustConnect(c DbConfig, pc *PoolConfig) *DbPool {
+func MustConnect(c DbConfig, pc *PoolConfig) *DB {
 	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
@@ -162,7 +172,7 @@ func MustConnect(c DbConfig, pc *PoolConfig) *DbPool {
 	return db
 }
 
-func Connect(c DbConfig, pc *PoolConfig) (*DbPool, error) {
+func Connect(c DbConfig, pc *PoolConfig) (*DB, error) {
 	pool, err := open(c, pc)
 	if err != nil {
 		return nil, err
@@ -174,29 +184,21 @@ func Connect(c DbConfig, pc *PoolConfig) (*DbPool, error) {
 	return pool, err
 }
 
-func (dp DbPool) GetEngine() Engine {
+func (db *DB) GetEngine() Engine {
 	return Engine{
-		Base:    EngineBase{db: dp, context: OrmContext{}},
-		Extra:   EngineExtra{db: dp, context: OrmContext{}},
-		Classic: EngineClassic{db: dp, context: OrmContext{}},
+		db:      db,
+		Base:    EngineBase{db: db, context: OrmContext{}},
+		Extra:   EngineExtra{db: db, context: OrmContext{}},
+		Classic: EngineClassic{db: db, context: OrmContext{}},
 		Table: EngineTable{
 			context:      OrmContext{},
-			db:           dp,
-			idName:       "",
-			tableName:    "",
-			dest:         nil,
-			columns:      nil,
-			columnValues: nil,
+			db:           db,
 		},
 	}
 }
 
-func (dp *DbPool) OrmConfig(c OrmConfig) {
-	dp.ormConfig = c
-}
-
-func (dp DbPool) Exec(query string, args ...interface{}) (int64, error) {
-	switch dp.dbConfig.DriverName() {
+func (db DB) Exec(query string, args ...interface{}) (int64, error) {
+	switch db.dbConfig.DriverName() {
 	case MYSQL:
 	case POSTGRES:
 		var i = 1
@@ -213,15 +215,15 @@ func (dp DbPool) Exec(query string, args ...interface{}) (int64, error) {
 	}
 	log.Println(query, args)
 
-	exec, err := dp.db.Exec(query, args...)
+	exec, err := db.db.Exec(query, args...)
 	if err != nil {
 		return 0, err
 	}
 	return exec.RowsAffected()
 }
 
-func (dp DbPool) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	switch dp.dbConfig.DriverName() {
+func (db DB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	switch db.dbConfig.DriverName() {
 	case POSTGRES:
 		var i = 1
 		for {
@@ -233,11 +235,11 @@ func (dp DbPool) Query(query string, args ...interface{}) (*sql.Rows, error) {
 			query = t
 		}
 	default:
-		return &sql.Rows{}, errors.New("无此db drive 类型")
+		return nil, errors.New("无此db drive 类型")
 	}
 	log.Println(query, args)
 
-	return dp.db.Query(query, args...)
+	return db.db.Query(query, args...)
 
 }
 
@@ -258,17 +260,17 @@ type OrmContext struct {
 }
 
 type OrmSelect struct {
-	db      DbPool
+	db      DBer
 	context OrmContext
 }
 
 type OrmFrom struct {
-	db      DbPool
+	db      DBer
 	context OrmContext
 }
 
 type OrmWhere struct {
-	db      DbPool
+	db      DBer
 	context OrmContext
 }
 

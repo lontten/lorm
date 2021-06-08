@@ -1,8 +1,8 @@
 package lorm
 
 
-type EngineExtra struct {
+type EngineBatch struct {
 	context   OrmContext
 
-	db DBer
+	db DB
 }
