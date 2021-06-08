@@ -2,7 +2,7 @@ package lorm
 
 import "log"
 
-
+//对基础SQL的简单封装
 type EngineBase struct {
 	context OrmContext
 	db      DBer

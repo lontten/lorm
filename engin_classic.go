@@ -2,6 +2,7 @@ package lorm
 
 import "log"
 
+//对 query exec 的简单封装
 type EngineClassic struct {
 	context OrmContext
 	db      DBer
