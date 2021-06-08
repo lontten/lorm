@@ -28,15 +28,10 @@ type MysqlConfig struct {
 }
 
 type PoolConfig struct {
-	maxIdleCount      int           // zero means defaultMaxIdleConns; negative means 0
-	maxOpen           int           // <= 0 means unlimited
-	maxLifetime       time.Duration // maximum amount of time a connection may be reused
-	maxIdleTime       time.Duration // maximum amount of time a connection may be idle before being closed
-	cleanerCh         chan struct{}
-	waitCount         int64 // Total number of connections waited for.
-	maxIdleClosed     int64 // Total number of connections closed due to idle count.
-	maxIdleTimeClosed int64 // Total number of connections closed due to idle time.
-	maxLifetimeClosed int64 // Total number of connections closed due to max connection lifetime limit.
+	MaxIdleCount int           // zero means defaultMaxIdleConns; negative means 0
+	MaxOpen      int           // <= 0 means unlimited
+	MaxLifetime  time.Duration // maximum amount of time a connection may be reused
+	MaxIdleTime  time.Duration // maximum amount of time a connection may be idle before being closed
 }
 
 func (c *MysqlConfig) DriverName() string {
@@ -65,12 +60,6 @@ type DB struct {
 func (db DB) OrmConfig() OrmConfig {
 	return db.ormConfig
 }
-
-
-func (db *DB) SetOrmConfig(c OrmConfig) {
-	db.ormConfig = c
-}
-
 
 type OrmConfig struct {
 	//po生成文件目录
@@ -152,10 +141,10 @@ func open(c DbConfig, pc *PoolConfig) (dp *DB, err error) {
 		return nil, errors.New("无此db 类型")
 	}
 	if pc != nil {
-		db.SetConnMaxLifetime(pc.maxLifetime)
-		db.SetConnMaxIdleTime(pc.maxIdleTime)
-		db.SetMaxOpenConns(pc.maxOpen)
-		db.SetMaxIdleConns(pc.maxIdleCount)
+		db.SetConnMaxLifetime(pc.MaxLifetime)
+		db.SetConnMaxIdleTime(pc.MaxIdleTime)
+		db.SetMaxOpenConns(pc.MaxOpen)
+		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
 	return &DB{
 		db:        db,
@@ -184,20 +173,22 @@ func Connect(c DbConfig, pc *PoolConfig) (*DB, error) {
 	return pool, err
 }
 
-func (db DB) GetEngine() Engine {
+func (db DB) GetEngine(c OrmConfig) Engine {
+	db.ormConfig = c
+
 	return Engine{
 		db:      db,
 		Base:    EngineBase{db: db, context: OrmContext{}},
 		Extra:   EngineExtra{db: db, context: OrmContext{}},
 		Classic: EngineClassic{db: db, context: OrmContext{}},
 		Table: EngineTable{
-			context:      OrmContext{},
-			db:           db,
+			context: OrmContext{},
+			db:      db,
 		},
 	}
 }
 
-func (db DB) Exec(query string, args ...interface{}) (int64, error) {
+func (db DB) exec(query string, args ...interface{}) (int64, error) {
 	switch db.dbConfig.DriverName() {
 	case MYSQL:
 	case POSTGRES:
@@ -222,7 +213,7 @@ func (db DB) Exec(query string, args ...interface{}) (int64, error) {
 	return exec.RowsAffected()
 }
 
-func (db DB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (db DB) query(query string, args ...interface{}) (*sql.Rows, error) {
 	switch db.dbConfig.DriverName() {
 	case POSTGRES:
 		var i = 1

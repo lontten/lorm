@@ -26,7 +26,7 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	query := q.query
 	args := q.args
 	log.Println(query,args)
-	rows, err := q.base.db.Query(query, args...)
+	rows, err := q.base.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -37,7 +37,7 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	query := q.query
 	args := q.args
 	log.Println(query,args)
-	rows, err := q.base.db.Query(query, args...)
+	rows, err := q.base.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -45,5 +45,5 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 }
 
 func (engine EngineClassic) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	return engine.db.Exec(query, args...)
+	return engine.db.exec(query, args...)
 }

@@ -26,7 +26,7 @@ type EngineTable struct {
 }
 
 func (engine EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
-	rows, err := engine.db.Query(query, args...)
+	rows, err := engine.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -75,7 +75,7 @@ func (engine EngineTable) Create(v interface{}) (int64, error) {
 	sb.WriteString(engine.tableName + " ")
 	sb.WriteString(createSqlStr)
 
-	return engine.db.Exec(sb.String(), engine.columnValues...)
+	return engine.db.exec(sb.String(), engine.columnValues...)
 }
 
 func (engine EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
@@ -103,7 +103,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
 	sb.WriteString(whereArgs2SqlStr)
-	rows, err := orm.base.db.Query(sb.String(), values...)
+	rows, err := orm.base.db.query(sb.String(), values...)
 	if err != nil {
 		return 0, err
 	}
@@ -117,7 +117,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 		sb.WriteString(whereArgs2SqlStr)
 		cv = append(cv, values...)
 
-		return orm.base.db.Exec(sb.String(), cv...)
+		return orm.base.db.exec(sb.String(), cv...)
 	}
 	columnSqlStr := tableCreateArgs2SqlStr(c)
 
@@ -126,7 +126,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(columnSqlStr)
 
-	return orm.base.db.Exec(sb.String(), cv...)
+	return orm.base.db.exec(sb.String(), cv...)
 }
 
 func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
@@ -158,7 +158,7 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	sb.WriteString(whereSql)
 
 	log.Println(sb.String(), args)
-	rows, err := orm.base.db.Query(sb.String(), args...)
+	rows, err := orm.base.db.query(sb.String(), args...)
 	if err != nil {
 		return 0, err
 	}
@@ -172,7 +172,7 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 		sb.WriteString(whereSql)
 		cv = append(cv, args)
 
-		return orm.base.db.Exec(sb.String(), cv...)
+		return orm.base.db.exec(sb.String(), cv...)
 	}
 	columnSqlStr := tableCreateArgs2SqlStr(c)
 
@@ -181,7 +181,7 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(columnSqlStr)
 
-	return orm.base.db.Exec(sb.String(), cv...)
+	return orm.base.db.exec(sb.String(), cv...)
 }
 
 //delete
@@ -201,7 +201,7 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 	sb.WriteString(orm.base.idName)
 	sb.WriteString(" = ? ")
 
-	return orm.base.db.Exec(sb.String(), v)
+	return orm.base.db.exec(sb.String(), v)
 }
 
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
@@ -219,7 +219,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(orm.base.tableName)
 	sb.WriteString(whereArgs2SqlStr)
 
-	return orm.base.db.Exec(sb.String(), values...)
+	return orm.base.db.exec(sb.String(), values...)
 }
 
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
@@ -241,7 +241,7 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 		sb.WriteString(" AND " + where)
 	}
 
-	return orm.base.db.Exec(sb.String(), args)
+	return orm.base.db.exec(sb.String(), args)
 }
 
 //update
@@ -269,7 +269,7 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	sb.WriteString(" = ? ")
 	cv = append(cv, v)
 	fmt.Println("id b")
-	return orm.base.db.Exec(sb.String(), cv...)
+	return orm.base.db.exec(sb.String(), cv...)
 }
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
@@ -295,7 +295,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 
 	cv = append(cv, values...)
 
-	return orm.base.db.Exec(sb.String(), cv...)
+	return orm.base.db.exec(sb.String(), cv...)
 }
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
@@ -325,7 +325,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 	cv = append(cv, args...)
 
-	return orm.base.db.Exec(sb.String(), cv...)
+	return orm.base.db.exec(sb.String(), cv...)
 }
 
 //select

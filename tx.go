@@ -14,7 +14,7 @@ type Tx struct {
 	ormConfig OrmConfig
 }
 
-func (tx Tx) Exec(query string, args ...interface{}) (int64, error) {
+func (tx Tx) exec(query string, args ...interface{}) (int64, error) {
 	switch tx.dbConfig.DriverName() {
 	case MYSQL:
 	case POSTGRES:
@@ -39,7 +39,7 @@ func (tx Tx) Exec(query string, args ...interface{}) (int64, error) {
 	return exec.RowsAffected()
 }
 
-func (tx Tx) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (tx Tx) query(query string, args ...interface{}) (*sql.Rows, error) {
 	switch tx.dbConfig.DriverName() {
 	case POSTGRES:
 		var i = 1

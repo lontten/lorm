@@ -48,7 +48,7 @@ func (orm *OrmFrom) Where(v *WhereBuilder) *OrmWhere {
 
 func (orm *OrmWhere) GetOne(dest interface{}) (int64, error) {
 	s := orm.context.query.String()
-	rows, err := orm.db.Query(s, orm.context.args...)
+	rows, err := orm.db.query(s, orm.context.args...)
 	if err != nil {
 		return 0, err
 	}
@@ -60,7 +60,7 @@ func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
 	log.Println(query)
 	args := orm.context.args
 	log.Printf("args :: %s", args)
-	rows, err := orm.db.Query(query, args...)
+	rows, err := orm.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
