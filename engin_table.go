@@ -3,7 +3,6 @@ package lorm
 import (
 	"database/sql/driver"
 	"errors"
-	"fmt"
 	"github.com/lontten/lorm/utils"
 	"log"
 	"reflect"
@@ -368,7 +367,6 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	sb.WriteString(orm.base.idName)
 	sb.WriteString(" = ? ")
 	cv = append(cv, v)
-	fmt.Println("id b")
 	return orm.base.db.exec(sb.String(), cv...)
 }
 
@@ -434,13 +432,13 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //select
-func (engine EngineTable) Select(v interface{}) OrmTableSelect {
-	err := engine.setDest(v)
+func (e EngineTable) Select(v interface{}) OrmTableSelect {
+	err := e.setDest(v)
 	if err != nil {
 		panic(err)
 	}
 
-	return OrmTableSelect{base: engine}
+	return OrmTableSelect{base: e}
 }
 
 func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
