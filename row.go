@@ -15,6 +15,10 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 		return 0, errors.New("dest need a struct pointer")
 	}
 	arr := reflect.Indirect(value)
+	err := checkValidStruct(arr.Elem())
+	if err != nil {
+		return 0, err
+	}
 
 	typ := reflect.TypeOf(dest)
 	slice, err := baseSliceType(typ)
@@ -28,10 +32,7 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	isNullable := checkNullStruct(base)
-	if !isNullable {
-		return 0, errors.New("struct need fields all pointer")
-	}
+
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -67,6 +68,12 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 
 	defer rows.Close()
 	value := reflect.ValueOf(dest)
+	err = checkValidStruct(value)
+	if err != nil {
+		return 0, err
+	}
+
+
 	if value.Kind() != reflect.Ptr {
 		return 0, errors.New("dest need a struct pointer")
 	}
@@ -78,10 +85,7 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 		fmt.Println("this is err")
 		return
 	}
-	isNullable := checkNullStruct(base)
-	if !isNullable {
-		return 0, errors.New("struct need fields all pointer")
-	}
+
 
 	columns, err := rows.Columns()
 	if err != nil {

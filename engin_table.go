@@ -34,10 +34,14 @@ func (engine EngineTable) queryLn(query string, args ...interface{}) (int64, err
 	return StructScanLn(rows, engine.dest)
 }
 
-func (engine *EngineTable) setDest(v interface{}) {
+func (engine *EngineTable) setDest(v interface{}) error {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return err
+	}
 	engine.dest = v
 	engine.initTableName()
-
+	return nil
 }
 
 type OrmTableCreate struct {
@@ -65,7 +69,10 @@ type OrmTableDelete struct {
 
 //create
 func (engine EngineTable) Create(v interface{}) (int64, error) {
-	engine.setDest(v)
+	err := engine.setDest(v)
+	if err != nil {
+		return 0, err
+	}
 	engine.initColumnsValue()
 
 	createSqlStr := tableCreateArgs2SqlStr(engine.columns)
@@ -79,7 +86,10 @@ func (engine EngineTable) Create(v interface{}) (int64, error) {
 }
 
 func (engine EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
-	engine.setDest(v)
+	err := engine.setDest(v)
+	if err != nil {
+		panic(err)
+	}
 	engine.initColumnsValue()
 	return OrmTableCreate{
 		base: engine,
@@ -129,6 +139,10 @@ func (orm OrmTableCreate) ById() (int64, error) {
 }
 
 func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
@@ -228,11 +242,19 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //delete
 func (engine EngineTable) Delete(v interface{}) OrmTableDelete {
-	engine.setDest(v)
+	err := engine.setDest(v)
+	if err != nil {
+		panic(err)
+	}
 	return OrmTableDelete{base: engine}
 }
 
 func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
+
 	orm.base.initIdName()
 
 	var sb strings.Builder
@@ -247,6 +269,11 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
+
 	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
 	if err != nil {
 		return 0, err
@@ -288,12 +315,20 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 
 //update
 func (engine EngineTable) Update(v interface{}) OrmTableUpdate {
-	engine.setDest(v)
+	err := engine.setDest(v)
+	if err != nil {
+		panic(err)
+	}
 	engine.initColumnsValue()
 	return OrmTableUpdate{base: engine}
 }
 
 func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
+
 	orm.base.initIdName()
 
 	tableName := orm.base.tableName
@@ -314,6 +349,11 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
+
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
@@ -371,12 +411,19 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //select
 func (engine EngineTable) Select(v interface{}) OrmTableSelect {
-	engine.setDest(v)
+	err := engine.setDest(v)
+	if err != nil {
+		panic(err)
+	}
 
 	return OrmTableSelect{base: engine}
 }
 
 func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
 	orm.base.initColumns()
 	orm.base.initIdName()
 	tableName := orm.base.tableName
@@ -448,6 +495,10 @@ func (orm OrmTableSelectWhere) getList() (int64, error) {
 }
 
 func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
+	err := checkValidStruct(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
 	orm.base.initColumns()
 	orm.base.initIdName()
 

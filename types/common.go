@@ -1,8 +1,5 @@
 package types
 
-type Null interface {
-	IsNull() bool
-}
 
 func NewInt(i int) *int {
 	var t = i
@@ -32,5 +29,10 @@ func NewInt64(i int64) *int64 {
 
 func NewString(i string) *string {
 	var t = i
+	return &t
+}
+
+func NewBool(b bool) *bool {
+	var t = b
 	return &t
 }

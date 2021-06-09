@@ -1,8 +1,8 @@
 package lorm
 
 import (
+	"database/sql/driver"
 	"errors"
-	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
@@ -111,10 +111,21 @@ func getStructMappingColumnsValue(dest interface{}, config OrmConfig) (columns [
 	for column, i := range mappingColumns {
 		field := structValue.Field(i)
 		indirect := reflect.Indirect(field)
-		if !field.IsNil() {
+		if field.Kind() == reflect.Struct {
 			columns = append(columns, column)
-			values = append(values, indirect.Interface())
+			value, err := indirect.Interface().(driver.Valuer).Value()
+			if err != nil {
+				return nil, nil, err
+			}
+
+			values = append(values, value)
+		} else {
+			if !field.IsNil() {
+				columns = append(columns, column)
+				values = append(values, indirect.Interface())
+			}
 		}
+
 	}
 	return
 }
@@ -162,39 +173,34 @@ func getFieldMap(typ reflect.Type) (fieldMap, error) {
 
 type StructValidFieldValueMap map[string]interface{}
 
-var structNullableCache = make(map[reflect.Type]bool)
-var mutexStructNullableCache sync.Mutex
+var structValidCache = make(map[reflect.Type]error)
+var mutexStructValidCache sync.Mutex
 
-func checkNullStruct(typ reflect.Type) bool {
-	mutexStructNullableCache.Lock()
-	defer mutexStructNullableCache.Unlock()
+func checkValidStruct(va reflect.Value) error {
+	mutexStructValidCache.Lock()
+	defer mutexStructValidCache.Unlock()
 
-	b, ok := structNullableCache[typ]
+	typ := va.Type()
+
+	b, ok := structValidCache[typ]
 	if ok {
 		return b
 	}
-	numField := typ.NumField()
+
+	numField := va.NumField()
 	for i := 0; i < numField; i++ {
-		field := typ.Field(i)
-		typ := field.Type
-	base:
-		switch typ.Kind() {
-		case reflect.Ptr:
+		field := va.Field(i)
+		validField, ok := baseStructValidField(field)
+		if !ok {
 			continue
-		case reflect.Slice:
-			typ = typ.Elem()
-			goto base
-		case reflect.Struct:
-			if _, ok := reflect.New(typ).Interface().(types.Null); !ok {
-				structNullableCache[typ] = false
-				return false
-			}
-		default:
-			return false
+		}
+		_, ok = validField.Interface().(driver.Valuer)
+		if !ok {
+			return errors.New("struct field " + field.String() + " nedd imp sql Value")
 		}
 	}
-	structNullableCache[typ] = true
-	return true
+	structValidCache[typ] = nil
+	return nil
 }
 
 func baseStructType(t reflect.Type) (structType reflect.Type, e error) {
@@ -220,6 +226,22 @@ func baseStructValue(v reflect.Value) (structValue reflect.Value, e error) {
 		return v, errors.New("is not a struct value")
 	}
 	return v, nil
+}
+
+func baseStructValidField(v reflect.Value) (structValue reflect.Value, b bool) {
+base:
+	switch v.Kind() {
+	case reflect.Ptr:
+		v = v.Elem()
+		goto base
+	case reflect.Slice:
+		v = v.Elem()
+		goto base
+	case reflect.Struct:
+	default:
+		return v, false
+	}
+	return v, true
 }
 
 func baseSliceType(t reflect.Type) (structType reflect.Type, e error) {

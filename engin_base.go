@@ -19,6 +19,7 @@ func (orm OrmSelect) SelectModel(v interface{}) OrmSelect {
 	if v == nil {
 		return orm
 	}
+
 	context := orm.context
 
 	return OrmSelect{db: orm.db, context: context}
