@@ -86,6 +86,48 @@ func (engine EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 	}
 }
 
+func (orm OrmTableCreate) ById() (int64, error) {
+	tableName := orm.base.tableName
+	c := orm.base.columns
+	cv := orm.base.columnValues
+	var idValue interface{}
+	for i, s := range c {
+		if s == "id" {
+			idValue = cv[i]
+		}
+	}
+
+	var sb strings.Builder
+	sb.WriteString("SELECT 1 ")
+	sb.WriteString(" FROM ")
+	sb.WriteString(tableName)
+	sb.WriteString(" WHERE id = ? ")
+	rows, err := orm.base.db.query(sb.String(), idValue)
+	if err != nil {
+		return 0, err
+	}
+	//update
+	if rows.Next() {
+		sb.Reset()
+		sb.WriteString("UPDATE ")
+		sb.WriteString(tableName)
+		sb.WriteString(" SET ")
+		sb.WriteString(tableUpdateArgs2SqlStr(c))
+		sb.WriteString(" WHERE id = ? ")
+		cv = append(cv, idValue)
+
+		return orm.base.db.exec(sb.String(), cv...)
+	}
+	columnSqlStr := tableCreateArgs2SqlStr(c)
+
+	sb.Reset()
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(tableName)
+	sb.WriteString(columnSqlStr)
+
+	return orm.base.db.exec(sb.String(), cv...)
+}
+
 func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
@@ -250,7 +292,6 @@ func (engine EngineTable) Update(v interface{}) OrmTableUpdate {
 	engine.initColumnsValue()
 	return OrmTableUpdate{base: engine}
 }
-
 
 func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	orm.base.initIdName()
