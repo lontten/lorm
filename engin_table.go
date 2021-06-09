@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"github.com/lontten/lorm/utils"
@@ -68,31 +69,36 @@ type OrmTableDelete struct {
 }
 
 //create
-func (engine EngineTable) Create(v interface{}) (int64, error) {
-	err := engine.setDest(v)
+func (e EngineTable) Create(v interface{}) (num int64, err error) {
+	err = e.setDest(v)
 	if err != nil {
-		return 0, err
+		return
 	}
-	engine.initColumnsValue()
-
-	createSqlStr := tableCreateArgs2SqlStr(engine.columns)
+	err = e.initColumnsValue()
+	if err != nil {
+		return
+	}
+	createSqlStr := tableCreateArgs2SqlStr(e.columns)
 
 	var sb strings.Builder
 	sb.WriteString("INSERT INTO ")
-	sb.WriteString(engine.tableName + " ")
+	sb.WriteString(e.tableName + " ")
 	sb.WriteString(createSqlStr)
 
-	return engine.db.exec(sb.String(), engine.columnValues...)
+	return e.db.exec(sb.String(), e.columnValues...)
 }
 
-func (engine EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
-	err := engine.setDest(v)
+func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
+	err := e.setDest(v)
 	if err != nil {
 		panic(err)
 	}
-	engine.initColumnsValue()
+	err = e.initColumnsValue()
+	if err != nil {
+		panic(err)
+	}
 	return OrmTableCreate{
-		base: engine,
+		base: e,
 	}
 }
 
@@ -329,13 +335,16 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //update
-func (engine EngineTable) Update(v interface{}) OrmTableUpdate {
-	err := engine.setDest(v)
+func (e EngineTable) Update(v interface{}) OrmTableUpdate {
+	err := e.setDest(v)
 	if err != nil {
 		panic(err)
 	}
-	engine.initColumnsValue()
-	return OrmTableUpdate{base: engine}
+	err = e.initColumnsValue()
+	if err != nil {
+		panic(err)
+	}
+	return OrmTableUpdate{base: e}
 }
 
 func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
@@ -617,25 +626,25 @@ func (e *EngineTable) initTableName() {
 }
 
 //获取struct对应的字段名 和 其值   有效部分
-func (e *EngineTable) initColumnsValue() {
+func (e *EngineTable) initColumnsValue() error {
 	dest := e.dest
 	config := e.db.OrmConfig()
 
 	t := reflect.TypeOf(dest)
 	base, err := baseStructType(t)
 	if err != nil {
-		return
+		return err
 	}
 
 	mappingColumns, err := getStructMappingColumns(base, config)
 	if err != nil {
-		return
+		return err
 	}
 
 	v := reflect.ValueOf(dest)
 	structValue, err := baseStructValue(v)
 	if err != nil {
-		return
+		return err
 	}
 
 	for column, i := range mappingColumns {
@@ -643,10 +652,14 @@ func (e *EngineTable) initColumnsValue() {
 		indirect := reflect.Indirect(field)
 		if !field.IsNil() {
 			e.columns = append(e.columns, column)
-			e.columnValues = append(e.columnValues, indirect.Interface())
+			value, err := indirect.Interface().(driver.Valuer).Value()
+			if err != nil {
+				return err
+			}
+			e.columnValues = append(e.columnValues, value)
 		}
 	}
-	return
+	return nil
 }
 
 //获取struct对应的字段名 有效部分
