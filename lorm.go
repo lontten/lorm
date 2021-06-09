@@ -86,9 +86,12 @@ type OrmConfig struct {
 	IdNameFun func(tableName string, dest interface{}) string
 
 	//逻辑删除 logicDeleteFieldName不为零值，即开启
-	LogicDeleteFieldName string
-	LogicDeleteValue     func() interface{}
-	LogicNotDeleteValue  func() interface{}
+	// LogicDeleteYesSql   lg.deleted_at is null
+	// LogicDeleteNoSql   lg.deleted_at is not null
+	// LogicDeleteSetSql   lg.deleted_at = now()
+	LogicDeleteYesSql string
+	LogicDeleteNoSql  string
+	LogicDeleteSetSql string
 
 	//多租户 tenantIdFieldName不为零值，即开启
 	TenantIdFieldName      string
@@ -286,7 +289,7 @@ func selectArgsArr2SqlStr(context OrmContext, args []string) {
 	}
 }
 
-func tableWhereArgs2SqlStr(args []string) string {
+func tableWhereArgs2SqlStr(args []string, sql string) string {
 	var sb strings.Builder
 	for i, where := range args {
 		if i == 0 {
@@ -298,6 +301,11 @@ func tableWhereArgs2SqlStr(args []string) string {
 		sb.WriteString(" AND ")
 		sb.WriteString(where)
 		sb.WriteString(" = ? ")
+	}
+	lgSql := strings.ReplaceAll(sql, "lg.", "")
+	if sql != lgSql {
+		sb.WriteString(" AND ")
+		sb.WriteString(lgSql)
 	}
 	return sb.String()
 }

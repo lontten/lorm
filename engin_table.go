@@ -146,14 +146,15 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
+	config := orm.base.db.OrmConfig()
+	columns, values, err := getStructMappingColumnsValue(v, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
 	if err != nil {
 		panic(err)
 	}
-	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns)
+	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns, config.LogicDeleteNoSql)
 	var sb strings.Builder
 	sb.WriteString("SELECT 1 ")
 	sb.WriteString(" FROM ")
@@ -256,14 +257,27 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 	}
 
 	orm.base.initIdName()
+	tableName := orm.base.tableName
+	idName := orm.base.idName
+	logicDeleteSetSql := orm.base.db.OrmConfig().LogicDeleteSetSql
 
 	var sb strings.Builder
-
-	sb.WriteString("DELETE FROM ")
-	sb.WriteString(orm.base.tableName)
-	sb.WriteString("WHERE ")
-	sb.WriteString(orm.base.idName)
-	sb.WriteString(" = ? ")
+	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
+	if logicDeleteSetSql == lgSql {
+		sb.WriteString("DELETE FROM ")
+		sb.WriteString(tableName)
+		sb.WriteString("WHERE ")
+		sb.WriteString(idName)
+		sb.WriteString(" = ? ")
+	} else {
+		sb.WriteString("UPDATE ")
+		sb.WriteString(tableName)
+		sb.WriteString(" SET ")
+		sb.WriteString(lgSql)
+		sb.WriteString("WHERE ")
+		sb.WriteString(idName)
+		sb.WriteString(" = ? ")
+	}
 
 	return orm.base.db.exec(sb.String(), v)
 }
@@ -273,15 +287,16 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	config := orm.base.db.OrmConfig()
 
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
+	columns, values, err := getStructMappingColumnsValue(v, config)
 	if err != nil {
 		return 0, err
 	}
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
-	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns)
+	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns, config.LogicDeleteNoSql)
 	var sb strings.Builder
 	sb.WriteString("DELETE ")
 	sb.WriteString(" FROM ")
@@ -363,15 +378,15 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
-
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
+	config := orm.base.db.OrmConfig()
+	columns, values, err := getStructMappingColumnsValue(v, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
 	if err != nil {
 		return 0, err
 	}
-	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns)
+	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns, config.LogicDeleteNoSql)
 	sb.WriteString(whereArgs2SqlStr)
 
 	cv = append(cv, values...)
@@ -504,8 +519,8 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 
 	tableName := orm.base.tableName
 	c := orm.base.columns
-
-	columns, values, err := getStructMappingColumnsValue(v, orm.base.db.OrmConfig())
+	config := orm.base.db.OrmConfig()
+	columns, values, err := getStructMappingColumnsValue(v, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -525,7 +540,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	}
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
-	sb.WriteString(tableWhereArgs2SqlStr(columns))
+	sb.WriteString(tableWhereArgs2SqlStr(columns, config.LogicDeleteNoSql))
 
 	return orm.base.queryLn(sb.String(), values...)
 }
