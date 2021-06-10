@@ -186,10 +186,15 @@ func checkValidStruct(va reflect.Value) error {
 	if ok {
 		return b
 	}
+	value, err := baseStructValue(va)
+	if err != nil {
+		return err
+	}
 
-	numField := va.NumField()
+
+	numField := value.NumField()
 	for i := 0; i < numField; i++ {
-		field := va.Field(i)
+		field := value.Field(i)
 		validField, ok := baseStructValidField(field)
 		if !ok {
 			continue
@@ -217,10 +222,11 @@ base:
 }
 
 func baseStructValue(v reflect.Value) (structValue reflect.Value, e error) {
+base:
 	switch v.Kind() {
 	case reflect.Ptr:
 		v = v.Elem()
-		fallthrough
+		goto base
 	case reflect.Struct:
 	default:
 		return v, errors.New("is not a struct value")

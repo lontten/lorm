@@ -231,8 +231,8 @@ func (db DB) query(query string, args ...interface{}) (*sql.Rows, error) {
 	default:
 		return nil, errors.New("无此db drive 类型")
 	}
-	log.Println(query, args)
 
+	Log.Println("sql",query,args)
 	return db.db.Query(query, args...)
 
 }
