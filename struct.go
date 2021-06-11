@@ -13,7 +13,7 @@ import (
 //获取struct对应数据库表名
 func getStructTableName(dest interface{}, config OrmConfig) (string, error) {
 	typ := reflect.TypeOf(dest)
-	_, base, err := baseSlicePtrType(typ)
+	_, base, err := baseStructTypeSliceOrPtr(typ)
 	if err != nil {
 		return "", err
 	}
@@ -270,11 +270,17 @@ base:
 	return v, true
 }
 
-func baseSliceType(t reflect.Type) (structType reflect.Type, e error) {
+//把 *slice  获取 slice
+func baseSliceTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 	switch t.Kind() {
 	case reflect.Ptr:
-		t = t.Elem()
-		fallthrough
+		t=t.Elem()
+	case reflect.Slice:
+	default:
+		return nil, errors.New("is not a slice type")
+	}
+
+	switch t.Kind() {
 	case reflect.Slice:
 	default:
 		return nil, errors.New("is not a slice type")
@@ -282,27 +288,32 @@ func baseSliceType(t reflect.Type) (structType reflect.Type, e error) {
 	return t, nil
 }
 
-func baseSlicePtrType(t reflect.Type) (typ int, structType reflect.Type, e error) {
-base:
+//	只能是 struct *struct []struct 三种类型
+
+//把 *[]struct 类型 剔除 * [] 获取 struct 的基础类型
+//typ 最表面的类型 1 ptr  ；   2 slice  ；  0 struct
+
+func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type, e error) {
 	switch t.Kind() {
 	case reflect.Ptr:
-		if typ == 0 {
-			typ = 1
-		}
+		typ = 1
 		t = t.Elem()
-		goto base
 	case reflect.Slice:
-		if typ == 0 {
-			typ = 2
-		}
+		typ = 2
 		t = t.Elem()
-		goto base
 	case reflect.Struct:
+		return typ, t, nil
 	default:
-		return 0, nil, errors.New("is base not a  type")
+		return 0, nil, errors.New("is base not a ptr slice struct type")
 	}
-	return typ, t, nil
+	switch t.Kind() {
+	case reflect.Struct:
+		return typ, t, nil
+	default:
+		return 0, nil, errors.New("is base not a ptr slice struct type")
+	}
 }
+
 
 func newStruct(structTyp reflect.Type) reflect.Value {
 	if structTyp.Kind() == reflect.Ptr {

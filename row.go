@@ -21,7 +21,7 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	}
 
 	typ := reflect.TypeOf(dest)
-	slice, err := baseSliceType(typ)
+	slice, err := baseSliceTypePtr(typ)
 	if err != nil {
 		return 0, err
 	}
