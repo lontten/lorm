@@ -603,24 +603,12 @@ func (e *EngineTable) initIdName() {
 }
 
 func (e *EngineTable) initTableName() {
-	typ := reflect.TypeOf(e.dest)
-	base, err := baseStructType(typ)
+	tableName, err := getStructTableName(e.dest, e.db.OrmConfig())
 	if err != nil {
+		Log.Println("tableName",err)
 		panic(err)
 	}
-	name := base.String()
-	index := strings.LastIndex(name, ".")
-	if index > 0 {
-		name = name[index+1:]
-	}
-	name = utils.Camel2Case(name)
-
-	tableNameFun := e.db.OrmConfig().TableNameFun
-	if tableNameFun != nil {
-		e.tableName = tableNameFun(name, base)
-	}
-	tableNamePrefix := e.db.OrmConfig().TableNamePrefix
-	e.tableName = tableNamePrefix + name
+	e.tableName = tableName
 }
 
 //获取struct对应的字段名 和 其值   有效部分

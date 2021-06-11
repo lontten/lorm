@@ -13,10 +13,12 @@ import (
 //获取struct对应数据库表名
 func getStructTableName(dest interface{}, config OrmConfig) (string, error) {
 	typ := reflect.TypeOf(dest)
-	base, err := baseSliceType(typ)
+	_, base, err := baseSlicePtrType(typ)
 	if err != nil {
 		return "", err
 	}
+
+	// fun
 	name := base.String()
 	index := strings.LastIndex(name, ".")
 	if index > 0 {
@@ -28,6 +30,25 @@ func getStructTableName(dest interface{}, config OrmConfig) (string, error) {
 	if tableNameFun != nil {
 		return tableNameFun(name, base), nil
 	}
+
+	// tag
+
+	numField := base.NumField()
+	tagTableName := ""
+	for i := 0; i < numField; i++ {
+		if tag := base.Field(i).Tag.Get("tableName"); tag != "" {
+			if tagTableName == "" {
+				tagTableName = tag
+			} else {
+				return "", errors.New("has to many tableName tag")
+			}
+		}
+	}
+	if tagTableName != "" {
+		return tagTableName, nil
+	}
+
+	// structName
 	tableNamePrefix := config.TableNamePrefix
 	if tableNamePrefix != "" {
 		return tableNamePrefix + name, nil
@@ -190,7 +211,6 @@ func checkValidStruct(va reflect.Value) error {
 	if err != nil {
 		return err
 	}
-
 
 	numField := value.NumField()
 	for i := 0; i < numField; i++ {

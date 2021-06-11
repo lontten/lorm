@@ -75,8 +75,9 @@ type OrmConfig struct {
 	IdType int
 
 	//表名
+	//TableNameFun >  tag > TableNamePrefix
 	TableNamePrefix string
-	TableNameFun    func(tableName string, dest interface{}) string
+	TableNameFun    func(structName string, dest interface{}) string
 
 	//字段名
 	FieldNamePrefix string
@@ -96,7 +97,7 @@ type OrmConfig struct {
 	//多租户 tenantIdFieldName不为零值，即开启
 	TenantIdFieldName      string
 	TenantIdValueFun       func() interface{}
-	TenantIdIgnoreTableFun func(tableName string, dest interface{}) string
+	TenantIdIgnoreTableFun func(structName string, dest interface{}) string
 }
 
 type Engine struct {
