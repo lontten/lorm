@@ -25,22 +25,22 @@ type EngineTable struct {
 	columnValues []interface{}
 }
 
-func (engine EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
-	rows, err := engine.db.query(query, args...)
+func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
+	rows, err := e.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
 
-	return StructScanLn(rows, engine.dest)
+	return StructScanLn(rows, e.dest)
 }
 
-func (engine *EngineTable) setDest(v interface{}) error {
+func (e *EngineTable) setDest(v interface{}) error {
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return err
 	}
-	engine.dest = v
-	engine.initTableName()
+	e.dest = v
+	e.initTableName()
 	return nil
 }
 
@@ -90,18 +90,21 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 	err := e.setDest(v)
 	if err != nil {
-		panic(err)
+		e.context.err = err
+		return OrmTableCreate{base: e}
 	}
 	err = e.initColumnsValue()
 	if err != nil {
-		panic(err)
+		e.context.err = err
+		return OrmTableCreate{base: e}
 	}
-	return OrmTableCreate{
-		base: e,
-	}
+	return OrmTableCreate{base: e}
 }
 
 func (orm OrmTableCreate) ById() (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
@@ -144,6 +147,10 @@ func (orm OrmTableCreate) ById() (int64, error) {
 }
 
 func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
@@ -192,6 +199,9 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
@@ -247,15 +257,20 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //delete
-func (engine EngineTable) Delete(v interface{}) OrmTableDelete {
-	err := engine.setDest(v)
+func (e EngineTable) Delete(v interface{}) OrmTableDelete {
+	err := e.setDest(v)
 	if err != nil {
-		panic(err)
+		e.context.err = err
+		return OrmTableDelete{base: e}
 	}
-	return OrmTableDelete{base: engine}
+	return OrmTableDelete{base: e}
 }
 
 func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
@@ -288,6 +303,10 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
@@ -312,6 +331,10 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	if w == nil {
 		return 0, nil
 	}
@@ -335,18 +358,27 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 
 //update
 func (e EngineTable) Update(v interface{}) OrmTableUpdate {
+	if e.context.err != nil {
+		return OrmTableUpdate{base: e}
+	}
 	err := e.setDest(v)
 	if err != nil {
-		panic(err)
+		e.context.err = err
+		return OrmTableUpdate{base: e}
 	}
 	err = e.initColumnsValue()
 	if err != nil {
-		panic(err)
+		e.context.err = err
+		return OrmTableUpdate{base: e}
 	}
 	return OrmTableUpdate{base: e}
 }
 
 func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
@@ -371,6 +403,10 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
@@ -402,6 +438,10 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	if w == nil {
 		return 0, nil
 	}
@@ -435,13 +475,18 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
 	err := e.setDest(v)
 	if err != nil {
-		panic(err)
+		e.context.err = err
+		return OrmTableSelect{base: e}
 	}
 
 	return OrmTableSelect{base: e}
 }
 
 func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
@@ -471,6 +516,10 @@ func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableSelectWhere) getOne() (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
@@ -494,6 +543,10 @@ func (orm OrmTableSelectWhere) getOne() (int64, error) {
 }
 
 func (orm OrmTableSelectWhere) getList() (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
@@ -517,6 +570,10 @@ func (orm OrmTableSelectWhere) getList() (int64, error) {
 }
 
 func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	err := checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
@@ -532,7 +589,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 		return 0, errors.New("where model valid field need ")
 	}
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	var sb strings.Builder
@@ -553,6 +610,10 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
+	if err := orm.base.context.err; err != nil {
+		return 0, err
+	}
+
 	if w == nil {
 		return 0, errors.New("table select where can't nil")
 	}
@@ -605,8 +666,8 @@ func (e *EngineTable) initIdName() {
 func (e *EngineTable) initTableName() {
 	tableName, err := getStructTableName(e.dest, e.db.OrmConfig())
 	if err != nil {
-		Log.Println("tableName",err)
-		panic(err)
+		e.context.err = err
+		return
 	}
 	e.tableName = tableName
 }
@@ -653,7 +714,10 @@ func (e *EngineTable) initColumns() {
 	dest := e.dest
 	typ := reflect.TypeOf(dest)
 	base, err := baseStructType(typ)
-	panicErr(err)
+	if err != nil {
+		e.context.err = err
+		return
+	}
 
 	config := e.db.OrmConfig()
 
@@ -680,7 +744,8 @@ func (e *EngineTable) initColumns() {
 			cMap[name] = i
 			num++
 			if len(cMap) < num {
-				panic(errors.New("字段::" + "error"))
+				e.context.err = errors.New("字段::" + "error")
+				return
 			}
 			continue
 		}
@@ -690,7 +755,8 @@ func (e *EngineTable) initColumns() {
 			cMap[fieldNamePrefix+name] = i
 			num++
 			if len(cMap) < num {
-				panic(errors.New("字段::" + "error"))
+				e.context.err = errors.New("字段::" + "error")
+				return
 			}
 			continue
 		}
@@ -698,7 +764,8 @@ func (e *EngineTable) initColumns() {
 		cMap[name] = i
 		num++
 		if len(cMap) < num {
-			panic(errors.New("字段::" + "error"))
+			e.context.err = errors.New("字段::" + "error")
+			return
 		}
 	}
 	arr := make([]string, len(cMap))

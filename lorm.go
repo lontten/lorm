@@ -52,6 +52,7 @@ func (c *PgConfig) DriverName() string {
 }
 
 type DB struct {
+	ctx OrmContext
 	db        *sql.DB
 	dbConfig  DbConfig
 	ormConfig OrmConfig
@@ -209,6 +210,7 @@ func (db DB) exec(query string, args ...interface{}) (int64, error) {
 		return 0, errors.New("无此db drive 类型")
 	}
 	log.Println(query, args)
+	Log.Println(query, args)
 
 	exec, err := db.db.Exec(query, args...)
 	if err != nil {
@@ -238,20 +240,12 @@ func (db DB) query(query string, args ...interface{}) (*sql.Rows, error) {
 
 }
 
-//
-//func (e *Engine) Begin() *Tx {
-//	return &Tx{
-//		Base:    e.Base,
-//		Extra:   e.Extra,
-//		Classic: e.Classic,
-//		Table:   e.Table,
-//	}
-//}
-
 type OrmContext struct {
 	query  *strings.Builder
 	args   []interface{}
 	startd bool
+	err error
+	log int
 }
 
 type OrmSelect struct {
