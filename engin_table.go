@@ -159,7 +159,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	c := orm.base.columns
 	cv := orm.base.columnValues
 	config := orm.base.db.OrmConfig()
-	columns, values, err := getStructMappingColumnsValue(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -313,7 +313,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	}
 	config := orm.base.db.OrmConfig()
 
-	columns, values, err := getStructMappingColumnsValue(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
 	if err != nil {
 		return 0, err
 	}
@@ -422,7 +422,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
 	config := orm.base.db.OrmConfig()
-	columns, values, err := getStructMappingColumnsValue(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -584,7 +584,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	config := orm.base.db.OrmConfig()
-	columns, values, err := getStructMappingColumnsValue(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -678,7 +678,7 @@ func (e *EngineTable) initColumnsValue() error {
 	config := e.db.OrmConfig()
 
 	t := reflect.TypeOf(dest)
-	base, err := baseStructType(t)
+	base, err := baseStructTypePtr(t)
 	if err != nil {
 		return err
 	}
@@ -689,7 +689,7 @@ func (e *EngineTable) initColumnsValue() error {
 	}
 
 	v := reflect.ValueOf(dest)
-	structValue, err := baseStructValue(v)
+	structValue, err := baseStructValuePtr(v)
 	if err != nil {
 		return err
 	}
@@ -713,7 +713,7 @@ func (e *EngineTable) initColumnsValue() error {
 func (e *EngineTable) initColumns() {
 	dest := e.dest
 	typ := reflect.TypeOf(dest)
-	base, err := baseStructType(typ)
+	base, err := baseStructTypePtr(typ)
 	if err != nil {
 		e.context.err = err
 		return

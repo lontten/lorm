@@ -30,13 +30,13 @@ func Test_baseStructValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotStructValue, err := baseStructValue(tt.args.v)
+			gotStructValue, err := baseStructValuePtr(tt.args.v)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("baseStructValue() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("baseStructValuePtr() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(gotStructValue, tt.wantStructValue) {
-				t.Errorf("baseStructValue() gotStructValue = %v, want %v", gotStructValue, tt.wantStructValue)
+				t.Errorf("baseStructValuePtr() gotStructValue = %v, want %v", gotStructValue, tt.wantStructValue)
 			}
 		})
 	}
@@ -307,6 +307,106 @@ func Test_baseSliceType(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotStructType, tt.wantStructType) {
 				t.Errorf("baseSliceType() gotStructType = %v, want %v", gotStructType, tt.wantStructType)
+			}
+		})
+	}
+}
+
+func Test_baseStructValidField(t *testing.T) {
+	type args struct {
+		v reflect.Value
+	}
+
+	var i=1
+	iv := reflect.ValueOf(i)
+	ipv := reflect.ValueOf(&i)
+
+	k := K{}
+	kv := reflect.ValueOf(k)
+	kpv := reflect.ValueOf(&k)
+
+
+	m:=make(map[int]int,0)
+	mv := reflect.ValueOf(m)
+	mpv := reflect.ValueOf(&m)
+
+
+
+
+
+	tests := []struct {
+		name            string
+		args            args
+		wantStructValue reflect.Value
+		wantB           bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "int",
+			args: args{iv},
+			wantStructValue: iv,
+			wantB: true,
+		},
+
+
+		{
+			name: "int ptr",
+			args: args{ipv},
+			wantStructValue: ipv.Elem(),
+			wantB: true,
+		},
+
+		{
+			name: "struct",
+			args: args{kv},
+			wantStructValue: kv,
+			wantB: true,
+		},
+
+
+
+		{
+			name: "struct ptr",
+			args: args{kpv},
+			wantStructValue: kpv.Elem(),
+			wantB: true,
+		},
+
+
+
+
+
+		{
+			name: "map",
+			args: args{mv},
+			wantStructValue: mv,
+			wantB: false,
+		},
+
+
+
+		{
+			name: "map ptr",
+			args: args{mpv},
+			wantStructValue: mpv.Elem(),
+			wantB: false,
+		},
+
+
+
+
+
+
+
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStructValue, gotB := baseStructValidField(tt.args.v)
+			if !reflect.DeepEqual(gotStructValue, tt.wantStructValue) {
+				t.Errorf("baseStructValidField() gotStructValue = %v, want %v", gotStructValue, tt.wantStructValue)
+			}
+			if gotB != tt.wantB {
+				t.Errorf("baseStructValidField() gotB = %v, want %v", gotB, tt.wantB)
 			}
 		})
 	}

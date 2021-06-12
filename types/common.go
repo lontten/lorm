@@ -1,5 +1,10 @@
 package types
 
+type NullEr interface {
+	IsNull() bool
+}
+
+
 
 func NewInt(i int) *int {
 	var t = i

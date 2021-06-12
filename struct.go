@@ -3,6 +3,7 @@ package lorm
 import (
 	"database/sql/driver"
 	"errors"
+	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
@@ -108,12 +109,12 @@ func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, 
 }
 
 //获取struct对应的字段名 和 其值   有效部分
-func getStructMappingColumnsValue(dest interface{}, config OrmConfig) (columns []string, values []interface{}, err error) {
+func getStructMappingColumnsValueNotNull(dest interface{}, config OrmConfig) (columns []string, values []interface{}, err error) {
 	columns = make([]string, 0)
 	values = make([]interface{}, 0)
 
 	t := reflect.TypeOf(dest)
-	base, err := baseStructType(t)
+	base, err := baseStructTypePtr(t)
 	if err != nil {
 		return
 	}
@@ -124,29 +125,39 @@ func getStructMappingColumnsValue(dest interface{}, config OrmConfig) (columns [
 	}
 
 	v := reflect.ValueOf(dest)
-	structValue, err := baseStructValue(v)
+	structValue, err := baseStructValuePtr(v)
 	if err != nil {
 		return
 	}
 
 	for column, i := range mappingColumns {
 		field := structValue.Field(i)
-		indirect := reflect.Indirect(field)
-		if field.Kind() == reflect.Struct {
-			columns = append(columns, column)
-			value, err := indirect.Interface().(driver.Valuer).Value()
-			if err != nil {
-				return nil, nil, err
-			}
 
-			values = append(values, value)
-		} else {
+		typ, validField, ok := baseStructValidField(field)
+		if !ok {
+			return nil, nil, errors.New("struct field " + field.String() + " need field is ptr slice struct")
+		}
+
+		if typ == 0 {
+			columns = append(columns, column)
+			values = append(values, validField.Interface())
+		}
+
+		if typ == 1 || typ == 2 {
 			if !field.IsNil() {
 				columns = append(columns, column)
-				values = append(values, indirect.Interface())
+				values = append(values, validField.Interface())
 			}
 		}
 
+		if typ == 3 {
+			vv := validField.Interface().(types.NullEr)
+			if !vv.IsNull() {
+				value, _ := validField.Interface().(driver.Valuer).Value()
+				columns = append(columns, column)
+				values = append(values, value)
+			}
+		}
 	}
 	return
 }
@@ -207,7 +218,7 @@ func checkValidStruct(va reflect.Value) error {
 	if ok {
 		return b
 	}
-	value, err := baseStructValue(va)
+	value, err := baseStructValuePtr(va)
 	if err != nil {
 		return err
 	}
@@ -215,66 +226,108 @@ func checkValidStruct(va reflect.Value) error {
 	numField := value.NumField()
 	for i := 0; i < numField; i++ {
 		field := value.Field(i)
-		validField, ok := baseStructValidField(field)
+		typ, validField, ok := baseStructValidField(field)
 		if !ok {
-			continue
+			return errors.New("struct field " + field.String() + " need field is ptr slice struct")
 		}
-		_, ok = validField.Interface().(driver.Valuer)
-		if !ok {
-			return errors.New("struct field " + field.String() + " nedd imp sql Value")
+		//为 struct类型
+		if typ == 3 {
+			_, ok = validField.Interface().(driver.Valuer)
+			if !ok {
+				return errors.New("struct field " + field.String() + " need imp sql Value")
+			}
+			_, ok = validField.Interface().(types.NullEr)
+			if !ok {
+				return errors.New("struct field " + field.String() + " need imp lorm NullEr ")
+			}
+
 		}
 	}
 	structValidCache[typ] = nil
 	return nil
 }
 
-func baseStructType(t reflect.Type) (structType reflect.Type, e error) {
-base:
-	switch t.Kind() {
-	case reflect.Ptr:
-		t = t.Elem()
-		goto base
-	case reflect.Struct:
-	default:
-		return nil, errors.New("is not a struct type")
-	}
-	return t, nil
-}
-
-func baseStructValue(v reflect.Value) (structValue reflect.Value, e error) {
+//去除 所有 ptr slice 获取 struct ，不为struct 或 基础类型 为false
+//1 ptr 2slice 3struct  0基础类型
+func baseStructValidField(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
 base:
 	switch v.Kind() {
 	case reflect.Ptr:
-		v = v.Elem()
-		goto base
-	case reflect.Struct:
-	default:
-		return v, errors.New("is not a struct value")
-	}
-	return v, nil
-}
-
-func baseStructValidField(v reflect.Value) (structValue reflect.Value, b bool) {
-base:
-	switch v.Kind() {
-	case reflect.Ptr:
+		if typ == 0 {
+			typ = 1
+		}
 		v = v.Elem()
 		goto base
 	case reflect.Slice:
+		if typ == 0 {
+			typ = 2
+		}
 		v = v.Elem()
 		goto base
 	case reflect.Struct:
+		if typ == 0 {
+			typ = 3
+		}
+		return typ, v, true
+	case reflect.Map:
+		return typ, v, false
+	case reflect.Interface:
+		return typ, v, false
+	case reflect.Func:
+		return typ, v, false
+	case reflect.Invalid:
+		return typ, v, false
+	case reflect.UnsafePointer:
+		return typ, v, false
+	case reflect.Uintptr:
+		return typ, v, false
 	default:
-		return v, false
+		return typ, v, true
 	}
-	return v, true
+}
+
+func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
+	switch t.Kind() {
+	case reflect.Ptr:
+		t = t.Elem()
+	case reflect.Struct:
+		return t, nil
+	default:
+		return nil, errors.New("is not a struct or ptr struct type")
+	}
+
+	switch t.Kind() {
+	case reflect.Struct:
+		return t, nil
+	default:
+		return nil, errors.New("is not a struct or ptr struct type")
+	}
+
+}
+
+func baseStructValuePtr(v reflect.Value) (structValue reflect.Value, e error) {
+	switch v.Kind() {
+	case reflect.Ptr:
+		v = v.Elem()
+	case reflect.Struct:
+		return v, nil
+	default:
+		return v, errors.New("is not a struct or ptr struct value")
+	}
+
+	switch v.Kind() {
+	case reflect.Struct:
+		return v, nil
+	default:
+		return v, errors.New("is not a struct or ptr struct value")
+	}
 }
 
 //把 *slice  获取 slice
 func baseSliceTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 	switch t.Kind() {
 	case reflect.Ptr:
-		t=t.Elem()
+		t = t.Elem()
 	case reflect.Slice:
 	default:
 		return nil, errors.New("is not a slice type")
@@ -313,7 +366,6 @@ func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type,
 		return 0, nil, errors.New("is base not a ptr slice struct type")
 	}
 }
-
 
 func newStruct(structTyp reflect.Type) reflect.Value {
 	if structTyp.Kind() == reflect.Ptr {

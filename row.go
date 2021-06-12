@@ -28,7 +28,7 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 
 	base := slice.Elem()
 	var isPtr = base.Kind() == reflect.Ptr
-	base, err = baseStructType(base)
+	base, err = baseStructTypePtr(base)
 	if err != nil {
 		return 0, err
 	}
@@ -80,7 +80,7 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 
 
 	typ := reflect.TypeOf(dest)
-	base, err := baseStructType(typ)
+	base, err := baseStructTypePtr(typ)
 	if err != nil {
 		fmt.Println("this is err")
 		return
