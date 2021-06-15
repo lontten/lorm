@@ -728,6 +728,15 @@ func (e *EngineTable) initColumns() {
 	for i := 0; i < numField; i++ {
 		field := base.Field(i)
 		name := field.Name
+		if name == "ID" {
+			cMap[name] = i
+			num++
+			if len(cMap) < num {
+				e.context.err = errors.New("字段::" + "error")
+				return
+			}
+			continue
+		}
 
 		// 过滤掉首字母小写的字段
 		if unicode.IsLower([]rune(name)[0]) {

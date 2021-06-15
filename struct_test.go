@@ -3,7 +3,7 @@ package lorm
 import (
 	"database/sql"
 	"fmt"
-	"github.com/lontten/lorm/types/jsuuid"
+	"github.com/lontten/lorm/types"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"reflect"
@@ -12,7 +12,7 @@ import (
 
 type K struct {
 	Name *string
-	Ha   jsuuid.NullUUID
+	Ha   types.NullUUID
 	Hb   sql.NullBool
 }
 

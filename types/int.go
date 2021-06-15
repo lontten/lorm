@@ -1,4 +1,4 @@
-package jsonint
+package types
 
 import (
 	"github.com/jackc/pgtype"

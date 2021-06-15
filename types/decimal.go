@@ -1,19 +1,20 @@
-package jsstring
+package types
 
 import (
 	"database/sql/driver"
 	"encoding/json"
 	"github.com/jackc/pgtype"
+	"github.com/shopspring/decimal"
 )
 
 
 
-type StringList []string
+type DecimalList []decimal.Decimal
 
 // gorm 自定义结构需要实现 Value Scan 两个方法
 // Value 实现方法
-func (p StringList) Value() (driver.Value, error) {
-	var k []string
+func (p DecimalList) Value() (driver.Value, error) {
+	var k []decimal.Decimal
 	k = p
 	marshal, err := json.Marshal(k)
 	if err != nil {
@@ -25,16 +26,20 @@ func (p StringList) Value() (driver.Value, error) {
 }
 
 // Scan 实现方法
-func (p *StringList) Scan(data interface{}) error {
+func (p *DecimalList) Scan(data interface{}) error {
 	array := pgtype.VarcharArray{}
 	err := array.Scan(data)
 	if err != nil {
 		return err
 	}
-	var list []string
-	list = make([]string, len(array.Elements))
+	var list []decimal.Decimal
+	list = make([]decimal.Decimal, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = element.String
+		fromString, err := decimal.NewFromString(element.String)
+		if err != nil {
+			return err
+		}
+		list[i] = fromString
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -43,3 +48,4 @@ func (p *StringList) Scan(data interface{}) error {
 	err = json.Unmarshal(marshal, &p)
 	return err
 }
+

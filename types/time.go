@@ -1,4 +1,4 @@
-package jstime
+package types
 
 import (
 	"database/sql/driver"
@@ -49,7 +49,6 @@ func (t *Time) Scan(v interface{}) error {
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
 
-
 type TimeList []Time
 
 // gorm 自定义结构需要实现 Value Scan 两个方法
@@ -85,9 +84,6 @@ func (p *TimeList) Scan(data interface{}) error {
 	err = json.Unmarshal(marshal, &p)
 	return err
 }
-
-
-
 
 //date
 type Date struct {
@@ -130,7 +126,6 @@ func (t Date) ToGoTime() time.Time {
 	return time.Unix(t.Unix(), 0)
 }
 
-
 type DateList []Date
 
 // gorm 自定义结构需要实现 Value Scan 两个方法
@@ -166,8 +161,6 @@ func (p *DateList) Scan(data interface{}) error {
 	err = json.Unmarshal(marshal, &p)
 	return err
 }
-
-
 
 //datetime
 type DateTime struct {
@@ -252,6 +245,10 @@ type NullTime struct {
 	Valid bool // Valid is true if Time is not NULL
 }
 
+func (t NullTime) IsNull() bool {
+	return !t.Valid
+}
+
 // Scan implements the Scanner interface.
 func (t *NullTime) Scan(v interface{}) error {
 	if v == nil {
@@ -321,6 +318,10 @@ type NullDateTime struct {
 	Valid bool // Valid is true if Time is not NULL
 }
 
+func (t NullDateTime) IsNull() bool {
+	return !t.Valid
+}
+
 // Scan implements the Scanner interface.
 func (t *NullDateTime) Scan(v interface{}) error {
 	if v == nil {
@@ -388,6 +389,10 @@ func (t *NullDateTime) SetTime(v time.Time) {
 type NullDate struct {
 	Time  time.Time
 	Valid bool // Valid is true if Time is not NULL
+}
+
+func (t NullDate) IsNull() bool {
+	return !t.Valid
 }
 
 // Scan implements the Scanner interface.

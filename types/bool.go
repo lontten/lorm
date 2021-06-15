@@ -1,4 +1,4 @@
-package jsonbool
+package types
 
 import (
 	"database/sql"
@@ -15,11 +15,16 @@ func (n *NullBool) Scan(value interface{}) error {
 }
 
 // Value implements the driver Valuer interface.
+
 func (n NullBool) Value() (driver.Value, error) {
 	if !n.Valid {
 		return nil, nil
 	}
 	return n.Bool, nil
+}
+
+func (n NullBool) IsNull() bool {
+	return !n.Valid
 }
 
 func (n NullBool) MarshalJSON() ([]byte, error) {
@@ -41,23 +46,16 @@ func (n *NullBool) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-
-
-
-
-
 func (b *NullBool) Set(v bool) {
-	b.Bool ,b.Valid= v,true
+	b.Bool, b.Valid = v, true
 }
 
 func From(b bool) NullBool {
 	return NullBool{
-		Bool:   b,
+		Bool:  b,
 		Valid: true,
 	}
 }
-
-
 
 func Pg2Arr(v pgtype.BoolArray) []bool {
 	var arr []bool
@@ -74,4 +72,3 @@ func Arr2Pg(arr []bool) pgtype.BoolArray {
 	list.Set(arr)
 	return list
 }
-

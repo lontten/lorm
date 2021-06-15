@@ -1,4 +1,4 @@
-package jsuuid
+package types
 
 import (
 	"database/sql/driver"
@@ -35,6 +35,7 @@ func (u *UUID) UnmarshalJSON(src []byte) error {
 }
 
 // Value insert timestamp into mysql need this function.
+
 func (u UUID) Value() (driver.Value, error) {
 	return u.UUID.String(), nil
 }
@@ -80,6 +81,10 @@ func (u NullUUID) Value() (driver.Value, error) {
 	return u.UUID, nil
 }
 
+func (u NullUUID) IsNull() bool {
+	return !u.Valid
+}
+
 func (u NullUUID) MarshalJSON() ([]byte, error) {
 	var str = ""
 	if !u.Valid {
@@ -122,11 +127,6 @@ func String2UUID(v string) UUID {
 func FromUUID(uuid UUID) NullUUID {
 	return NullUUID{UUID: uuid.UUID, Valid: true}
 }
-
-
-
-
-
 
 type UUIDList []UUID
 
