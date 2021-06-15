@@ -194,6 +194,15 @@ func getFieldMap(typ reflect.Type) (fieldMap, error) {
 		field := typ.Field(i)
 		name := field.Name
 
+		if name=="ID"  {
+			arr[name] = i
+			num++
+			if len(arr) < num {
+				return arr, errors.New("字段::" + name + "error")
+			}
+			continue
+		}
+
 		// 过滤掉首字母小写的字段
 		if unicode.IsLower([]rune(name)[0]) {
 			continue
