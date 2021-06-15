@@ -68,11 +68,22 @@ func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, 
 		field := t.Field(i)
 		name := field.Name
 
+		if name=="ID"  {
+			cMap[name] = i
+			num++
+			if len(cMap) < num {
+				return cMap, errors.New("字段::" + "error")
+			}
+			continue
+		}
+
+
 		// 过滤掉首字母小写的字段
 		if unicode.IsLower([]rune(name)[0]) {
 			continue
 		}
 		name = utils.Camel2Case(name)
+
 
 		if tag := field.Tag.Get("lorm"); tag == "-" {
 			continue
