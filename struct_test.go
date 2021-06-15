@@ -401,7 +401,7 @@ func Test_baseStructValidField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotStructValue, gotB := baseStructValidField(tt.args.v)
+			_, gotStructValue, gotB := baseStructValidField(tt.args.v)
 			if !reflect.DeepEqual(gotStructValue, tt.wantStructValue) {
 				t.Errorf("baseStructValidField() gotStructValue = %v, want %v", gotStructValue, tt.wantStructValue)
 			}

@@ -69,10 +69,10 @@ func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, 
 		name := field.Name
 
 		if name=="ID"  {
-			cMap[name] = i
+			cMap["Id"] = i
 			num++
 			if len(cMap) < num {
-				return cMap, errors.New("字段::" + "error")
+				return cMap, errors.New("字段::id" + "error")
 			}
 			continue
 		}
@@ -195,10 +195,10 @@ func getFieldMap(typ reflect.Type) (fieldMap, error) {
 		name := field.Name
 
 		if name=="ID"  {
-			arr[name] = i
+			arr["id"] = i
 			num++
 			if len(arr) < num {
-				return arr, errors.New("字段::" + name + "error")
+				return arr, errors.New("字段:: id error")
 			}
 			continue
 		}

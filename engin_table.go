@@ -729,10 +729,10 @@ func (e *EngineTable) initColumns() {
 		field := base.Field(i)
 		name := field.Name
 		if name == "ID" {
-			cMap[name] = i
+			cMap["id"] = i
 			num++
 			if len(cMap) < num {
-				e.context.err = errors.New("字段::" + "error")
+				e.context.err = errors.New("字段:: id  error")
 				return
 			}
 			continue
