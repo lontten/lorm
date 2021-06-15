@@ -7,7 +7,6 @@ import (
 	"reflect"
 )
 
-
 func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	defer rows.Close()
 	value := reflect.ValueOf(dest)
@@ -32,7 +31,6 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -68,24 +66,39 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 
 	defer rows.Close()
 	value := reflect.ValueOf(dest)
-	err = checkValidStruct(value)
-	if err != nil {
-		return 0, err
-	}
-
 
 	if value.Kind() != reflect.Ptr {
-		return 0, errors.New("dest need a struct pointer")
+		return 0, errors.New("dest need a  ptr")
 	}
 
+	value = value.Elem()
+	if value.Kind() != reflect.Struct {
+		box, v := getSignleRowFieldBox(value.Type())
+		if rows.Next() {
+			num++
+			err = rows.Scan(box)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			value.Set(v)
+		}
+		if rows.Next() {
+			return 0, errors.New("result to many for one")
+		}
+		return
+	}
+
+	//err = checkValidStruct(value)
+	//if err != nil {
+	//	return 0, err
+	//}
 
 	typ := reflect.TypeOf(dest)
 	base, err := baseStructTypePtr(typ)
 	if err != nil {
-		fmt.Println("this is err")
 		return
 	}
-
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -127,6 +140,13 @@ func getRowFieldBox(columns []string, base reflect.Type, rsFM RowStructFieldMap)
 		box[r] = v.Field(s).Addr().Interface()
 	}
 	return
+}
+
+//用来存放row中值得 引用
+func getSignleRowFieldBox(base reflect.Type) (interface{}, reflect.Value) {
+	vp := reflect.New(base)
+	v := reflect.Indirect(vp)
+	return v.Addr().Interface(), v
 }
 
 type RowStructFieldMap []int

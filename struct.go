@@ -306,6 +306,7 @@ base:
 	}
 }
 
+// *struct
 func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 	switch t.Kind() {
 	case reflect.Ptr:
@@ -325,6 +326,7 @@ func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 
 }
 
+// *struct
 func baseStructValuePtr(v reflect.Value) (structValue reflect.Value, e error) {
 	switch v.Kind() {
 	case reflect.Ptr:
