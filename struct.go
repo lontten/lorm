@@ -270,39 +270,41 @@ func checkValidStruct(va reflect.Value) error {
 //去除 所有 ptr slice 获取 struct ，不为struct 或 基础类型 为false
 //1 ptr 2slice 3struct  0基础类型
 func baseStructValidField(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
+	structValue=v
+	t := v.Type()
 base:
-	switch v.Kind() {
+	switch t.Kind() {
 	case reflect.Ptr:
 		if typ == 0 {
 			typ = 1
 		}
-		v = v.Elem()
+		t = t.Elem()
 		goto base
 	case reflect.Slice:
 		if typ == 0 {
 			typ = 2
 		}
-		v = v.Elem()
+		t = t.Elem()
 		goto base
 	case reflect.Struct:
 		if typ == 0 {
 			typ = 3
 		}
-		return typ, v, true
+		return typ, structValue, true
 	case reflect.Map:
-		return typ, v, false
+		return
 	case reflect.Interface:
-		return typ, v, false
+		return
 	case reflect.Func:
-		return typ, v, false
+		return
 	case reflect.Invalid:
-		return typ, v, false
+		return
 	case reflect.UnsafePointer:
-		return typ, v, false
+		return
 	case reflect.Uintptr:
-		return typ, v, false
+		return
 	default:
-		return typ, v, true
+		return typ, structValue, true
 	}
 }
 
