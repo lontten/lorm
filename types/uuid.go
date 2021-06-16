@@ -50,8 +50,16 @@ func (u *UUID) Scan(v interface{}) error {
 	return fmt.Errorf("can not convert %v to uuid", v)
 }
 
-func String2UUID(v string) UUID {
+func Str2UUIDMust(v string) UUID {
 	return UUID{uuid.FromStringOrNil(v)}
+}
+
+func Str2UUID(v string) (UUID, error) {
+	id, err := uuid.FromString(v)
+	if err != nil {
+		return UUID{}, err
+	}
+	return UUID{id}, nil
 }
 
 type UUIDList []UUID
