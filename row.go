@@ -112,7 +112,7 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 			fmt.Println(err)
 			return
 		}
-		value.Elem().Set(p)
+		value.Set(p)
 	}
 	if rows.Next() {
 		return 0, errors.New("result to many for one")
