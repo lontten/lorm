@@ -14,10 +14,6 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 		return 0, errors.New("dest need a struct pointer")
 	}
 	arr := reflect.Indirect(value)
-	err := checkValidStruct(arr.Elem())
-	if err != nil {
-		return 0, err
-	}
 
 	typ := reflect.TypeOf(dest)
 	slice, err := baseSliceTypePtr(typ)
