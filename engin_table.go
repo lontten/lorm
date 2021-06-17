@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"database/sql/driver"
 	"errors"
 	"github.com/lontten/lorm/utils"
 	"log"
@@ -677,35 +676,12 @@ func (e *EngineTable) initColumnsValue() error {
 	dest := e.dest
 	config := e.db.OrmConfig()
 
-	t := reflect.TypeOf(dest)
-	base, err := baseStructTypePtr(t)
+	columns, values, err := getStructMappingColumnsValueNotNull(dest, config)
 	if err != nil {
 		return err
 	}
-
-	mappingColumns, err := getStructMappingColumns(base, config)
-	if err != nil {
-		return err
-	}
-
-	v := reflect.ValueOf(dest)
-	structValue, err := baseStructValuePtr(v)
-	if err != nil {
-		return err
-	}
-
-	for column, i := range mappingColumns {
-		field := structValue.Field(i)
-		indirect := reflect.Indirect(field)
-		if !field.IsNil() {
-			e.columns = append(e.columns, column)
-			value, err := indirect.Interface().(driver.Valuer).Value()
-			if err != nil {
-				return err
-			}
-			e.columnValues = append(e.columnValues, value)
-		}
-	}
+	e.columns = columns
+	e.columnValues = values
 	return nil
 }
 
