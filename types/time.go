@@ -8,12 +8,10 @@ import (
 	"time"
 )
 
-type Time struct {
-	time.Time
-}
+type Time time.Time
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	tune := t.Format(`"15:04:05"`)
+	tune := time.Time(t).Format(`"15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -22,31 +20,8 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
-	*t = Time{Time: now}
+	*t = Time(now)
 	return err
-}
-
-func (t Time) ToGoTime() time.Time {
-	return time.Unix(t.Unix(), 0)
-}
-
-// Value insert timestamp into mysql need this function.
-func (t Time) Value() (driver.Value, error) {
-	var zeroTime time.Time
-	if t.Time.UnixNano() == zeroTime.UnixNano() {
-		return nil, nil
-	}
-	return t.Time, nil
-}
-
-// Scan valueof jstime.Time
-func (t *Time) Scan(v interface{}) error {
-	value, ok := v.(time.Time)
-	if ok {
-		*t = Time{Time: value}
-		return nil
-	}
-	return fmt.Errorf("can not convert %v to timestamp", v)
 }
 
 type TimeList []Time
@@ -61,7 +36,9 @@ func (p TimeList) Value() (driver.Value, error) {
 		return nil, err
 	}
 	var s = string(marshal)
-	s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	if s != "null" {
+		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	}
 	return s, nil
 }
 
@@ -75,7 +52,7 @@ func (p *TimeList) Scan(data interface{}) error {
 	var list []Time
 	list = make([]Time, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = Time{element.Time}
+		list[i] = Time(element.Time)
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
