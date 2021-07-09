@@ -54,6 +54,11 @@ func Str2UUIDMust(v string) UUID {
 	return UUID{uuid.FromStringOrNil(v)}
 }
 
+func NewV4() UUID {
+	v4, _ := uuid.NewV4()
+	return UUID{v4}
+}
+
 func Str2UUID(v string) (UUID, error) {
 	id, err := uuid.FromString(v)
 	if err != nil {
