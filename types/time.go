@@ -38,6 +38,8 @@ func (p TimeList) Value() (driver.Value, error) {
 	var s = string(marshal)
 	if s != "null" {
 		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	} else {
+		s = "{}"
 	}
 	return s, nil
 }
@@ -115,7 +117,11 @@ func (p DateList) Value() (driver.Value, error) {
 		return nil, err
 	}
 	var s = string(marshal)
-	s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	if s != "null" {
+		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	} else {
+		s = "{}"
+	}
 	return s, nil
 }
 
@@ -193,7 +199,11 @@ func (p DateTimeList) Value() (driver.Value, error) {
 		return nil, err
 	}
 	var s = string(marshal)
-	s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	if s != "null" {
+		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	} else {
+		s = "{}"
+	}
 	return s, nil
 }
 
