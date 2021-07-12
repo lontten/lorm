@@ -8,8 +8,6 @@ import (
 	"unicode"
 )
 
-
-
 // 驼峰式写法转为下划线写法
 func Camel2Case(name string) string {
 	buffer := NewBuffer()
@@ -26,11 +24,19 @@ func Camel2Case(name string) string {
 	return buffer.String()
 }
 
-// 下划线写法转为驼峰写法
-func Case2Camel(name string) string {
+// 下划线写法转为大驼峰写法
+func Case2BigCamel(name string) string {
 	name = strings.Replace(name, "_", " ", -1)
 	name = strings.Title(name)
 	return strings.Replace(name, " ", "", -1)
+}
+
+// 下划线写法转为小驼峰写法
+func Case2SmallCamel(name string) string {
+	name = strings.Replace(name, "_", " ", -1)
+	name = strings.Title(name)
+	camel := strings.Replace(name, " ", "", -1)
+	return Lcfirst(camel)
 }
 
 // 首字母大写
@@ -57,8 +63,6 @@ type Buffer struct {
 func NewBuffer() *Buffer {
 	return &Buffer{Buffer: new(bytes.Buffer)}
 }
-
-
 
 func (b *Buffer) Append(i interface{}) *Buffer {
 	switch val := i.(type) {
