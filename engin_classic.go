@@ -1,6 +1,9 @@
 package lorm
 
-import "log"
+import (
+	"log"
+	"reflect"
+)
 
 //对 query exec 的简单封装
 type EngineClassic struct {
@@ -23,6 +26,11 @@ func (engine EngineClassic) Query(query string, args ...interface{}) *ClassicQue
 }
 
 func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
+	_, err = checkScanTypeLn(reflect.TypeOf(dest))
+	if err != nil {
+		return 0, err
+	}
+
 	query := q.query
 	args := q.args
 	log.Println(query,args)

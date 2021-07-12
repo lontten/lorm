@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
+func StructScan(rows *sql.Rows, dest interface{}, fieldNamePrefix string) (int64, error) {
 	defer rows.Close()
 
 	value := reflect.ValueOf(dest)
@@ -33,14 +33,14 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	rsFM, err := getRowStructFieldMap(columns, base)
+	cfm, err := getColFieldIndexLinkMap(columns, base, fieldNamePrefix)
 	if err != nil {
 		return 0, err
 	}
 	var num int64 = 0
 	for rows.Next() {
 		num++
-		box, vp, v := getRowFieldBox(base, rsFM)
+		box, vp, v := createColBox(base, cfm)
 
 		err = rows.Scan(box...)
 		if err != nil {
@@ -58,18 +58,24 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	return num, nil
 }
 
-//只有一个结果的row
-func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
+// StructScanLn 只有一个结果的row
+func StructScanLn(rows *sql.Rows, dest interface{}, fieldNamePrefix string) (num int64, err error) {
 	defer rows.Close()
 	value := reflect.ValueOf(dest)
-	if value.Kind() != reflect.Ptr {
+	code, base := basePtrStructBaseValue(value)
+	if code == -1 {
 		return 0, errors.New("dest need a  ptr")
 	}
-	value = value.Elem()
-	if value.Kind() != reflect.Struct {
-		box, v := getSignleRowFieldBox(value.Type())
+	if code == -2 {
+		return 0, errors.New("need a ptr struct or base type")
+	}
+
+	num=1
+	t := base.Type()
+
+	if code==2 {
+		box, v := getSignleRowFieldBox(t)
 		if rows.Next() {
-			num++
 			err = rows.Scan(box)
 			if err != nil {
 				fmt.Println(err)
@@ -77,50 +83,50 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 			}
 			value.Set(v)
 		}
-		if rows.Next() {
-			return 0, errors.New("result to many for one")
-		}
-		return
 	}
 
-	//err = checkValidStruct(value)
-	//if err != nil {
-	//	return 0, err
-	//}
-
-	typ := reflect.TypeOf(dest)
-	base, err := baseStructTypePtr(typ)
-	if err != nil {
-		return
-	}
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return
-	}
-	rsFM, err := getRowStructFieldMap(columns, base)
-	if err != nil {
-		return
-	}
-	if rows.Next() {
-		num++
-		box, _, p := getRowFieldBox(base, rsFM)
-		err = rows.Scan(box...)
+	if code==1 {
+		columns, err := rows.Columns()
 		if err != nil {
-			fmt.Println(err)
 			return
 		}
-		value.Set(p)
+		cfm, err := getColFieldIndexLinkMap(columns, t, fieldNamePrefix)
+		if err != nil {
+			return
+		}
+		if rows.Next() {
+			box, _, v := createColBox(t, cfm)
+			err = rows.Scan(box...)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			value.Set(v)
+		}
 	}
 	if rows.Next() {
 		return 0, errors.New("result to many for one")
 	}
+	return
+}
 
+//创建用来存放row中值得 引用
+func createColBox(base reflect.Type, cfLink ColFieldIndexLinkMap) (box []interface{}, vp, v reflect.Value) {
+	vp = newStruct(base)
+	v = reflect.Indirect(vp)
+	box = make([]interface{}, len(cfLink))
+	for c, f := range cfLink {
+		if f < 0 { // -1 表示此列不接收
+			box[c] = new([]uint8)
+		} else {
+			box[c] = v.Field(f).Addr().Interface()
+		}
+	}
 	return
 }
 
 //用来存放row中值得 引用
-func getRowFieldBox(base reflect.Type, rsFM RowStructFieldMap) (box []interface{}, vp, v reflect.Value) {
+func getRowBox(base reflect.Type, rsFM ColFieldIndexLinkMap) (num int, box []interface{}, vp, v reflect.Value) {
 	vp = newStruct(base)
 	v = reflect.Indirect(vp)
 	fieldNum := len(rsFM)
@@ -143,11 +149,11 @@ func getSignleRowFieldBox(base reflect.Type) (interface{}, reflect.Value) {
 	return v.Addr().Interface(), v
 }
 
-type RowStructFieldMap []int
+type ColFieldIndexLinkMap []int
 
-func getRowStructFieldMap(columns []string, typ reflect.Type) (RowStructFieldMap, error) {
-	rfm := make([]int, len(columns))
-	fm, err := getFieldMap(typ)
+func getColFieldIndexLinkMap(columns []string, typ reflect.Type, fieldNamePrefix string) (ColFieldIndexLinkMap, error) {
+	cfm := make([]int, len(columns))
+	fm, err := getFieldMap(typ, fieldNamePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -155,10 +161,10 @@ func getRowStructFieldMap(columns []string, typ reflect.Type) (RowStructFieldMap
 	for i, column := range columns {
 		index, ok := fm[column]
 		if !ok {
-			rfm[i] = -1
+			cfm[i] = -1
 			continue
 		}
-		rfm[i] = index
+		cfm[i] = index
 	}
-	return rfm, nil
+	return cfm, nil
 }

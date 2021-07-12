@@ -164,8 +164,12 @@ func Connect(c DbConfig, pc *PoolConfig) (*DB, error) {
 	return pool, err
 }
 
-func (db DB) GetEngine(c OrmConfig) Engine {
-	db.ormConfig = c
+func (db DB) GetEngine(c *OrmConfig) Engine {
+	if c == nil {
+		config := OrmConfig{}
+		c = &config
+	}
+	db.ormConfig = *c
 
 	return Engine{
 		db:      db,

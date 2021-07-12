@@ -180,7 +180,7 @@ type fieldMap map[string]int
 
 var mutex sync.Mutex
 
-func getFieldMap(typ reflect.Type) (fieldMap, error) {
+func getFieldMap(typ reflect.Type,fieldNamePrefix string) (fieldMap, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	fields, ok := structFieldsMapCache[typ]
@@ -209,6 +209,7 @@ func getFieldMap(typ reflect.Type) (fieldMap, error) {
 		}
 
 		name = utils.Camel2Case(name)
+		name = strings.TrimPrefix(name, fieldNamePrefix)
 		if tag := field.Tag.Get("db"); tag != "" {
 			name = tag
 		}
@@ -267,11 +268,61 @@ func checkValidStruct(va reflect.Value) error {
 	return nil
 }
 
+
 //去除 所有 ptr slice 获取 struct ，不为struct 或 基础类型 为false
 //1 ptr 2slice 3struct  0基础类型
 func baseStructValidField(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
 	structValue=v
 	t := v.Type()
+
+
+
+
+base:
+	switch t.Kind() {
+	case reflect.Ptr:
+		if typ == 0 {
+			typ = 1
+		}
+		t = t.Elem()
+		goto base
+	case reflect.Slice:
+		if typ == 0 {
+			typ = 2
+		}
+		t = t.Elem()
+		goto base
+	case reflect.Struct:
+		if typ == 0 {
+			typ = 3
+		}
+		return typ, structValue, true
+	case reflect.Map:
+		return
+	case reflect.Interface:
+		return
+	case reflect.Func:
+		return
+	case reflect.Invalid:
+		return
+	case reflect.UnsafePointer:
+		return
+	case reflect.Uintptr:
+		return
+	default:
+		return typ, structValue, true
+	}
+}
+
+
+//1 ptr 2slice 3struct  0基础类型
+func baseStructValidField2(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
+	structValue=v
+	t := v.Type()
+
+
+
+
 base:
 	switch t.Kind() {
 	case reflect.Ptr:
