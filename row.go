@@ -9,6 +9,7 @@ import (
 
 func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	defer rows.Close()
+
 	value := reflect.ValueOf(dest)
 	if value.Kind() != reflect.Ptr {
 		return 0, errors.New("dest need a struct pointer")
@@ -39,7 +40,7 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 	var num int64 = 0
 	for rows.Next() {
 		num++
-		box, vp, v := getRowFieldBox(columns, base, rsFM)
+		box, vp, v := getRowFieldBox(base, rsFM)
 
 		err = rows.Scan(box...)
 		if err != nil {
@@ -59,14 +60,11 @@ func StructScan(rows *sql.Rows, dest interface{}) (int64, error) {
 
 //只有一个结果的row
 func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
-
 	defer rows.Close()
 	value := reflect.ValueOf(dest)
-
 	if value.Kind() != reflect.Ptr {
 		return 0, errors.New("dest need a  ptr")
 	}
-
 	value = value.Elem()
 	if value.Kind() != reflect.Struct {
 		box, v := getSignleRowFieldBox(value.Type())
@@ -106,7 +104,7 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 	}
 	if rows.Next() {
 		num++
-		box, _, p := getRowFieldBox(columns, base, rsFM)
+		box, _, p := getRowFieldBox(base, rsFM)
 		err = rows.Scan(box...)
 		if err != nil {
 			fmt.Println(err)
@@ -122,10 +120,10 @@ func StructScanLn(rows *sql.Rows, dest interface{}) (num int64, err error) {
 }
 
 //用来存放row中值得 引用
-func getRowFieldBox(columns []string, base reflect.Type, rsFM RowStructFieldMap) (box []interface{}, vp, v reflect.Value) {
+func getRowFieldBox(base reflect.Type, rsFM RowStructFieldMap) (box []interface{}, vp, v reflect.Value) {
 	vp = newStruct(base)
 	v = reflect.Indirect(vp)
-	fieldNum := len(columns)
+	fieldNum := len(rsFM)
 	box = make([]interface{}, fieldNum)
 	for r, s := range rsFM {
 		if s < 0 {
