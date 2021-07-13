@@ -49,15 +49,17 @@ func (orm *OrmFrom) Where(v *WhereBuilder) *OrmWhere {
 
 func (orm *OrmWhere) GetOne(dest interface{}) (int64, error) {
 	s := orm.context.query.String()
+	fieldNamePrefix := orm.db.OrmConfig().FieldNamePrefix
 	rows, err := orm.db.query(s, orm.context.args...)
 	if err != nil {
 		return 0, err
 	}
-	return StructScanLn(rows, dest)
+	return StructScanLn(rows, dest,fieldNamePrefix)
 }
 
 func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
 	query := orm.context.query.String()
+	fieldNamePrefix := orm.db.OrmConfig().FieldNamePrefix
 	log.Println(query)
 	args := orm.context.args
 	log.Printf("args :: %s", args)
@@ -65,5 +67,5 @@ func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return StructScan(rows, dest)
+	return StructScan(rows, dest,fieldNamePrefix)
 }

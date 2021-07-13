@@ -68,7 +68,7 @@ func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, 
 		field := t.Field(i)
 		name := field.Name
 
-		if name=="ID"  {
+		if name == "ID" {
 			cMap["Id"] = i
 			num++
 			if len(cMap) < num {
@@ -77,13 +77,11 @@ func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, 
 			continue
 		}
 
-
 		// 过滤掉首字母小写的字段
 		if unicode.IsLower([]rune(name)[0]) {
 			continue
 		}
 		name = utils.Camel2Case(name)
-
 
 		if tag := field.Tag.Get("lorm"); tag == "-" {
 			continue
@@ -180,7 +178,7 @@ type fieldMap map[string]int
 
 var mutex sync.Mutex
 
-func getFieldMap(typ reflect.Type,fieldNamePrefix string) (fieldMap, error) {
+func getFieldMap(typ reflect.Type, fieldNamePrefix string) (fieldMap, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	fields, ok := structFieldsMapCache[typ]
@@ -194,7 +192,7 @@ func getFieldMap(typ reflect.Type,fieldNamePrefix string) (fieldMap, error) {
 		field := typ.Field(i)
 		name := field.Name
 
-		if name=="ID"  {
+		if name == "ID" {
 			arr["id"] = i
 			num++
 			if len(arr) < num {
@@ -268,15 +266,11 @@ func checkValidStruct(va reflect.Value) error {
 	return nil
 }
 
-
 //去除 所有 ptr slice 获取 struct ，不为struct 或 基础类型 为false
 //1 ptr 2slice 3struct  0基础类型
 func baseStructValidField(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
-	structValue=v
+	structValue = v
 	t := v.Type()
-
-
-
 
 base:
 	switch t.Kind() {
@@ -314,14 +308,10 @@ base:
 	}
 }
 
-
 //1 ptr 2slice 3struct  0基础类型
 func baseStructValidField2(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
-	structValue=v
+	structValue = v
 	t := v.Type()
-
-
-
 
 base:
 	switch t.Kind() {
@@ -443,10 +433,10 @@ func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type,
 }
 
 func newStruct(structTyp reflect.Type) reflect.Value {
-	if structTyp.Kind() == reflect.Ptr {
-		structTyp = structTyp.Elem()
-	}
 	tPtr := reflect.New(structTyp)
+	if baseBaseType(structTyp) {
+		return tPtr
+	}
 	numField := structTyp.NumField()
 	for i := 0; i < numField; i++ {
 		field := structTyp.Field(i)

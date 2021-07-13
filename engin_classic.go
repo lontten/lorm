@@ -33,23 +33,25 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 
 	query := q.query
 	args := q.args
+	fieldNamePrefix := q.base.db.OrmConfig().FieldNamePrefix
 	log.Println(query,args)
 	rows, err := q.base.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return StructScanLn(rows, dest)
+	return StructScanLn(rows, dest,fieldNamePrefix)
 }
 
 func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	query := q.query
 	args := q.args
+	fieldNamePrefix := q.base.db.OrmConfig().FieldNamePrefix
 	log.Println(query,args)
 	rows, err := q.base.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return StructScan(rows, dest)
+	return StructScan(rows, dest,fieldNamePrefix)
 }
 
 func (engine EngineClassic) Exec(query string, args ...interface{}) (rowsNum int64, err error) {

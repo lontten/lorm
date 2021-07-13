@@ -9,24 +9,22 @@ import (
 
 func StructScan(rows *sql.Rows, dest interface{}, fieldNamePrefix string) (int64, error) {
 	defer rows.Close()
-
 	value := reflect.ValueOf(dest)
 	if value.Kind() != reflect.Ptr {
-		return 0, errors.New("dest need a struct pointer")
+		return 0, errors.New("need a ptr type")
 	}
-	arr := reflect.Indirect(value)
+	arr := value.Elem()
+	if arr.Kind() != reflect.Slice {
+		return 0, errors.New("need a slice type")
+	}
 
-	typ := reflect.TypeOf(dest)
-	slice, err := baseSliceTypePtr(typ)
-	if err != nil {
-		return 0, err
-	}
+	slice := arr.Type()
 
 	base := slice.Elem()
-	var isPtr = base.Kind() == reflect.Ptr
-	base, err = baseStructTypePtr(base)
-	if err != nil {
-		return 0, err
+	isPtr := base.Kind() == reflect.Ptr
+	code, base := baseStructBaseType(base)
+	if code == -2 {
+		return 0, errors.New("need a struct or base type in  slice")
 	}
 
 	columns, err := rows.Columns()
@@ -39,7 +37,6 @@ func StructScan(rows *sql.Rows, dest interface{}, fieldNamePrefix string) (int64
 	}
 	var num int64 = 0
 	for rows.Next() {
-		num++
 		box, vp, v := createColBox(base, cfm)
 
 		err = rows.Scan(box...)
@@ -47,13 +44,12 @@ func StructScan(rows *sql.Rows, dest interface{}, fieldNamePrefix string) (int64
 			fmt.Println(err)
 			return 0, err
 		}
-
 		if isPtr {
 			arr.Set(reflect.Append(arr, vp))
 		} else {
 			arr.Set(reflect.Append(arr, v))
 		}
-
+		num++
 	}
 	return num, nil
 }
@@ -70,40 +66,27 @@ func StructScanLn(rows *sql.Rows, dest interface{}, fieldNamePrefix string) (num
 		return 0, errors.New("need a ptr struct or base type")
 	}
 
-	num=1
+	num = 1
 	t := base.Type()
 
-	if code==2 {
-		box, v := getSignleRowFieldBox(t)
-		if rows.Next() {
-			err = rows.Scan(box)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			value.Set(v)
+	columns, err := rows.Columns()
+	if err != nil {
+		return
+	}
+	cfm, err := getColFieldIndexLinkMap(columns, t, fieldNamePrefix)
+	if err != nil {
+		return
+	}
+	if rows.Next() {
+		box, _, v := createColBox(t, cfm)
+		err = rows.Scan(box...)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
+		base.Set(v)
 	}
 
-	if code==1 {
-		columns, err := rows.Columns()
-		if err != nil {
-			return
-		}
-		cfm, err := getColFieldIndexLinkMap(columns, t, fieldNamePrefix)
-		if err != nil {
-			return
-		}
-		if rows.Next() {
-			box, _, v := createColBox(t, cfm)
-			err = rows.Scan(box...)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			value.Set(v)
-		}
-	}
 	if rows.Next() {
 		return 0, errors.New("result to many for one")
 	}
@@ -114,44 +97,32 @@ func StructScanLn(rows *sql.Rows, dest interface{}, fieldNamePrefix string) (num
 func createColBox(base reflect.Type, cfLink ColFieldIndexLinkMap) (box []interface{}, vp, v reflect.Value) {
 	vp = newStruct(base)
 	v = reflect.Indirect(vp)
-	box = make([]interface{}, len(cfLink))
+	length := len(cfLink)
+	box = make([]interface{}, 1)
+	if length == 0 {
+		box[0] = v.Addr().Interface()
+		return
+	}
+	box = make([]interface{}, length)
 	for c, f := range cfLink {
 		if f < 0 { // -1 表示此列不接收
 			box[c] = new([]uint8)
 		} else {
 			box[c] = v.Field(f).Addr().Interface()
 		}
+
 	}
 	return
-}
-
-//用来存放row中值得 引用
-func getRowBox(base reflect.Type, rsFM ColFieldIndexLinkMap) (num int, box []interface{}, vp, v reflect.Value) {
-	vp = newStruct(base)
-	v = reflect.Indirect(vp)
-	fieldNum := len(rsFM)
-	box = make([]interface{}, fieldNum)
-	for r, s := range rsFM {
-		if s < 0 {
-			empt := new([]uint8)
-			box[r] = empt
-			continue
-		}
-		box[r] = v.Field(s).Addr().Interface()
-	}
-	return
-}
-
-//用来存放row中值得 引用
-func getSignleRowFieldBox(base reflect.Type) (interface{}, reflect.Value) {
-	vp := reflect.New(base)
-	v := reflect.Indirect(vp)
-	return v.Addr().Interface(), v
 }
 
 type ColFieldIndexLinkMap []int
 
 func getColFieldIndexLinkMap(columns []string, typ reflect.Type, fieldNamePrefix string) (ColFieldIndexLinkMap, error) {
+	is := baseBaseType(typ)
+	if is {
+		return ColFieldIndexLinkMap{}, nil
+	}
+
 	cfm := make([]int, len(columns))
 	fm, err := getFieldMap(typ, fieldNamePrefix)
 	if err != nil {

@@ -25,12 +25,13 @@ type EngineTable struct {
 }
 
 func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
+	fieldNamePrefix := e.db.OrmConfig().FieldNamePrefix
 	rows, err := e.db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
 
-	return StructScanLn(rows, e.dest)
+	return StructScanLn(rows, e.dest,fieldNamePrefix)
 }
 
 func (e *EngineTable) setDest(v interface{}) error {

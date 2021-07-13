@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"reflect"
 )
+
 //type
 func baseBaseType(t reflect.Type) bool {
 	kind := t.Kind()
@@ -71,11 +72,6 @@ func baseStructValue(v reflect.Value) (is bool, structType reflect.Value) {
 	return false, v
 }
 
-
-
-
-
-
 //struct
 func basePtrStructBaseType(t reflect.Type) (is bool, structType reflect.Type) {
 	is, base := basePtrType(t)
@@ -92,7 +88,6 @@ func basePtrStructBaseType(t reflect.Type) (is bool, structType reflect.Type) {
 	}
 	return false, t
 }
-
 
 //struct
 // no ptr -1
@@ -115,28 +110,59 @@ func basePtrStructBaseValue(v reflect.Value) (t int, structType reflect.Value) {
 	return -2, v
 }
 
-
 //struct
-func checkScanTypeLn(t reflect.Type) ( reflect.Type, error) {
-	is, base := basePtrStructBaseType(t)
-	if !is {
-		return  t, errors.New("need a ptr struct or base type")
+// struct 1
+// base 2
+// no type -2
+func baseStructBaseValue(v reflect.Value) (int, reflect.Value) {
+	is, base := baseStructValue(v)
+	if is {
+		return 1, base
 	}
-	return  base, nil
+	is = baseBaseValue(base)
+	if is {
+		return 2, base
+	}
+	return -2, v
 }
 
-func checkScanType(t reflect.Type) ( reflect.Type, error) {
+//struct
+// struct 1
+// base 2
+// no type -2
+func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
+	is, base := baseStructType(t)
+	if is {
+		return 1, base
+	}
+	is = baseBaseType(base)
+	if is {
+		return 2, base
+	}
+	return -2, t
+}
+
+//struct
+func checkScanTypeLn(t reflect.Type) (reflect.Type, error) {
+	is, base := basePtrStructBaseType(t)
+	if !is {
+		return t, errors.New("need a ptr struct or base type")
+	}
+	return base, nil
+}
+
+func checkScanType(t reflect.Type) (reflect.Type, error) {
 	_, base := basePtrType(t)
 	is, base := baseSliceType(base)
 	if is {
-		return  t, errors.New("need a slice type")
+		return t, errors.New("need a slice type")
 	}
 
 	is, base = basePtrStructBaseType(base)
 
 	is = baseBaseType(base)
 	if !is {
-		return  t, errors.New("need a ptr struct or base type")
+		return t, errors.New("need a ptr struct or base type")
 	}
-	return  base, nil
+	return base, nil
 }

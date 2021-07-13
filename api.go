@@ -23,7 +23,7 @@ func Select(q Queryer, dest interface{}, query string, args ...interface{}) erro
 	}
 
 	defer rows.Close()
-	_, err = StructScan(rows, dest)
+	_, err = StructScan(rows, dest,"")
 	return err
 }
 
