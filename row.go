@@ -123,12 +123,14 @@ func getColFieldIndexLinkMap(columns []string, typ reflect.Type, fieldNamePrefix
 		return ColFieldIndexLinkMap{}, nil
 	}
 
-	cfm := make([]int, len(columns))
+	colNum := len(columns)
+	cfm := make([]int, colNum)
 	fm, err := getFieldMap(typ, fieldNamePrefix)
 	if err != nil {
 		return nil, err
 	}
 
+	validNum := 0
 	for i, column := range columns {
 		index, ok := fm[column]
 		if !ok {
@@ -136,6 +138,11 @@ func getColFieldIndexLinkMap(columns []string, typ reflect.Type, fieldNamePrefix
 			continue
 		}
 		cfm[i] = index
+		validNum++
+	}
+
+	if colNum == 1 && validNum == 0 {
+		return ColFieldIndexLinkMap{}, nil
 	}
 	return cfm, nil
 }
