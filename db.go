@@ -9,7 +9,6 @@ import (
 )
 
 type DB struct {
-	ctx OrmContext
 	db        *sql.DB
 	dbConfig  DbConfig
 	ormConfig OrmConfig

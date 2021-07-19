@@ -12,12 +12,8 @@ import (
 )
 
 //获取struct对应数据库表名
-func getStructTableName(dest interface{}, config OrmConfig) (string, error) {
-	typ := reflect.TypeOf(dest)
-	_, base, err := baseStructTypeSliceOrPtr(typ)
-	if err != nil {
-		return "", err
-	}
+func getStructTableName(v reflect.Value, config OrmConfig) (string, error) {
+	base := v.Type()
 
 	// fun
 	name := base.String()
@@ -118,29 +114,19 @@ func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, 
 }
 
 //获取struct对应的字段名 和 其值   有效部分
-func getStructMappingColumnsValueNotNull(dest interface{}, config OrmConfig) (columns []string, values []interface{}, err error) {
+func getStructMappingColumnsValueNotNull(v reflect.Value, config OrmConfig) (columns []string, values []interface{}, err error) {
 	columns = make([]string, 0)
 	values = make([]interface{}, 0)
 
-	t := reflect.TypeOf(dest)
-	base, err := baseStructTypePtr(t)
-	if err != nil {
-		return
-	}
+	t := v.Type()
 
-	mappingColumns, err := getStructMappingColumns(base, config)
-	if err != nil {
-		return
-	}
-
-	v := reflect.ValueOf(dest)
-	structValue, err := baseStructValuePtr(v)
+	mappingColumns, err := getStructMappingColumns(t, config)
 	if err != nil {
 		return
 	}
 
 	for column, i := range mappingColumns {
-		field := structValue.Field(i)
+		field := v.Field(i)
 
 		typ, validField, ok := baseStructValidField(field)
 		if !ok {

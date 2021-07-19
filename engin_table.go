@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"errors"
+	"fmt"
 	"github.com/lontten/lorm/utils"
 	"log"
 	"reflect"
@@ -14,11 +15,14 @@ type EngineTable struct {
 
 	db DBer
 
-	idName string
+	primaryKeyNames []string
+
 	//当前表名
 	tableName string
 	//当前struct对象
-	dest interface{}
+	dest          interface{}
+	destBaseValue reflect.Value
+	destIsSlice   bool
 
 	columns      []string
 	columnValues []interface{}
@@ -31,17 +35,24 @@ func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 		return 0, err
 	}
 
-	return StructScanLn(rows, e.dest,fieldNamePrefix)
+	return StructScanLn(rows, e.dest, fieldNamePrefix)
 }
 
 func (e *EngineTable) setDest(v interface{}) error {
-	err := checkValidStruct(reflect.ValueOf(v))
+	value := reflect.ValueOf(v)
+	is, base, err := destBaseValueCheckSlice(value)
+	if err != nil {
+		return err
+	}
+
+	err = checkValidStruct(reflect.ValueOf(v))
 	if err != nil {
 		return err
 	}
 	e.dest = v
-	e.initTableName()
-	return nil
+	e.destBaseValue = base
+	e.destIsSlice = is
+	return e.initTableName()
 }
 
 type OrmTableCreate struct {
@@ -150,8 +161,8 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
-
-	err := checkValidStruct(reflect.ValueOf(v))
+	va := reflect.ValueOf(v)
+	err := checkValidStruct(va)
 	if err != nil {
 		return 0, err
 	}
@@ -159,7 +170,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	c := orm.base.columns
 	cv := orm.base.columnValues
 	config := orm.base.db.OrmConfig()
-	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -266,7 +277,7 @@ func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 	return OrmTableDelete{base: e}
 }
 
-func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
+func (orm OrmTableDelete) ById(v... interface{}) (int64, error) {
 	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
@@ -276,9 +287,10 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	orm.base.initIdName()
+	orm.base.initPrimaryKeyName()
 	tableName := orm.base.tableName
-	idName := orm.base.idName
+	idNames := orm.base.primaryKeyNames
+	fmt.Println(idNames)
 	logicDeleteSetSql := orm.base.db.OrmConfig().LogicDeleteSetSql
 
 	var sb strings.Builder
@@ -287,7 +299,7 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 		sb.WriteString("DELETE FROM ")
 		sb.WriteString(tableName)
 		sb.WriteString("WHERE ")
-		sb.WriteString(idName)
+		//sb.WriteString(idName)
 		sb.WriteString(" = ? ")
 	} else {
 		sb.WriteString("UPDATE ")
@@ -295,7 +307,7 @@ func (orm OrmTableDelete) ById(v interface{}) (int64, error) {
 		sb.WriteString(" SET ")
 		sb.WriteString(lgSql)
 		sb.WriteString("WHERE ")
-		sb.WriteString(idName)
+		//sb.WriteString(idName)
 		sb.WriteString(" = ? ")
 	}
 
@@ -306,14 +318,14 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
-
-	err := checkValidStruct(reflect.ValueOf(v))
+	va := reflect.ValueOf(v)
+	err := checkValidStruct(va)
 	if err != nil {
 		return 0, err
 	}
 	config := orm.base.db.OrmConfig()
 
-	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if err != nil {
 		return 0, err
 	}
@@ -384,7 +396,7 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	orm.base.initIdName()
+	orm.base.initPrimaryKeyName()
 
 	tableName := orm.base.tableName
 	c := orm.base.columns
@@ -396,7 +408,7 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
 	sb.WriteString(" WHERE ")
-	sb.WriteString(orm.base.idName)
+	//sb.WriteString(orm.base.primaryKeyNames)
 	sb.WriteString(" = ? ")
 	cv = append(cv, v)
 	return orm.base.db.exec(sb.String(), cv...)
@@ -406,8 +418,8 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
-
-	err := checkValidStruct(reflect.ValueOf(v))
+	va := reflect.ValueOf(v)
+	err := checkValidStruct(va)
 	if err != nil {
 		return 0, err
 	}
@@ -422,7 +434,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
 	config := orm.base.db.OrmConfig()
-	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -482,7 +494,7 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 	return OrmTableSelect{base: e}
 }
 
-func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
+func (orm OrmTableSelect) ById(v... interface{}) (int64, error) {
 	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
@@ -492,7 +504,7 @@ func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 		return 0, err
 	}
 	orm.base.initColumns()
-	orm.base.initIdName()
+	orm.base.initPrimaryKeyName()
 	tableName := orm.base.tableName
 	c := orm.base.columns
 
@@ -509,7 +521,7 @@ func (orm OrmTableSelect) ById(v interface{}) (int64, error) {
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
 	sb.WriteString(" WHERE ")
-	sb.WriteString(orm.base.idName)
+	//sb.WriteString(orm.base.primaryKeyNames)
 	sb.WriteString(" = ? ")
 
 	return orm.base.queryLn(sb.String(), v)
@@ -536,11 +548,12 @@ func (orm OrmTableSelectWhere) getOne() (int64, error) {
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
 	sb.WriteString(" WHERE ")
-	sb.WriteString(orm.base.idName)
+	//sb.WriteString(orm.base.primaryKeyNames)
 	sb.WriteString(" = ? ")
 
 	return orm.base.queryLn(sb.String(), orm.base.dest)
 }
+
 
 func (orm OrmTableSelectWhere) getList() (int64, error) {
 	if err := orm.base.context.err; err != nil {
@@ -563,7 +576,7 @@ func (orm OrmTableSelectWhere) getList() (int64, error) {
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
 	sb.WriteString("WHERE ")
-	sb.WriteString(orm.base.idName)
+	//sb.WriteString(orm.base.primaryKeyNames)
 	sb.WriteString(" = ? ")
 
 	return orm.base.queryLn(sb.String(), orm.base.dest)
@@ -573,18 +586,18 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
-
-	err := checkValidStruct(reflect.ValueOf(v))
+	va := reflect.ValueOf(v)
+	err := checkValidStruct(va)
 	if err != nil {
 		return 0, err
 	}
 	orm.base.initColumns()
-	orm.base.initIdName()
+	orm.base.initPrimaryKeyName()
 
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	config := orm.base.db.OrmConfig()
-	columns, values, err := getStructMappingColumnsValueNotNull(v, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -618,7 +631,7 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 		return 0, errors.New("table select where can't nil")
 	}
 	orm.base.initColumns()
-	orm.base.initIdName()
+	orm.base.initPrimaryKeyName()
 
 	wheres := w.context.wheres
 	args := w.context.args
@@ -651,33 +664,35 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //init
-func (e *EngineTable) initIdName() {
-	idNameFun := e.db.OrmConfig().IdNameFun
-	idName := e.db.OrmConfig().IdName
-	if idNameFun != nil {
-		e.idName = idNameFun(e.tableName, e.dest)
+func (e *EngineTable) initPrimaryKeyName() {
+	primaryKeyNameFun := e.db.OrmConfig().PrimaryKeyNameFun
+	primaryKeyName := e.db.OrmConfig().PrimaryKeyNames
+	if primaryKeyNameFun != nil {
+		e.primaryKeyNames = primaryKeyNameFun(e.tableName, e.destBaseValue)
 	}
-	if idName != "" {
-		e.idName = idName
+	if len(primaryKeyName) != 0 {
+		e.primaryKeyNames = primaryKeyName
 	}
-	e.idName = "id"
+
+	//todo 获取 struct 中 tag为id 的 filed ，为 primaryKeyNames 可多个
+
+	e.primaryKeyNames = []string{"id"}
 }
 
-func (e *EngineTable) initTableName() {
-	tableName, err := getStructTableName(e.dest, e.db.OrmConfig())
+func (e *EngineTable) initTableName() error {
+	tableName, err := getStructTableName(e.destBaseValue, e.db.OrmConfig())
 	if err != nil {
-		e.context.err = err
-		return
+		return err
 	}
 	e.tableName = tableName
+	return nil
 }
 
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() error {
-	dest := e.dest
 	config := e.db.OrmConfig()
 
-	columns, values, err := getStructMappingColumnsValueNotNull(dest, config)
+	columns, values, err := getStructMappingColumnsValueNotNull(e.destBaseValue, config)
 	if err != nil {
 		return err
 	}

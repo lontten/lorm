@@ -12,7 +12,7 @@ import (
 
 type K struct {
 	Name *string
-	Ha   types.NullUUID
+	Ha   types.UUID
 	Hb   sql.NullBool
 }
 

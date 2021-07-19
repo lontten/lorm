@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -11,6 +12,13 @@ const (
 	MYSQL    = "mysql"
 	POSTGRES = "postgres"
 )
+
+type Dialect interface {
+	ToDialectSql(sql string)string
+
+
+}
+
 
 type DbConfig interface {
 	DriverName() string
@@ -70,8 +78,8 @@ type OrmConfig struct {
 	FieldNamePrefix string
 
 	//主键 默认为id
-	IdName    string
-	IdNameFun func(tableName string, dest interface{}) string
+	PrimaryKeyNames   []string
+	PrimaryKeyNameFun func(tableName string, base reflect.Value) []string
 
 	//逻辑删除 logicDeleteFieldName不为零值，即开启
 	// LogicDeleteYesSql   lg.deleted_at is null
@@ -181,4 +189,8 @@ func (db DB) GetEngine(c *OrmConfig) Engine {
 			db:      db,
 		},
 	}
+}
+
+type Ha struct {
+
 }
