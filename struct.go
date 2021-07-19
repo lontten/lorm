@@ -12,7 +12,7 @@ import (
 )
 
 //获取struct对应数据库表名
-func getStructTableName(v reflect.Value, config OrmConfig) (string, error) {
+func getStructTableName(v reflect.Value, config LormConf) (string, error) {
 	base := v.Type()
 
 	// fun
@@ -55,7 +55,7 @@ func getStructTableName(v reflect.Value, config OrmConfig) (string, error) {
 }
 
 //获取struct对应的字段名 有效部分
-func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, error) {
+func getStructMappingColumns(t reflect.Type, config LormConf) (map[string]int, error) {
 	cMap := make(map[string]int)
 
 	numField := t.NumField()
@@ -114,7 +114,7 @@ func getStructMappingColumns(t reflect.Type, config OrmConfig) (map[string]int, 
 }
 
 //获取struct对应的字段名 和 其值   有效部分
-func getStructMappingColumnsValueNotNull(v reflect.Value, config OrmConfig) (columns []string, values []interface{}, err error) {
+func getStructMappingColumnsValueNotNull(v reflect.Value, config LormConf) (columns []string, values []interface{}, err error) {
 	columns = make([]string, 0)
 	values = make([]interface{}, 0)
 

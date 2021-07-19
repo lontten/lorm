@@ -46,7 +46,7 @@ func Test_getStructTableName(t *testing.T) {
 	as := assert.New(t)
 	type args struct {
 		dest   interface{}
-		config OrmConfig
+		config LormConf
 	}
 
 	type User struct {
@@ -63,7 +63,7 @@ func Test_getStructTableName(t *testing.T) {
 		return "user"
 	}
 	println(f)
-	config := OrmConfig{
+	config := LormConf{
 		TableNamePrefix: "t_",
 		TableNameFun:    nil,
 	}

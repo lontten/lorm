@@ -7,8 +7,10 @@ import (
 
 //对 query exec 的简单封装
 type EngineClassic struct {
+	db        DBer
+	ormConfig LormConf
+
 	context OrmContext
-	db      DBer
 }
 
 type ClassicQuery struct {

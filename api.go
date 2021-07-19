@@ -40,5 +40,4 @@ func Exec(e Execer, query string, args ...interface{}) (sql.Result, error) {
 type DBer interface {
 	exec(query string, args ...interface{}) (int64, error)
 	query(query string, args ...interface{}) (*sql.Rows, error)
-	OrmConfig() OrmConfig
 }

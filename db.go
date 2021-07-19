@@ -11,12 +11,8 @@ import (
 type DB struct {
 	db        *sql.DB
 	dbConfig  DbConfig
-	ormConfig OrmConfig
 }
 
-func (db DB) OrmConfig() OrmConfig {
-	return db.ormConfig
-}
 
 
 func (db DB) exec(query string, args ...interface{}) (int64, error) {

@@ -2,7 +2,8 @@ package lorm
 
 
 type EngineExtra struct {
-	context   OrmContext
+	db        DBer
+	ormConfig LormConf
 
-	db DBer
+	context OrmContext
 }

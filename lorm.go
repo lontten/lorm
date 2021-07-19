@@ -2,8 +2,8 @@ package lorm
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"reflect"
 	"time"
 )
@@ -14,17 +14,31 @@ const (
 )
 
 type Dialect interface {
-	ToDialectSql(sql string)string
-
-
+	DriverName() string
+	ToDialectSql(sql string) string
 }
 
+type MysqlDialect struct {
+	lormConf LormConf
+}
+
+type PgDialect struct {
+	lormConf LormConf
+}
 
 type DbConfig interface {
 	DriverName() string
+	Open() (*sql.DB, error)
 }
 
-type MysqlConfig struct {
+type PoolConf struct {
+	MaxIdleCount int           // zero means defaultMaxIdleConns; negative means 0
+	MaxOpen      int           // <= 0 means unlimited
+	MaxLifetime  time.Duration // maximum amount of time a connection may be reused
+	MaxIdleTime  time.Duration // maximum amount of time a connection may be idle before being closed
+}
+
+type MysqlConf struct {
 	Host     string
 	Port     string
 	DbName   string
@@ -32,18 +46,19 @@ type MysqlConfig struct {
 	Password string
 }
 
-type PoolConfig struct {
-	MaxIdleCount int           // zero means defaultMaxIdleConns; negative means 0
-	MaxOpen      int           // <= 0 means unlimited
-	MaxLifetime  time.Duration // maximum amount of time a connection may be reused
-	MaxIdleTime  time.Duration // maximum amount of time a connection may be idle before being closed
-}
-
-func (c *MysqlConfig) DriverName() string {
+func (c *MysqlConf) DriverName() string {
 	return MYSQL
 }
 
-type PgConfig struct {
+func (c *MysqlConf) Open() (*sql.DB, error) {
+	dsn := c.User + ":" + c.Password +
+		"@tcp(" + c.Host +
+		":" + c.Port +
+		")/" + c.DbName
+	return sql.Open("mysql", dsn)
+}
+
+type PgConf struct {
 	Host     string
 	Port     string
 	DbName   string
@@ -52,11 +67,24 @@ type PgConfig struct {
 	Other    string
 }
 
-func (c *PgConfig) DriverName() string {
+func (c *PgConf) DriverName() string {
 	return POSTGRES
 }
 
-type OrmConfig struct {
+func (c *PgConf) Open() (*sql.DB, error) {
+	dsn := "user=" + c.User +
+		" password=" + c.Password +
+		" dbname=" + c.DbName +
+		" host=" + c.Host +
+		" port= " + c.Port
+	if c.Other == "" {
+		dsn += " sslmode=disable TimeZone=Asia/Shanghai"
+	}
+	dsn += c.Other
+	return sql.Open("pgx", dsn)
+}
+
+type LormConf struct {
 	//po生成文件目录
 	PoDir string
 	//是否覆盖，默认true
@@ -96,49 +124,26 @@ type OrmConfig struct {
 }
 
 type Engine struct {
-	db      DB
+	db       DB
+	lormConf LormConf
+
 	Base    EngineBase
 	Extra   EngineExtra
 	Table   EngineTable
 	Classic EngineClassic
 }
 
-func open(c DbConfig, pc *PoolConfig) (dp *DB, err error) {
+func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	if c == nil {
 		fmt.Println("dbconfig canot be nil")
-		panic(errors.New("dbconfig canot be nil"))
+		return nil, errors.New("dbconfig canot be nil")
 	}
 
-	var db *sql.DB
-	switch c.DriverName() {
-	case MYSQL:
-		c := c.(*MysqlConfig)
-		dsn := c.User + ":" + c.Password +
-			"@tcp(" + c.Host +
-			":" + c.Port +
-			")/" + c.DbName
-		db, err = sql.Open("mysql", dsn)
-		if err != nil {
-			panic(err)
-		}
-	case POSTGRES:
-		c := c.(*PgConfig)
-		dsn := "user=" + c.User +
-			" password=" + c.Password +
-			" dbname=" + c.DbName +
-			" host=" + c.Host +
-			" port= " + c.Port
-		if c.Other == "" {
-			dsn += " sslmode=disable TimeZone=Asia/Shanghai"
-		}
-		dsn += c.Other
-		db, err = sql.Open("pgx", dsn)
-		if err != nil {
-			panic(err)
-		}
-	default:
-		return nil, errors.New("无此db 类型")
+	db, err := c.Open()
+	if err != nil {
+		return nil, err
 	}
+
 	if pc != nil {
 		db.SetConnMaxLifetime(pc.MaxLifetime)
 		db.SetConnMaxIdleTime(pc.MaxIdleTime)
@@ -146,13 +151,12 @@ func open(c DbConfig, pc *PoolConfig) (dp *DB, err error) {
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
 	return &DB{
-		db:        db,
-		dbConfig:  c,
-		ormConfig: OrmConfig{},
+		db:       db,
+		dbConfig: c,
 	}, nil
 }
 
-func MustConnect(c DbConfig, pc *PoolConfig) *DB {
+func MustConnect(c DbConfig, pc *PoolConf) *DB {
 	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
@@ -160,7 +164,7 @@ func MustConnect(c DbConfig, pc *PoolConfig) *DB {
 	return db
 }
 
-func Connect(c DbConfig, pc *PoolConfig) (*DB, error) {
+func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
 	pool, err := open(c, pc)
 	if err != nil {
 		return nil, err
@@ -172,18 +176,16 @@ func Connect(c DbConfig, pc *PoolConfig) (*DB, error) {
 	return pool, err
 }
 
-func (db DB) GetEngine(c *OrmConfig) Engine {
+func (db DB) GetEngine(c *LormConf) Engine {
 	if c == nil {
-		config := OrmConfig{}
-		c = &config
+		c = &LormConf{}
 	}
-	db.ormConfig = *c
-
 	return Engine{
-		db:      db,
-		Base:    EngineBase{db: db, context: OrmContext{}},
-		Extra:   EngineExtra{db: db, context: OrmContext{}},
-		Classic: EngineClassic{db: db, context: OrmContext{}},
+		db:       db,
+		lormConf: *c,
+		Base:     EngineBase{db: db, context: OrmContext{}},
+		Extra:    EngineExtra{db: db, context: OrmContext{}},
+		Classic:  EngineClassic{db: db, context: OrmContext{}},
 		Table: EngineTable{
 			context: OrmContext{},
 			db:      db,
@@ -192,5 +194,4 @@ func (db DB) GetEngine(c *OrmConfig) Engine {
 }
 
 type Ha struct {
-
 }

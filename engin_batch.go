@@ -2,7 +2,8 @@ package lorm
 
 //批量操作
 type EngineBatch struct {
-	context   OrmContext
+	db        DBer
+	ormConfig LormConf
 
-	db DB
+	context OrmContext
 }

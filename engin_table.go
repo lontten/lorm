@@ -11,9 +11,12 @@ import (
 )
 
 type EngineTable struct {
-	context OrmContext
+	db        DBer
+	ormConfig LormConf
 
-	db DBer
+	dialect Dialect
+
+	context OrmContext
 
 	primaryKeyNames []string
 
@@ -29,7 +32,7 @@ type EngineTable struct {
 }
 
 func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
-	fieldNamePrefix := e.db.OrmConfig().FieldNamePrefix
+	fieldNamePrefix := e.ormConfig.FieldNamePrefix
 	rows, err := e.db.query(query, args...)
 	if err != nil {
 		return 0, err
@@ -169,7 +172,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	c := orm.base.columns
 	cv := orm.base.columnValues
-	config := orm.base.db.OrmConfig()
+	config := orm.base.ormConfig
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -291,7 +294,7 @@ func (orm OrmTableDelete) ById(v... interface{}) (int64, error) {
 	tableName := orm.base.tableName
 	idNames := orm.base.primaryKeyNames
 	fmt.Println(idNames)
-	logicDeleteSetSql := orm.base.db.OrmConfig().LogicDeleteSetSql
+	logicDeleteSetSql := orm.base.ormConfig.LogicDeleteSetSql
 
 	var sb strings.Builder
 	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
@@ -323,7 +326,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	config := orm.base.db.OrmConfig()
+	config := orm.base.ormConfig
 
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if err != nil {
@@ -433,7 +436,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
-	config := orm.base.db.OrmConfig()
+	config := orm.base.ormConfig
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -596,7 +599,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 
 	tableName := orm.base.tableName
 	c := orm.base.columns
-	config := orm.base.db.OrmConfig()
+	config := orm.base.ormConfig
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -665,8 +668,8 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 
 //init
 func (e *EngineTable) initPrimaryKeyName() {
-	primaryKeyNameFun := e.db.OrmConfig().PrimaryKeyNameFun
-	primaryKeyName := e.db.OrmConfig().PrimaryKeyNames
+	primaryKeyNameFun := e.ormConfig.PrimaryKeyNameFun
+	primaryKeyName := e.ormConfig.PrimaryKeyNames
 	if primaryKeyNameFun != nil {
 		e.primaryKeyNames = primaryKeyNameFun(e.tableName, e.destBaseValue)
 	}
@@ -680,7 +683,7 @@ func (e *EngineTable) initPrimaryKeyName() {
 }
 
 func (e *EngineTable) initTableName() error {
-	tableName, err := getStructTableName(e.destBaseValue, e.db.OrmConfig())
+	tableName, err := getStructTableName(e.destBaseValue, e.ormConfig)
 	if err != nil {
 		return err
 	}
@@ -690,7 +693,7 @@ func (e *EngineTable) initTableName() error {
 
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() error {
-	config := e.db.OrmConfig()
+	config := e.ormConfig
 
 	columns, values, err := getStructMappingColumnsValueNotNull(e.destBaseValue, config)
 	if err != nil {
@@ -711,7 +714,7 @@ func (e *EngineTable) initColumns() {
 		return
 	}
 
-	config := e.db.OrmConfig()
+	config := e.ormConfig
 
 	cMap := make(map[string]int)
 
