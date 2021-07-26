@@ -209,7 +209,6 @@ func (p DateTimeList) Value() (driver.Value, error) {
 	return s, nil
 }
 
-
 // Scan 实现方法
 func (p *DateTimeList) Scan(data interface{}) error {
 	array := pgtype.TimestampArray{}
@@ -229,7 +228,6 @@ func (p *DateTimeList) Scan(data interface{}) error {
 	err = json.Unmarshal(marshal, &p)
 	return err
 }
-
 
 func (d Date) AddTime(t Time) DateTime {
 	return DateTime{time.Date(
@@ -251,4 +249,47 @@ func (t Time) AddData(d Date) DateTime {
 		t.Minute(),
 		t.Second(), 0, nil,
 	)}
+}
+
+//datetime
+type AutoDateTime struct {
+	time.Time
+}
+
+func (t AutoDateTime) MarshalJSON() ([]byte, error) {
+	var tune string
+	if t.Year() == 0 && t.Month() == time.January && t.Day() == 1 {
+		tune = t.Format(`"15:04:05"`)
+	} else {
+		tune = t.Format(`"2006-01-02"`)
+	}
+	return []byte(tune), nil
+}
+
+func (t *AutoDateTime) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	now, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, string(data), time.Local)
+	*t = AutoDateTime{Time: now}
+	return err
+}
+
+// Value insert timestamp into mysql need this function.
+func (t AutoDateTime) Value() (driver.Value, error) {
+	var zeroTime time.Time
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
+		return nil, nil
+	}
+	return t.Time, nil
+}
+
+// Scan valueof jstime.Time
+func (t *AutoDateTime) Scan(v interface{}) error {
+	value, ok := v.(time.Time)
+	if ok {
+		*t = AutoDateTime{Time: value}
+		return nil
+	}
+	return fmt.Errorf("can not convert %v to timestamp", v)
 }
