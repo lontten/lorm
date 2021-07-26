@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-type Time time.Time
+type Time struct {
+	time.Time
+}
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	tune := time.Time(t).Format(`"15:04:05"`)
+	tune := t.Format(`"15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -20,7 +22,7 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
-	*t = Time(now)
+	*t = Time{now}
 	return err
 }
 
@@ -54,7 +56,7 @@ func (p *TimeList) Scan(data interface{}) error {
 	var list []Time
 	list = make([]Time, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = Time(element.Time)
+		list[i] = Time{element.Time}
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -207,6 +209,7 @@ func (p DateTimeList) Value() (driver.Value, error) {
 	return s, nil
 }
 
+
 // Scan 实现方法
 func (p *DateTimeList) Scan(data interface{}) error {
 	array := pgtype.TimestampArray{}
@@ -225,4 +228,27 @@ func (p *DateTimeList) Scan(data interface{}) error {
 	}
 	err = json.Unmarshal(marshal, &p)
 	return err
+}
+
+
+func (d Date) AddTime(t Time) DateTime {
+	return DateTime{time.Date(
+		d.Time.Year(),
+		d.Time.Month(),
+		d.Time.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
+	)}
+}
+
+func (t Time) AddData(d Date) DateTime {
+	return DateTime{time.Date(
+		d.Time.Year(),
+		d.Time.Month(),
+		d.Time.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
+	)}
 }
