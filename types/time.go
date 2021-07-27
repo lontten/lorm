@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-type Time time.Time
+type Time struct {
+	time.Time
+}
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	tune := time.Time(t).Format(`"15:04:05"`)
+	tune := t.Format(`"15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -20,7 +22,7 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
-	*t = Time(now)
+	*t = Time{now}
 	return err
 }
 
@@ -54,7 +56,7 @@ func (p *TimeList) Scan(data interface{}) error {
 	var list []Time
 	list = make([]Time, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = Time(element.Time)
+		list[i] = Time{element.Time}
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -225,4 +227,69 @@ func (p *DateTimeList) Scan(data interface{}) error {
 	}
 	err = json.Unmarshal(marshal, &p)
 	return err
+}
+
+func (d Date) AddTime(t Time) DateTime {
+	return DateTime{time.Date(
+		d.Time.Year(),
+		d.Time.Month(),
+		d.Time.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
+	)}
+}
+
+func (t Time) AddData(d Date) DateTime {
+	return DateTime{time.Date(
+		d.Time.Year(),
+		d.Time.Month(),
+		d.Time.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
+	)}
+}
+
+//datetime
+type AutoDateTime struct {
+	time.Time
+}
+
+func (t AutoDateTime) MarshalJSON() ([]byte, error) {
+	var tune string
+	if t.Year() == 0 && t.Month() == time.January && t.Day() == 1 {
+		tune = t.Format(`"15:04:05"`)
+	} else {
+		tune = t.Format(`"2006-01-02"`)
+	}
+	return []byte(tune), nil
+}
+
+func (t *AutoDateTime) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	now, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, string(data), time.Local)
+	*t = AutoDateTime{Time: now}
+	return err
+}
+
+// Value insert timestamp into mysql need this function.
+func (t AutoDateTime) Value() (driver.Value, error) {
+	var zeroTime time.Time
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
+		return nil, nil
+	}
+	return t.Time, nil
+}
+
+// Scan valueof jstime.Time
+func (t *AutoDateTime) Scan(v interface{}) error {
+	value, ok := v.(time.Time)
+	if ok {
+		*t = AutoDateTime{Time: value}
+		return nil
+	}
+	return fmt.Errorf("can not convert %v to timestamp", v)
 }
