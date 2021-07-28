@@ -88,7 +88,6 @@ func (e Engine) Begin() TxEngine {
 	tx := Tx{
 		db:        t,
 		dbConfig:  e.db.dbConfig,
-		ormConfig: e.db.ormConfig,
 	}
 
 	return TxEngine{

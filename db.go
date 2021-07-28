@@ -16,6 +16,7 @@ type DB struct {
 
 
 func (db DB) exec(query string, args ...interface{}) (int64, error) {
+
 	switch db.dbConfig.DriverName() {
 	case MYSQL:
 	case POSTGRES:
@@ -42,24 +43,8 @@ func (db DB) exec(query string, args ...interface{}) (int64, error) {
 }
 
 func (db DB) query(query string, args ...interface{}) (*sql.Rows, error) {
-	switch db.dbConfig.DriverName() {
-	case POSTGRES:
-		var i = 1
-		for {
-			t := strings.Replace(query, " ? ", " $"+strconv.Itoa(i)+" ", 1)
-			if t == query {
-				break
-			}
-			i++
-			query = t
-		}
-	default:
-		return nil, errors.New("无此db drive 类型")
-	}
-
 	Log.Println("sql",query,args)
 	return db.db.Query(query, args...)
-
 }
 
 type OrmContext struct {
@@ -71,17 +56,23 @@ type OrmContext struct {
 }
 
 type OrmSelect struct {
-	db      DBer
+	db DBer
+	lormConf Lorm
+	dialect  Dialect
 	context OrmContext
 }
 
 type OrmFrom struct {
-	db      DBer
+	db DBer
+	lormConf Lorm
+	dialect  Dialect
 	context OrmContext
 }
 
 type OrmWhere struct {
-	db      DBer
+	db DBer
+	lormConf Lorm
+	dialect  Dialect
 	context OrmContext
 }
 

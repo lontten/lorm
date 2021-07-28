@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -13,22 +15,141 @@ const (
 	POSTGRES = "postgres"
 )
 
+type Lorm interface {
+	ScanLn(rows *sql.Rows, v interface{}) (int64, error)
+	Scan(rows *sql.Rows, v interface{}) (int64, error)
+}
+
+func (c LormConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
+	defer rows.Close()
+	value := reflect.ValueOf(v)
+	code, base := basePtrStructBaseValue(value)
+	if code == -1 {
+		return 0, errors.New("dest need a  ptr")
+	}
+	if code == -2 {
+		return 0, errors.New("need a ptr struct or base type")
+	}
+
+	num = 1
+	t := base.Type()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return
+	}
+	cfm, err := getColFieldIndexLinkMap(columns, t, c.FieldNamePrefix)
+	if err != nil {
+		return
+	}
+	if rows.Next() {
+		box, _, v := createColBox(t, cfm)
+		err = rows.Scan(box...)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		base.Set(v)
+	}
+
+	if rows.Next() {
+		return 0, errors.New("result to many for one")
+	}
+	return
+}
+
+func (c LormConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
+	defer rows.Close()
+	value := reflect.ValueOf(v)
+	if value.Kind() != reflect.Ptr {
+		return 0, errors.New("need a ptr type")
+	}
+	arr := value.Elem()
+	if arr.Kind() != reflect.Slice {
+		return 0, errors.New("need a slice type")
+	}
+
+	slice := arr.Type()
+
+	base := slice.Elem()
+	isPtr := base.Kind() == reflect.Ptr
+	code, base := baseStructBaseType(base)
+	if code == -2 {
+		return 0, errors.New("need a struct or base type in  slice")
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return 0, err
+	}
+	cfm, err := getColFieldIndexLinkMap(columns, base, c.FieldNamePrefix)
+	fmt.Println(len(cfm))
+	fmt.Println("------")
+	if err != nil {
+		return 0, err
+	}
+	var num int64 = 0
+	for rows.Next() {
+		box, vp, v := createColBox(base, cfm)
+
+		err = rows.Scan(box...)
+		if err != nil {
+			fmt.Println(err)
+			return 0, err
+		}
+		if isPtr {
+			arr.Set(reflect.Append(arr, vp))
+		} else {
+			arr.Set(reflect.Append(arr, v))
+		}
+		num++
+	}
+	return num, nil
+}
+
 type Dialect interface {
 	DriverName() string
 	ToDialectSql(sql string) string
+
 }
 
 type MysqlDialect struct {
 	lormConf LormConf
 }
 
+func (m MysqlDialect) DriverName() string {
+	return MYSQL
+}
+
+func (m MysqlDialect) ToDialectSql(sql string) string {
+	return sql
+}
+
 type PgDialect struct {
 	lormConf LormConf
+}
+
+func (m PgDialect) DriverName() string {
+	return POSTGRES
+}
+
+func (m PgDialect) ToDialectSql(sql string) string {
+	var i = 1
+	for {
+		t := strings.Replace(sql, " ? ", " $"+strconv.Itoa(i)+" ", 1)
+		if t == sql {
+			break
+		}
+		i++
+		sql = t
+	}
+	return sql
 }
 
 type DbConfig interface {
 	DriverName() string
 	Open() (*sql.DB, error)
+	Dialect(c LormConf) Dialect
 }
 
 type PoolConf struct {
@@ -50,6 +171,10 @@ func (c *MysqlConf) DriverName() string {
 	return MYSQL
 }
 
+func (c *MysqlConf) Dialect(cf LormConf) Dialect {
+	return MysqlDialect{cf}
+}
+
 func (c *MysqlConf) Open() (*sql.DB, error) {
 	dsn := c.User + ":" + c.Password +
 		"@tcp(" + c.Host +
@@ -65,6 +190,10 @@ type PgConf struct {
 	User     string
 	Password string
 	Other    string
+}
+
+func (c *PgConf) Dialect(cf LormConf) Dialect {
+	return PgDialect{cf}
 }
 
 func (c *PgConf) DriverName() string {
@@ -177,18 +306,36 @@ func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
 }
 
 func (db DB) GetEngine(c *LormConf) Engine {
-	if c == nil {
-		c = &LormConf{}
+	conf := LormConf{}
+	if c != nil {
+		conf = *c
 	}
 	return Engine{
 		db:       db,
-		lormConf: *c,
-		Base:     EngineBase{db: db, context: OrmContext{}},
-		Extra:    EngineExtra{db: db, context: OrmContext{}},
-		Classic:  EngineClassic{db: db, context: OrmContext{}},
-		Table: EngineTable{
-			context: OrmContext{},
+		lormConf: conf,
+		Base: EngineBase{
 			db:      db,
+			lormConf: conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
+		},
+		Extra: EngineExtra{
+			db:      db,
+			lormConf: conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
+		},
+		Classic: EngineClassic{
+			db:      db,
+			lormConf: conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
+		},
+		Table: EngineTable{
+			db:      db,
+			lormConf: conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
 		},
 	}
 }
