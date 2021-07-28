@@ -47,6 +47,7 @@ func (db DB) query(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.db.Query(query, args...)
 }
 
+
 type OrmContext struct {
 	query  *strings.Builder
 	args   []interface{}
@@ -56,23 +57,14 @@ type OrmContext struct {
 }
 
 type OrmSelect struct {
-	db DBer
-	lormConf Lorm
-	dialect  Dialect
-	context OrmContext
+	base EngineBase
 }
 
 type OrmFrom struct {
-	db DBer
-	lormConf Lorm
-	dialect  Dialect
-	context OrmContext
+	base EngineBase
 }
 
 type OrmWhere struct {
-	db DBer
-	lormConf Lorm
-	dialect  Dialect
-	context OrmContext
+	base EngineBase
 }
 

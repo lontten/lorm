@@ -8,10 +8,9 @@ import (
 
 //对 query exec 的简单封装
 type EngineClassic struct {
-	db DBer
-	lormConf Lorm
-	dialect  Dialect
-
+	db      DBer
+	lorm    Lorm
+	dialect Dialect
 	context OrmContext
 }
 
@@ -42,13 +41,13 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.lormConf.ScanLn(rows, dest)
+	return q.base.lorm.ScanLn(rows, dest)
 }
 
 func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	query := q.query
 	args := q.args
-	fmt.Println(query+"k")
+	fmt.Println(query + "k")
 	fmt.Println(args...)
 	query = q.base.dialect.ToDialectSql(query)
 	fmt.Println(query)
@@ -56,7 +55,7 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.lormConf.Scan(rows, dest)
+	return q.base.lorm.Scan(rows, dest)
 }
 
 func (engine EngineClassic) Exec(query string, args ...interface{}) (rowsNum int64, err error) {

@@ -11,7 +11,7 @@ import (
 type Tx struct {
 	db        *sql.Tx
 	dbConfig  DbConfig
-	ormConfig LormConf
+	ormConfig OrmConf
 }
 
 func (tx Tx) exec(query string, args ...interface{}) (int64, error) {
@@ -60,7 +60,7 @@ func (tx Tx) query(query string, args ...interface{}) (*sql.Rows, error) {
 
 }
 
-func (tx Tx) OrmConfig() LormConf {
+func (tx Tx) OrmConfig() OrmConf {
 	return tx.ormConfig
 }
 

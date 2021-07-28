@@ -20,7 +20,7 @@ type Lorm interface {
 	Scan(rows *sql.Rows, v interface{}) (int64, error)
 }
 
-func (c LormConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
+func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	defer rows.Close()
 	value := reflect.ValueOf(v)
 	code, base := basePtrStructBaseValue(value)
@@ -58,7 +58,7 @@ func (c LormConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	return
 }
 
-func (c LormConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
+func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	defer rows.Close()
 	value := reflect.ValueOf(v)
 	if value.Kind() != reflect.Ptr {
@@ -114,7 +114,7 @@ type Dialect interface {
 }
 
 type MysqlDialect struct {
-	lormConf LormConf
+	lormConf OrmConf
 }
 
 func (m MysqlDialect) DriverName() string {
@@ -126,7 +126,7 @@ func (m MysqlDialect) ToDialectSql(sql string) string {
 }
 
 type PgDialect struct {
-	lormConf LormConf
+	lormConf OrmConf
 }
 
 func (m PgDialect) DriverName() string {
@@ -149,7 +149,7 @@ func (m PgDialect) ToDialectSql(sql string) string {
 type DbConfig interface {
 	DriverName() string
 	Open() (*sql.DB, error)
-	Dialect(c LormConf) Dialect
+	Dialect(c OrmConf) Dialect
 }
 
 type PoolConf struct {
@@ -171,7 +171,7 @@ func (c *MysqlConf) DriverName() string {
 	return MYSQL
 }
 
-func (c *MysqlConf) Dialect(cf LormConf) Dialect {
+func (c *MysqlConf) Dialect(cf OrmConf) Dialect {
 	return MysqlDialect{cf}
 }
 
@@ -192,7 +192,7 @@ type PgConf struct {
 	Other    string
 }
 
-func (c *PgConf) Dialect(cf LormConf) Dialect {
+func (c *PgConf) Dialect(cf OrmConf) Dialect {
 	return PgDialect{cf}
 }
 
@@ -213,7 +213,7 @@ func (c *PgConf) Open() (*sql.DB, error) {
 	return sql.Open("pgx", dsn)
 }
 
-type LormConf struct {
+type OrmConf struct {
 	//po生成文件目录
 	PoDir string
 	//是否覆盖，默认true
@@ -254,7 +254,7 @@ type LormConf struct {
 
 type Engine struct {
 	db       DB
-	lormConf LormConf
+	lormConf OrmConf
 
 	Base    EngineBase
 	Extra   EngineExtra
@@ -305,8 +305,8 @@ func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
 	return pool, err
 }
 
-func (db DB) GetEngine(c *LormConf) Engine {
-	conf := LormConf{}
+func (db DB) GetEngine(c *OrmConf) Engine {
+	conf := OrmConf{}
 	if c != nil {
 		conf = *c
 	}
@@ -315,7 +315,7 @@ func (db DB) GetEngine(c *LormConf) Engine {
 		lormConf: conf,
 		Base: EngineBase{
 			db:      db,
-			lormConf: conf,
+			lorm:    conf,
 			context: OrmContext{},
 			dialect: db.dbConfig.Dialect(conf),
 		},
