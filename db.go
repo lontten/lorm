@@ -13,7 +13,40 @@ type DB struct {
 	dbConfig  DbConfig
 }
 
-
+func (db DB) Db(c *OrmConf) Engine{
+	conf := OrmConf{}
+	if c != nil {
+		conf = *c
+	}
+	return Engine{
+		db:       db,
+		lormConf: conf,
+		Base: EngineBase{
+			db:      db,
+			lorm:    conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
+		},
+		Extra: EngineExtra{
+			db:      db,
+			lormConf: conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
+		},
+		Classic: EngineClassic{
+			db:      db,
+			lorm: conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
+		},
+		Table: EngineTable{
+			db:      db,
+			lorm:    conf,
+			context: OrmContext{},
+			dialect: db.dbConfig.Dialect(conf),
+		},
+	}
+}
 
 func (db DB) exec(query string, args ...interface{}) (int64, error) {
 

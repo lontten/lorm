@@ -12,7 +12,7 @@ import (
 
 type EngineTable struct {
 	db      DBer
-	lorm    Lorm
+	lorm    OrmCore
 	dialect Dialect
 
 	context OrmContext

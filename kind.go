@@ -73,6 +73,8 @@ func baseStructValue(v reflect.Value) (is bool, structType reflect.Value) {
 }
 
 //struct
+
+//必须为 struct或基础类型  的 指针类型
 func basePtrStructBaseType(t reflect.Type) (is bool, structType reflect.Type) {
 	is, base := basePtrType(t)
 	if !is {
@@ -142,6 +144,7 @@ func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 	return -2, t
 }
 
+
 //struct
 func checkScanTypeLn(t reflect.Type) (reflect.Type, error) {
 	is, base := basePtrStructBaseType(t)
@@ -154,13 +157,11 @@ func checkScanTypeLn(t reflect.Type) (reflect.Type, error) {
 func checkScanType(t reflect.Type) (reflect.Type, error) {
 	_, base := basePtrType(t)
 	is, base := baseSliceType(base)
-	if is {
+	if !is {
 		return t, errors.New("need a slice type")
 	}
 
 	is, base = basePtrStructBaseType(base)
-
-	is = baseBaseType(base)
 	if !is {
 		return t, errors.New("need a ptr struct or base type")
 	}

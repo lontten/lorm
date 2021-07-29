@@ -8,6 +8,10 @@ import (
 // * struct
 // * slice
 // slice
+
+// 检查数据类型，
+//获取基础 value
+//bool 为 是否为 slice类型
 func destBaseValueCheckSlice(v reflect.Value) (bool, reflect.Value, error) {
 	is, base := basePtrValue(v)
 	if !is {

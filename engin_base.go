@@ -5,7 +5,7 @@ import "log"
 //对基础SQL的简单封装
 type EngineBase struct {
 	db      DBer
-	lorm    Lorm
+	lorm    OrmCore
 	dialect Dialect
 	context OrmContext
 }

@@ -375,6 +375,7 @@ func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type,
 	}
 }
 
+
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
 	if baseBaseType(structTyp) {
