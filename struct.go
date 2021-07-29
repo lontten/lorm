@@ -11,49 +11,6 @@ import (
 	"unicode"
 )
 
-//获取struct对应数据库表名
-func getStructTableName(v reflect.Value, config OrmConf) (string, error) {
-	base := v.Type()
-
-	// fun
-	name := base.String()
-	index := strings.LastIndex(name, ".")
-	if index > 0 {
-		name = name[index+1:]
-	}
-	name = utils.Camel2Case(name)
-
-	tableNameFun := config.TableNameFun
-	if tableNameFun != nil {
-		return tableNameFun(name, base), nil
-	}
-
-	// tag
-
-	numField := base.NumField()
-	tagTableName := ""
-	for i := 0; i < numField; i++ {
-		if tag := base.Field(i).Tag.Get("tableName"); tag != "" {
-			if tagTableName == "" {
-				tagTableName = tag
-			} else {
-				return "", errors.New("has to many tableName tag")
-			}
-		}
-	}
-	if tagTableName != "" {
-		return tagTableName, nil
-	}
-
-	// structName
-	tableNamePrefix := config.TableNamePrefix
-	if tableNamePrefix != "" {
-		return tableNamePrefix + name, nil
-	}
-
-	return name, nil
-}
-
 //获取struct对应的字段名 有效部分
 func getStructMappingColumns(t reflect.Type, config OrmConf) (map[string]int, error) {
 	cMap := make(map[string]int)

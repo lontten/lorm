@@ -11,9 +11,9 @@ import (
 )
 
 type EngineTable struct {
-	db       DBer
-	lormConf Lorm
-	dialect  Dialect
+	db      DBer
+	lorm    Lorm
+	dialect Dialect
 
 	context OrmContext
 
@@ -173,7 +173,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := base.tableName
 	c := base.columns
 	cv := base.columnValues
-	config := base.lormConf
+	config := base.lorm
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -297,7 +297,7 @@ func (orm OrmTableDelete) ById(v ...interface{}) (int64, error) {
 	tableName := base.tableName
 	idNames := base.primaryKeyNames
 	fmt.Println(idNames)
-	logicDeleteSetSql := base.lormConf.LogicDeleteSetSql
+	logicDeleteSetSql := base.lorm.LogicDeleteSetSql
 
 	var sb strings.Builder
 	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
@@ -330,7 +330,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	config := base.lormConf
+	config := base.lorm
 
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if err != nil {
@@ -442,7 +442,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
-	config := base.lormConf
+	config := base.lorm
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -606,7 +606,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 
 	tableName := base.tableName
 	c := base.columns
-	config := base.lormConf
+	config := base.lorm
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -675,28 +675,18 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 
 //init
 func (e *EngineTable) initPrimaryKeyName() {
-	primaryKeyNameFun := e.ormConfig.PrimaryKeyNameFun
-	primaryKeyName := e.ormConfig.PrimaryKeyNames
-	if primaryKeyNameFun != nil {
-		e.primaryKeyNames = primaryKeyNameFun(e.tableName, e.destBaseValue)
-	}
-	if len(primaryKeyName) != 0 {
-		e.primaryKeyNames = primaryKeyName
-	}
-
-	//todo 获取 struct 中 tag为id 的 filed ，为 primaryKeyNames 可多个
-
-	e.primaryKeyNames = []string{"id"}
+	e.primaryKeyNames = e.lorm.primaryKeys(e.tableName, e.destBaseValue)
 }
 
 func (e *EngineTable) initTableName() error {
-	tableName, err := getStructTableName(e.destBaseValue, e.ormConfig)
+	tableName, err := e.lorm.tableName(e.destBaseValue)
 	if err != nil {
 		return err
 	}
 	e.tableName = tableName
 	return nil
 }
+
 
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() error {
@@ -721,7 +711,7 @@ func (e *EngineTable) initColumns() {
 		return
 	}
 
-	config := e.ormConfig
+	config := e.lorm
 
 	cMap := make(map[string]int)
 

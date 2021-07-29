@@ -3,6 +3,7 @@ package lorm
 import (
 	"database/sql"
 	"fmt"
+	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
@@ -18,7 +19,72 @@ const (
 type Lorm interface {
 	ScanLn(rows *sql.Rows, v interface{}) (int64, error)
 	Scan(rows *sql.Rows, v interface{}) (int64, error)
+
+	//获取主键列表
+	primaryKeys(tableName string, v reflect.Value)[]string
+	//获取表名
+	tableName(v reflect.Value)(string,error)
 }
+
+
+func (c OrmConf) tableName(v reflect.Value) (string,error) {
+	base := v.Type()
+
+	// fun
+	name := base.String()
+	index := strings.LastIndex(name, ".")
+	if index > 0 {
+		name = name[index+1:]
+	}
+	name = utils.Camel2Case(name)
+
+	tableNameFun := c.TableNameFun
+	if tableNameFun != nil {
+		return tableNameFun(name, base), nil
+	}
+
+	// tag
+
+	numField := base.NumField()
+	tagTableName := ""
+	for i := 0; i < numField; i++ {
+		if tag := base.Field(i).Tag.Get("tableName"); tag != "" {
+			if tagTableName == "" {
+				tagTableName = tag
+			} else {
+				return "", errors.New("has to many tableName tag")
+			}
+		}
+	}
+	if tagTableName != "" {
+		return tagTableName, nil
+	}
+
+	// structName
+	tableNamePrefix := c.TableNamePrefix
+	if tableNamePrefix != "" {
+		return tableNamePrefix + name, nil
+	}
+
+	return name, nil
+}
+func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
+	primaryKeyNameFun := c.PrimaryKeyNameFun
+	if primaryKeyNameFun != nil {
+		return primaryKeyNameFun(tableName, v)
+	}
+
+
+	primaryKeyName := c.PrimaryKeyNames
+	if len(primaryKeyName) != 0 {
+		return primaryKeyName
+	}
+
+	//todo 获取 struct 中 tag为id 的 filed ，为 primaryKeyNames 可多个
+
+	return []string{"id"}
+}
+
 
 func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	defer rows.Close()
@@ -327,13 +393,13 @@ func (db DB) GetEngine(c *OrmConf) Engine {
 		},
 		Classic: EngineClassic{
 			db:      db,
-			lormConf: conf,
+			lorm: conf,
 			context: OrmContext{},
 			dialect: db.dbConfig.Dialect(conf),
 		},
 		Table: EngineTable{
 			db:      db,
-			lormConf: conf,
+			lorm:    conf,
 			context: OrmContext{},
 			dialect: db.dbConfig.Dialect(conf),
 		},
