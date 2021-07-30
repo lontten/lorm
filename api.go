@@ -26,9 +26,10 @@ type OrmCore interface {
 	//获取表名
 	tableName(v reflect.Value) (string, error)
 
-	initColumns() (c []string, err error)
-	initColumnsValue() (c, v []string, err error)
-
+	initColumns(v reflect.Value) (c []string, err error)
+	initColumnsValue(v reflect.Value) ([]string, []interface{}, error)
+	getStructMappingColumns(t reflect.Type) (map[string]int, error)
+	getStructMappingColumnsValueNotNull(v reflect.Value) (columns []string, values []interface{}, err error)
 }
 
 type Queryer interface {

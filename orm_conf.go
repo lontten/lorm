@@ -2,7 +2,9 @@ package lorm
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
+	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
@@ -193,30 +195,25 @@ func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
 
 	return []string{"id"}
 }
-func (c OrmConf) initColumns(v reflect.Value) (c []string, err error) {
-	dest := e.dest
-	typ := reflect.TypeOf(dest)
-	OrmCore, err := baseStructTypePtr(typ)
+func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
+	typ := v.Type()
+	base, err := baseStructTypePtr(typ)
 	if err != nil {
-		e.context.err = err
 		return
 	}
 
-	config := e.core
-
 	cMap := make(map[string]int)
 
-	numField := OrmCore.NumField()
+	numField := base.NumField()
 	var num = 0
 	for i := 0; i < numField; i++ {
-		field := OrmCore.Field(i)
+		field := base.Field(i)
 		name := field.Name
 		if name == "ID" {
 			cMap["id"] = i
 			num++
 			if len(cMap) < num {
-				e.context.err = errors.New("字段:: id  error")
-				return
+				return columns, errors.New("字段:: id  error")
 			}
 			continue
 		}
@@ -236,19 +233,17 @@ func (c OrmConf) initColumns(v reflect.Value) (c []string, err error) {
 			cMap[name] = i
 			num++
 			if len(cMap) < num {
-				e.context.err = errors.New("字段::" + "error")
-				return
+				return columns, errors.New("字段::" + "error")
 			}
 			continue
 		}
 
-		fieldNamePrefix := config.FieldNamePrefix
+		fieldNamePrefix := c.FieldNamePrefix
 		if fieldNamePrefix != "" {
 			cMap[fieldNamePrefix+name] = i
 			num++
 			if len(cMap) < num {
-				e.context.err = errors.New("字段::" + "error")
-				return
+				return columns, errors.New("字段::" + "error")
 			}
 			continue
 		}
@@ -256,8 +251,7 @@ func (c OrmConf) initColumns(v reflect.Value) (c []string, err error) {
 		cMap[name] = i
 		num++
 		if len(cMap) < num {
-			e.context.err = errors.New("字段::" + "error")
-			return
+			return columns, errors.New("字段::" + "error")
 		}
 	}
 	arr := make([]string, len(cMap))
@@ -267,8 +261,152 @@ func (c OrmConf) initColumns(v reflect.Value) (c []string, err error) {
 		arr[i] = s
 		i++
 	}
-	e.columns = arr
+	return arr, nil
 }
-func (c OrmConf) initColumnsValue(v reflect.Value) ([]string, []interface{}, error) {
-	return getStructMappingColumnsValueNotNull(v, config)
+
+func (c OrmConf) initColumnsValue(v reflect.Value) (columns []string, values []interface{}, err error) {
+	columns = make([]string, 0)
+	values = make([]interface{}, 0)
+
+	t := v.Type()
+
+	mappingColumns, err := c.getStructMappingColumns(t)
+	if err != nil {
+		return
+	}
+
+	for column, i := range mappingColumns {
+		field := v.Field(i)
+
+		typ, validField, ok := baseStructValidField(field)
+		if !ok {
+			return nil, nil, errors.New("struct field " + field.String() + " need field is ptr slice struct")
+		}
+
+		if typ == 0 {
+			columns = append(columns, column)
+			values = append(values, validField.Interface())
+		}
+
+		if typ == 1 || typ == 2 {
+			if !field.IsNil() {
+				columns = append(columns, column)
+				values = append(values, validField.Interface())
+			}
+		}
+
+		if typ == 3 {
+			vv := validField.Interface().(types.NullEr)
+			if !vv.IsNull() {
+				value, _ := validField.Interface().(driver.Valuer).Value()
+				columns = append(columns, column)
+				values = append(values, value)
+			}
+		}
+	}
+	return
+
+}
+
+//获取struct对应的字段名 有效部分
+func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error) {
+	cMap := make(map[string]int)
+
+	numField := t.NumField()
+	var num = 0
+	for i := 0; i < numField; i++ {
+		field := t.Field(i)
+		name := field.Name
+
+		if name == "ID" {
+			cMap["Id"] = i
+			num++
+			if len(cMap) < num {
+				return cMap, errors.New("字段::id" + "error")
+			}
+			continue
+		}
+
+		// 过滤掉首字母小写的字段
+		if unicode.IsLower([]rune(name)[0]) {
+			continue
+		}
+		name = utils.Camel2Case(name)
+
+		if tag := field.Tag.Get("core"); tag == "-" {
+			continue
+		}
+
+		if tag := field.Tag.Get("db"); tag != "" {
+			name = tag
+			cMap[name] = i
+			num++
+			if len(cMap) < num {
+				return cMap, errors.New("字段::" + "error")
+			}
+			continue
+		}
+
+		fieldNamePrefix := c.FieldNamePrefix
+		if fieldNamePrefix != "" {
+			cMap[fieldNamePrefix+name] = i
+			num++
+			if len(cMap) < num {
+				return cMap, errors.New("字段::" + "error")
+			}
+			continue
+		}
+
+		cMap[name] = i
+		num++
+		if len(cMap) < num {
+			return cMap, errors.New("字段::" + "error")
+		}
+	}
+
+	return cMap, nil
+}
+
+//获取struct对应的字段名 和 其值   有效部分
+func (c OrmConf) getStructMappingColumnsValueNotNull(v reflect.Value) (columns []string, values []interface{}, err error) {
+	columns = make([]string, 0)
+	values = make([]interface{}, 0)
+
+	t := v.Type()
+
+	mappingColumns, err := c.getStructMappingColumns(t)
+	if err != nil {
+		return
+	}
+
+	for column, i := range mappingColumns {
+		field := v.Field(i)
+
+		typ, validField, ok := baseStructValidField(field)
+		if !ok {
+			return nil, nil, errors.New("struct field " + field.String() + " need field is ptr slice struct")
+		}
+
+		if typ == 0 {
+			columns = append(columns, column)
+			values = append(values, validField.Interface())
+		}
+
+		if typ == 1 || typ == 2 {
+			if !field.IsNil() {
+				columns = append(columns, column)
+				values = append(values, validField.Interface())
+			}
+		}
+
+		if typ == 3 {
+			vv := validField.Interface().(types.NullEr)
+			if !vv.IsNull() {
+				value, _ := validField.Interface().(driver.Valuer).Value()
+				columns = append(columns, column)
+				values = append(values, value)
+			}
+		}
+	}
+	return
 }

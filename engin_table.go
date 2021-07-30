@@ -171,8 +171,8 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := base.tableName
 	c := base.columns
 	cv := base.columnValues
-	config := base.core
-	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
+
+	columns, values, err := base.core.getStructMappingColumnsValueNotNull(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -334,9 +334,8 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	config := base.core
 
-	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
+	columns, values, err := base.core.getStructMappingColumnsValueNotNull(va)
 	if err != nil {
 		return 0, err
 	}
@@ -446,15 +445,14 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
-	config := base.core
-	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
+	columns, values, err := base.core.getStructMappingColumnsValueNotNull(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
 	if err != nil {
 		return 0, err
 	}
-	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns, config.LogicDeleteNoSql)
+	whereArgs2SqlStr := tableWhereArgs2SqlStr(columns, base.LogicDeleteNoSql)
 	sb.WriteString(whereArgs2SqlStr)
 
 	cv = append(cv, values...)
@@ -611,7 +609,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	tableName := base.tableName
 	c := base.columns
 	config := base.core
-	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
+	columns, values, err := base.core.getStructMappingColumnsValueNotNull(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -693,9 +691,8 @@ func (e *EngineTable) initTableName() error {
 
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() error {
-	config := e.ormConfig
 
-	columns, values, err := getStructMappingColumnsValueNotNull(e.destBaseValue, config)
+	columns, values, err := e.core.getStructMappingColumnsValueNotNull(e.destBaseValue)
 	if err != nil {
 		return err
 	}
@@ -714,7 +711,6 @@ func (e *EngineTable) initColumns() {
 		return
 	}
 
-	config := e.core
 
 	cMap := make(map[string]int)
 
@@ -754,7 +750,7 @@ func (e *EngineTable) initColumns() {
 			continue
 		}
 
-		fieldNamePrefix := config.FieldNamePrefix
+		fieldNamePrefix := c.FieldNamePrefix
 		if fieldNamePrefix != "" {
 			cMap[fieldNamePrefix+name] = i
 			num++
