@@ -12,10 +12,13 @@ import (
 // 检查数据类型，
 //获取基础 value
 //bool 为 是否为 slice类型
-func destBaseValueCheckSlice(v reflect.Value) (bool, reflect.Value, error) {
+func targetDestBaseValueCheckSlice(v reflect.Value) (bool, reflect.Value, error) {
 	is, base := basePtrValue(v)
 	if !is {
-		is, base = baseSliceValue(base)
+		is, base,err := baseSliceValue(base)
+		if err != nil {
+			return false, v, err
+		}
 		if !is {
 			return false, base, errors.New("need ptr or slice")
 		}
@@ -33,3 +36,4 @@ func destBaseValueCheckSlice(v reflect.Value) (bool, reflect.Value, error) {
 	}
 	return false, base, errors.New("need ptr struct type")
 }
+

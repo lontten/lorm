@@ -1,8 +1,9 @@
 package lorm
 
+import "database/sql"
 
 type MysqlDialect struct {
-	lormConf OrmConf
+	db *sql.DB
 }
 
 func (m MysqlDialect) DriverName() string {

@@ -51,11 +51,14 @@ func baseBaseValue(v reflect.Value) bool {
 	return false
 }
 
-func baseSliceValue(v reflect.Value) (ok bool, structType reflect.Value) {
+func baseSliceValue(v reflect.Value) (ok bool, structType reflect.Value,err error) {
 	if v.Kind() == reflect.Slice {
-		return true, v.Elem()
+		if v.Len() == 0 {
+			return false, v, errors.New("slice len is 0 ,can't base value")
+		}
+		return true, v.Index(0),nil
 	}
-	return false, v
+	return false, v,nil
 }
 
 func basePtrValue(v reflect.Value) (is bool, structType reflect.Value) {

@@ -38,8 +38,8 @@ func (c *MysqlConf) DriverName() string {
 	return MYSQL
 }
 
-func (c *MysqlConf) Dialect(cf OrmConf) Dialect {
-	return MysqlDialect{cf}
+func (c *MysqlConf) Dialect(db *sql.DB) Dialect {
+	return MysqlDialect{db}
 }
 
 func (c *MysqlConf) Open() (*sql.DB, error) {
@@ -59,8 +59,8 @@ type PgConf struct {
 	Other    string
 }
 
-func (c *PgConf) Dialect(cf OrmConf) Dialect {
-	return PgDialect{cf}
+func (c *PgConf) Dialect(db *sql.DB) Dialect {
+	return PgDialect{db}
 }
 
 func (c *PgConf) DriverName() string {
@@ -89,7 +89,7 @@ type Engine struct {
 	Base    EngineBase
 	Extra   EngineExtra
 	Table   EngineTable
-	Classic EngineClassic
+	Classic EngineNative
 }
 
 type engineEr interface {

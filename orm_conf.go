@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
+	"unicode"
 )
-
 
 type OrmConf struct {
 	//po生成文件目录
@@ -48,7 +48,6 @@ type OrmConf struct {
 	TenantIdValueFun       func() interface{}
 	TenantIdIgnoreTableFun func(structName string, dest interface{}) string
 }
-
 
 func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	defer rows.Close()
@@ -137,10 +136,7 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	return num, nil
 }
 
-
-
-
-func (c OrmConf) tableName(v reflect.Value) (string,error) {
+func (c OrmConf) tableName(v reflect.Value) (string, error) {
 	base := v.Type()
 
 	// fun
@@ -188,7 +184,6 @@ func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
 		return primaryKeyNameFun(tableName, v)
 	}
 
-
 	primaryKeyName := c.PrimaryKeyNames
 	if len(primaryKeyName) != 0 {
 		return primaryKeyName
@@ -197,4 +192,83 @@ func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
 	//todo 获取 struct 中 tag为id 的 filed ，为 primaryKeyNames 可多个
 
 	return []string{"id"}
+}
+func (c OrmConf) initColumns(v reflect.Value) (c []string, err error) {
+	dest := e.dest
+	typ := reflect.TypeOf(dest)
+	OrmCore, err := baseStructTypePtr(typ)
+	if err != nil {
+		e.context.err = err
+		return
+	}
+
+	config := e.core
+
+	cMap := make(map[string]int)
+
+	numField := OrmCore.NumField()
+	var num = 0
+	for i := 0; i < numField; i++ {
+		field := OrmCore.Field(i)
+		name := field.Name
+		if name == "ID" {
+			cMap["id"] = i
+			num++
+			if len(cMap) < num {
+				e.context.err = errors.New("字段:: id  error")
+				return
+			}
+			continue
+		}
+
+		// 过滤掉首字母小写的字段
+		if unicode.IsLower([]rune(name)[0]) {
+			continue
+		}
+		name = utils.Camel2Case(name)
+
+		if tag := field.Tag.Get("core"); tag == "-" {
+			continue
+		}
+
+		if tag := field.Tag.Get("db"); tag != "" {
+			name = tag
+			cMap[name] = i
+			num++
+			if len(cMap) < num {
+				e.context.err = errors.New("字段::" + "error")
+				return
+			}
+			continue
+		}
+
+		fieldNamePrefix := config.FieldNamePrefix
+		if fieldNamePrefix != "" {
+			cMap[fieldNamePrefix+name] = i
+			num++
+			if len(cMap) < num {
+				e.context.err = errors.New("字段::" + "error")
+				return
+			}
+			continue
+		}
+
+		cMap[name] = i
+		num++
+		if len(cMap) < num {
+			e.context.err = errors.New("字段::" + "error")
+			return
+		}
+	}
+	arr := make([]string, len(cMap))
+
+	var i = 0
+	for s := range cMap {
+		arr[i] = s
+		i++
+	}
+	e.columns = arr
+}
+func (c OrmConf) initColumnsValue(v reflect.Value) ([]string, []interface{}, error) {
+	return getStructMappingColumnsValueNotNull(v, config)
 }

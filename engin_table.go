@@ -6,13 +6,13 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
 type EngineTable struct {
-	db      DBer
-	lorm    OrmCore
+	core    OrmCore
 	dialect Dialect
 
 	context OrmContext
@@ -31,26 +31,26 @@ type EngineTable struct {
 }
 
 func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
-	rows, err := e.db.query(query, args...)
+	rows, err := e.dialect.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return e.lorm.ScanLn(rows, e.dest)
+	return e.core.ScanLn(rows, e.dest)
 }
 
-func (e *EngineTable) setDest(v interface{}) error {
+func (e *EngineTable) setTargetDest(v interface{}) error {
 	value := reflect.ValueOf(v)
-	is, OrmCore, err := destBaseValueCheckSlice(value)
+	is, base, err := targetDestBaseValueCheckSlice(value)
 	if err != nil {
 		return err
 	}
 
-	err = checkValidStruct(reflect.ValueOf(v))
+	err = checkValidStruct(value)
 	if err != nil {
 		return err
 	}
 	e.dest = v
-	e.destBaseValue = OrmCore
+	e.destBaseValue = base
 	e.destIsSlice = is
 	return e.initTableName()
 }
@@ -80,7 +80,7 @@ type OrmTableDelete struct {
 
 //create
 func (e EngineTable) Create(v interface{}) (num int64, err error) {
-	err = e.setDest(v)
+	err = e.setTargetDest(v)
 	if err != nil {
 		return
 	}
@@ -95,13 +95,11 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	sb.WriteString(e.tableName + " ")
 	sb.WriteString(createSqlStr)
 
-	sql := e.dialect.ToDialectSql(sb.String())
-
-	return e.db.exec(sql, e.columnValues...)
+	return e.dialect.exec(sb.String(), e.columnValues...)
 }
 
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
-	err := e.setDest(v)
+	err := e.setTargetDest(v)
 	if err != nil {
 		e.context.err = err
 		return OrmTableCreate{base: e}
@@ -133,7 +131,7 @@ func (orm OrmTableCreate) ById() (int64, error) {
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
 	sb.WriteString(" WHERE id = ? ")
-	rows, err := orm.base.db.query(sb.String(), idValue)
+	rows, err := orm.base.dialect.query(sb.String(), idValue)
 	if err != nil {
 		return 0, err
 	}
@@ -147,7 +145,7 @@ func (orm OrmTableCreate) ById() (int64, error) {
 		sb.WriteString(" WHERE id = ? ")
 		cv = append(cv, idValue)
 
-		return orm.base.db.exec(sb.String(), cv...)
+		return orm.base.dialect.exec(sb.String(), cv...)
 	}
 	columnSqlStr := tableCreateArgs2SqlStr(c)
 
@@ -156,7 +154,7 @@ func (orm OrmTableCreate) ById() (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(columnSqlStr)
 
-	return orm.base.db.exec(sb.String(), cv...)
+	return orm.base.dialect.exec(sb.String(), cv...)
 }
 
 func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
@@ -173,7 +171,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	tableName := base.tableName
 	c := base.columns
 	cv := base.columnValues
-	config := base.lorm
+	config := base.core
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -187,7 +185,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
 	sb.WriteString(whereArgs2SqlStr)
-	rows, err := base.db.query(sb.String(), values...)
+	rows, err := base.dialect.query(sb.String(), values...)
 	if err != nil {
 		return 0, err
 	}
@@ -201,7 +199,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 		sb.WriteString(whereArgs2SqlStr)
 		cv = append(cv, values...)
 
-		return base.db.exec(sb.String(), cv...)
+		return base.dialect.exec(sb.String(), cv...)
 	}
 	columnSqlStr := tableCreateArgs2SqlStr(c)
 
@@ -210,7 +208,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(columnSqlStr)
 
-	return base.db.exec(sb.String(), cv...)
+	return base.dialect.exec(sb.String(), cv...)
 }
 
 func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
@@ -245,7 +243,7 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	sb.WriteString(whereSql)
 
 	log.Println(sb.String(), args)
-	rows, err := orm.base.db.query(sb.String(), args...)
+	rows, err := orm.base.dialect.query(sb.String(), args...)
 	if err != nil {
 		return 0, err
 	}
@@ -259,7 +257,7 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 		sb.WriteString(whereSql)
 		cv = append(cv, args)
 
-		return orm.base.db.exec(sb.String(), cv...)
+		return orm.base.dialect.exec(sb.String(), cv...)
 	}
 	columnSqlStr := tableCreateArgs2SqlStr(c)
 
@@ -268,12 +266,12 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(columnSqlStr)
 
-	return orm.base.db.exec(sb.String(), cv...)
+	return orm.base.dialect.exec(sb.String(), cv...)
 }
 
 //delete
 func (e EngineTable) Delete(v interface{}) OrmTableDelete {
-	err := e.setDest(v)
+	err := e.setTargetDest(v)
 	if err != nil {
 		e.context.err = err
 		return OrmTableDelete{base: e}
@@ -288,16 +286,22 @@ func (orm OrmTableDelete) ById(v ...interface{}) (int64, error) {
 		return 0, err
 	}
 
-	err := checkValidStruct(reflect.ValueOf(v))
-	if err != nil {
-		return 0, err
+	for i, e := range v {
+		value := reflect.ValueOf(e)
+		is, err := checkValidOneValue(value)
+		if err != nil {
+			return 0, err
+		}
+		if !is {
+			return 0, errors.New("byid " + strconv.Itoa(i) + ": is nil")
+		}
 	}
 
 	base.initPrimaryKeyName()
 	tableName := base.tableName
 	idNames := base.primaryKeyNames
 	fmt.Println(idNames)
-	logicDeleteSetSql := base.lorm.LogicDeleteSetSql
+	logicDeleteSetSql := base.core.LogicDeleteSetSql
 
 	var sb strings.Builder
 	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
@@ -317,7 +321,7 @@ func (orm OrmTableDelete) ById(v ...interface{}) (int64, error) {
 		sb.WriteString(" = ? ")
 	}
 
-	return base.db.exec(sb.String(), v)
+	return base.dialect.exec(sb.String(), v)
 }
 
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
@@ -330,7 +334,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	config := base.lorm
+	config := base.core
 
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if err != nil {
@@ -346,7 +350,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(base.tableName)
 	sb.WriteString(whereArgs2SqlStr)
 
-	return base.db.exec(sb.String(), values...)
+	return base.dialect.exec(sb.String(), values...)
 }
 
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
@@ -372,7 +376,7 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 		sb.WriteString(" AND " + where)
 	}
 
-	return orm.base.db.exec(sb.String(), args)
+	return orm.base.dialect.exec(sb.String(), args)
 }
 
 //update
@@ -380,7 +384,7 @@ func (e EngineTable) Update(v interface{}) OrmTableUpdate {
 	if e.context.err != nil {
 		return OrmTableUpdate{base: e}
 	}
-	err := e.setDest(v)
+	err := e.setTargetDest(v)
 	if err != nil {
 		e.context.err = err
 		return OrmTableUpdate{base: e}
@@ -418,7 +422,7 @@ func (orm OrmTableUpdate) ById(v interface{}) (int64, error) {
 	//sb.WriteString(orm.base.primaryKeyNames)
 	sb.WriteString(" = ? ")
 	cv = append(cv, v)
-	return orm.base.db.exec(sb.String(), cv...)
+	return orm.base.dialect.exec(sb.String(), cv...)
 }
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
@@ -442,7 +446,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(tableUpdateArgs2SqlStr(c))
-	config := base.lorm
+	config := base.core
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -455,7 +459,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 
 	cv = append(cv, values...)
 
-	return base.db.exec(sb.String(), cv...)
+	return base.dialect.exec(sb.String(), cv...)
 }
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
@@ -489,12 +493,12 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 	cv = append(cv, args...)
 
-	return orm.base.db.exec(sb.String(), cv...)
+	return orm.base.dialect.exec(sb.String(), cv...)
 }
 
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
-	err := e.setDest(v)
+	err := e.setTargetDest(v)
 	if err != nil {
 		e.context.err = err
 		return OrmTableSelect{base: e}
@@ -606,7 +610,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 
 	tableName := base.tableName
 	c := base.columns
-	config := base.lorm
+	config := base.core
 	columns, values, err := getStructMappingColumnsValueNotNull(va, config)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
@@ -675,18 +679,17 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 
 //init
 func (e *EngineTable) initPrimaryKeyName() {
-	e.primaryKeyNames = e.lorm.primaryKeys(e.tableName, e.destBaseValue)
+	e.primaryKeyNames = e.core.primaryKeys(e.tableName, e.destBaseValue)
 }
 
 func (e *EngineTable) initTableName() error {
-	tableName, err := e.lorm.tableName(e.destBaseValue)
+	tableName, err := e.core.tableName(e.destBaseValue)
 	if err != nil {
 		return err
 	}
 	e.tableName = tableName
 	return nil
 }
-
 
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() error {
@@ -711,7 +714,7 @@ func (e *EngineTable) initColumns() {
 		return
 	}
 
-	config := e.lorm
+	config := e.core
 
 	cMap := make(map[string]int)
 
@@ -736,7 +739,7 @@ func (e *EngineTable) initColumns() {
 		}
 		name = utils.Camel2Case(name)
 
-		if tag := field.Tag.Get("lorm"); tag == "-" {
+		if tag := field.Tag.Get("core"); tag == "-" {
 			continue
 		}
 

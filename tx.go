@@ -73,11 +73,11 @@ func (tx TxEngine) Rollback() error {
 }
 
 type TxEngine struct {
-	tx *sql.Tx
+	tx      *sql.Tx
 	Base    EngineBase
 	Extra   EngineExtra
 	Table   EngineTable
-	Classic EngineClassic
+	Classic EngineNative
 }
 
 func (e Engine) Begin() TxEngine {
@@ -91,10 +91,10 @@ func (e Engine) Begin() TxEngine {
 	}
 
 	return TxEngine{
-		tx: t,
+		tx:      t,
 		Base:    EngineBase{db: tx, context: OrmContext{}},
 		Extra:   EngineExtra{db: tx, context: OrmContext{}},
-		Classic: EngineClassic{db: tx, context: OrmContext{}},
+		Classic: EngineNative{db: tx, context: OrmContext{}},
 		Table: EngineTable{
 			context: OrmContext{},
 			db:      tx,

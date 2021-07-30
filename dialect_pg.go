@@ -1,12 +1,13 @@
 package lorm
 
 import (
+	"database/sql"
 	"strconv"
 	"strings"
 )
 
 type PgDialect struct {
-	lormConf OrmConf
+	db *sql.DB
 }
 
 func (m PgDialect) DriverName() string {
@@ -26,3 +27,18 @@ func (m PgDialect) ToDialectSql(sql string) string {
 	return sql
 }
 
+func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
+	Log.Println("sql",query,args)
+	return m.db.Query(query, args...)
+}
+
+func (m PgDialect) exec(query string, args ...interface{}) (int64, error) {
+	query = m.ToDialectSql(query)
+	Log.Println(query, args)
+
+	exec, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return exec.RowsAffected()
+}

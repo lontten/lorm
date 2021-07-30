@@ -36,7 +36,7 @@ func getStructMappingColumns(t reflect.Type, config OrmConf) (map[string]int, er
 		}
 		name = utils.Camel2Case(name)
 
-		if tag := field.Tag.Get("lorm"); tag == "-" {
+		if tag := field.Tag.Get("core"); tag == "-" {
 			continue
 		}
 
@@ -167,92 +167,10 @@ func getFieldMap(typ reflect.Type, fieldNamePrefix string) (fieldMap, error) {
 
 type StructValidFieldValueMap map[string]interface{}
 
-var structValidCache = make(map[reflect.Type]error)
-var mutexStructValidCache sync.Mutex
-
-func checkValidStruct(va reflect.Value) error {
-	mutexStructValidCache.Lock()
-	defer mutexStructValidCache.Unlock()
-
-	typ := va.Type()
-
-	b, ok := structValidCache[typ]
-	if ok {
-		return b
-	}
-	value, err := baseStructValuePtr(va)
-	if err != nil {
-		return err
-	}
-
-	numField := value.NumField()
-	for i := 0; i < numField; i++ {
-		field := value.Field(i)
-		typ, validField, ok := baseStructValidField(field)
-		if !ok {
-			return errors.New("struct field " + field.String() + " need field is ptr slice struct")
-		}
-		//为 struct类型
-		if typ == 3 {
-			_, ok = validField.Interface().(driver.Valuer)
-			if !ok {
-				return errors.New("struct field " + field.String() + " need imp sql Value")
-			}
-			_, ok = validField.Interface().(types.NullEr)
-			if !ok {
-				return errors.New("struct field " + field.String() + " need imp lorm NullEr ")
-			}
-
-		}
-	}
-	structValidCache[typ] = nil
-	return nil
-}
 
 //去除 所有 ptr slice 获取 struct ，不为struct 或 基础类型 为false
 //1 ptr 2slice 3struct  0基础类型
 func baseStructValidField(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
-	structValue = v
-	t := v.Type()
-
-base:
-	switch t.Kind() {
-	case reflect.Ptr:
-		if typ == 0 {
-			typ = 1
-		}
-		t = t.Elem()
-		goto base
-	case reflect.Slice:
-		if typ == 0 {
-			typ = 2
-		}
-		t = t.Elem()
-		goto base
-	case reflect.Struct:
-		if typ == 0 {
-			typ = 3
-		}
-		return typ, structValue, true
-	case reflect.Map:
-		return
-	case reflect.Interface:
-		return
-	case reflect.Func:
-		return
-	case reflect.Invalid:
-		return
-	case reflect.UnsafePointer:
-		return
-	case reflect.Uintptr:
-		return
-	default:
-		return typ, structValue, true
-	}
-}
-
-//1 ptr 2slice 3struct  0基础类型
-func baseStructValidField2(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
 	structValue = v
 	t := v.Type()
 
@@ -375,7 +293,6 @@ func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type,
 	}
 }
 
-
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
 	if baseBaseType(structTyp) {
@@ -390,4 +307,87 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 		}
 	}
 	return tPtr
+}
+
+//用于检查，单一值的合法性，base 或 valuer struct
+// bool true 代表有效 false:无效-nil
+// err 不合法
+func checkValidOneValue(v reflect.Value) (bool, error) {
+
+	is, base := basePtrValue(v)
+	if is {
+		isNil := v.IsNil()
+		if isNil { //数值无效，直接返回false，不再进行合法性检查
+			return false, nil
+		}
+	}
+
+	is = baseBaseValue(base)
+	if is {
+		return true, nil
+	}
+
+	is, base = baseStructValue(base)
+	if is {
+		_, ok := base.Interface().(driver.Valuer)
+		if !ok {
+			return false, errors.New("struct field " + base.String() + " need imp sql Value")
+		}
+		_, ok = base.Interface().(types.NullEr)
+		if !ok {
+			return false, errors.New("struct field " + base.String() + " need imp core NullEr ")
+		}
+
+		return true, nil
+	}
+
+	return false, errors.New("need a struct or base type")
+}
+
+
+
+var structValidCache = make(map[reflect.Type]error)
+var mutexStructValidCache sync.Mutex
+
+func checkValidStruct(va reflect.Value) error {
+	mutexStructValidCache.Lock()
+	defer mutexStructValidCache.Unlock()
+
+	_, base := basePtrValue(va)
+
+	typ := base.Type()
+	b, ok := structValidCache[typ]
+	if ok {
+		return b
+	}
+
+	is, base := baseStructValue(base)
+	if !is {
+		return errors.New("need a struct")
+	}
+
+
+	numField := base.NumField()
+	for i := 0; i < numField; i++ {
+		field := base.Field(i)
+
+		typ, validField, ok := baseStructValidField(field)
+		if !ok {
+			return errors.New("struct field " + field.String() + " need field is ptr slice struct")
+		}
+		//为 struct类型
+		if typ == 3 {
+			_, ok = validField.Interface().(driver.Valuer)
+			if !ok {
+				return errors.New("struct field " + field.String() + " need imp sql Value")
+			}
+			_, ok = validField.Interface().(types.NullEr)
+			if !ok {
+				return errors.New("struct field " + field.String() + " need imp core NullEr ")
+			}
+
+		}
+	}
+	structValidCache[typ] = nil
+	return nil
 }
