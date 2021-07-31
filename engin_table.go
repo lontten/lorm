@@ -179,7 +179,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 		panic(err)
 	}
 
-	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns)
+	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns, base.ormConf)
 
 	var sb strings.Builder
 	sb.WriteString("SELECT 1 ")
@@ -307,7 +307,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	logicDeleteSetSql := base.ormConf.LogicDeleteSetSql
 	logicDeleteYesSql := base.ormConf.LogicDeleteYesSql
 	tableName := base.ctx.tableName
-	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, &orm.base.ctx)
+	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, base.ormConf)
 
 	var sb strings.Builder
 	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
@@ -349,7 +349,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
-	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns)
+	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns, base.ormConf)
 	var sb strings.Builder
 	sb.WriteString("DELETE ")
 	sb.WriteString(" FROM ")
@@ -460,7 +460,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns)
+	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns, base.ormConf)
 	sb.WriteString(whereArgs2SqlStr)
 
 	cv = append(cv, values...)
@@ -643,7 +643,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	}
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
-	sb.WriteString(base.ctx.tableWhereArgs2SqlStr(columns))
+	sb.WriteString(base.ctx.tableWhereArgs2SqlStr(columns, base.ormConf))
 
 	return base.queryLn(sb.String(), values...)
 }
