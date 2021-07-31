@@ -6,6 +6,7 @@ import (
 	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode"
@@ -63,7 +64,6 @@ func getFieldMap(typ reflect.Type, fieldNamePrefix string) (fieldMap, error) {
 }
 
 type StructValidFieldValueMap map[string]interface{}
-
 
 //去除 所有 ptr slice 获取 struct ，不为struct 或 基础类型 为false
 //1 ptr 2slice 3struct  0基础类型
@@ -209,7 +209,7 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 //用于检查，单一值的合法性，base 或 valuer struct
 // bool true 代表有效 false:无效-nil
 // err 不合法
-func checkValidOneValue(v reflect.Value) (bool, error) {
+func checkValidFieldTypOne(v reflect.Value) (bool, error) {
 
 	is, base := basePtrValue(v)
 	if is {
@@ -241,12 +241,56 @@ func checkValidOneValue(v reflect.Value) (bool, error) {
 	return false, errors.New("need a struct or base type")
 }
 
+//用于检查，id  base 或  struct field nuller
+// bool true 代表有效 false:无效-nil
+// err 不合法
+func checkValidPrimaryKey(v []interface{}, ids []string) ([]interface{}, error) {
+	singlePk := len(ids) == 1
+	arr := make([]interface{}, 0)
+	for i, e := range v {
+		value := reflect.ValueOf(e)
+		is, base := basePtrValue(value)
+		if is {
+			isNil := value.IsNil()
+			if isNil { //数值无效，直接返回false，不再进行合法性检查
+				return nil, errors.New("PrimaryKey " + strconv.Itoa(i) + ": is nil")
+			}
+		}
+		is, err := checkValidFieldTypOne(base)
+		if err != nil {
+			return nil, err
+		}
+		if is {
+			if !singlePk {
+				return nil, errors.New("PrimaryKey arg is err")
+			}
+			arr = append(arr, e)
+			continue
+		}
+		is, base = baseStructValue(base)
+		if !is {
+			return nil, errors.New("need a struct or base type")
+		}
+		err = checkValidFieldTypStruct(base)
+		if err != nil {
+			return nil, err
+		}
 
+		if singlePk {
+			return nil, errors.New("PrimaryKey arg is err")
+		}
+		for _, id := range ids {
+			field := base.FieldByName(id)
+			arr = append(arr, field.Interface())
+		}
+	}
+	return arr, nil
+}
 
 var structValidCache = make(map[reflect.Type]error)
 var mutexStructValidCache sync.Mutex
 
-func checkValidStruct(va reflect.Value) error {
+func checkValidFieldTypStruct(va reflect.Value) error {
 	mutexStructValidCache.Lock()
 	defer mutexStructValidCache.Unlock()
 
@@ -262,7 +306,6 @@ func checkValidStruct(va reflect.Value) error {
 	if !is {
 		return errors.New("need a struct")
 	}
-
 
 	numField := base.NumField()
 	for i := 0; i < numField; i++ {

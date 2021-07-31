@@ -2,7 +2,6 @@ package lorm
 
 import (
 	"database/sql"
-	"strings"
 )
 
 type DB struct {
@@ -21,32 +20,24 @@ func (db DB) Db(c *OrmConf) Engine {
 		Base: EngineBase{
 			core:    conf,
 			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(conf),
+			dialect: db.dbConfig.Dialect(db.db),
 		},
 		Extra: EngineExtra{
 			core:    conf,
 			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(conf),
+			dialect: db.dbConfig.Dialect(db.db),
 		},
 		Classic: EngineNative{
 			core:    conf,
 			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(conf),
+			dialect: db.dbConfig.Dialect(db.db),
 		},
 		Table: EngineTable{
 			core:    conf,
-			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(conf),
+			ctx:     OrmContext{},
+			dialect: db.dbConfig.Dialect(db.db),
 		},
 	}
-}
-
-type OrmContext struct {
-	query  *strings.Builder
-	args   []interface{}
-	startd bool
-	err    error
-	log    int
 }
 
 type OrmSelect struct {

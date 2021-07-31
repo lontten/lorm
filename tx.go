@@ -3,6 +3,7 @@ package lorm
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -86,18 +87,12 @@ func (e Engine) Begin() TxEngine {
 		panic(err)
 	}
 	tx := Tx{
-		db:        t,
-		dbConfig:  e.db.dbConfig,
+		db:       t,
+		dbConfig: e.db.dbConfig,
 	}
 
+	fmt.Println(tx)
 	return TxEngine{
-		tx:      t,
-		Base:    EngineBase{db: tx, context: OrmContext{}},
-		Extra:   EngineExtra{db: tx, context: OrmContext{}},
-		Classic: EngineNative{db: tx, context: OrmContext{}},
-		Table: EngineTable{
-			context: OrmContext{},
-			db:      tx,
-		},
+		tx: t,
 	}
 }

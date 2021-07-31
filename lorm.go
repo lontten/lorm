@@ -16,7 +16,7 @@ const (
 type DbConfig interface {
 	DriverName() string
 	Open() (*sql.DB, error)
-	Dialect(c OrmConf) Dialect
+	Dialect(db *sql.DB) Dialect
 }
 
 type PoolConf struct {

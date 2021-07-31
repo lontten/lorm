@@ -46,9 +46,9 @@ type OrmConf struct {
 	LogicDeleteSetSql string
 
 	//多租户 tenantIdFieldName不为零值，即开启
-	TenantIdFieldName      string
-	TenantIdValueFun       func() interface{}
-	TenantIdIgnoreTableFun func(structName string, dest interface{}) string
+	TenantIdFieldName    string
+	TenantIdValueFun     func() interface{}
+	TenantIgnoreTableFun func(tableName string, base reflect.Value) bool
 }
 
 func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
@@ -69,7 +69,7 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	if err != nil {
 		return
 	}
-	cfm, err := getColFieldIndexLinkMap(columns, t, c.FieldNamePrefix)
+	cfm, err := c.getColFieldIndexLinkMap(columns, t)
 	if err != nil {
 		return
 	}
@@ -113,7 +113,7 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	cfm, err := getColFieldIndexLinkMap(columns, base, c.FieldNamePrefix)
+	cfm, err := c.getColFieldIndexLinkMap(columns, base)
 	fmt.Println(len(cfm))
 	fmt.Println("------")
 	if err != nil {
@@ -409,4 +409,34 @@ func (c OrmConf) getStructMappingColumnsValueNotNull(v reflect.Value) (columns [
 		}
 	}
 	return
+}
+
+func (c OrmConf) getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error) {
+	is := baseBaseType(typ)
+	if is {
+		return ColFieldIndexLinkMap{}, nil
+	}
+
+	colNum := len(columns)
+	cfm := make([]int, colNum)
+	fm, err := getFieldMap(typ, c.FieldNamePrefix)
+	if err != nil {
+		return nil, err
+	}
+
+	validNum := 0
+	for i, column := range columns {
+		index, ok := fm[column]
+		if !ok {
+			cfm[i] = -1
+			continue
+		}
+		cfm[i] = index
+		validNum++
+	}
+
+	if colNum == 1 && validNum == 0 {
+		return ColFieldIndexLinkMap{}, nil
+	}
+	return cfm, nil
 }

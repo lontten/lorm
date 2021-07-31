@@ -10,10 +10,17 @@ type DBer interface {
 
 type Dialect interface {
 	DriverName() string
-	ToDialectSql(sql string) string
 
 	exec(query string, args ...interface{}) (int64, error)
 	query(query string, args ...interface{}) (*sql.Rows, error)
+}
+
+type SqlUtil interface {
+	selectArgsArr2SqlStr(args []string)
+	tableWhereArgs2SqlStr(args []string, c OrmConf) string
+	tableCreateArgs2SqlStr(args []string) string
+	tableUpdateArgs2SqlStr(args []string) string
+	tableWherePrimaryKey2SqlStr(ids []string, c OrmConf) string
 }
 
 type OrmCore interface {
@@ -30,6 +37,8 @@ type OrmCore interface {
 	initColumnsValue(v reflect.Value) ([]string, []interface{}, error)
 	getStructMappingColumns(t reflect.Type) (map[string]int, error)
 	getStructMappingColumnsValueNotNull(v reflect.Value) (columns []string, values []interface{}, err error)
+
+	getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error)
 }
 
 type Queryer interface {
