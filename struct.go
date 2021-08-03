@@ -267,56 +267,61 @@ func checkValidFieldTypOne(v reflect.Value) (bool, error) {
 // map[string]intface - ptr		2
 // struct - ptr					3
 // base struct-base- ptr		4
-func checkArgTyp(v reflect.Value) (int, error) {
-	is, base := basePtrValue(v)
-	if is {
+// isPtr  是否指针
+// typ  0 -    1 slice   2 map
+// isStruct 是否struct，false为单个filed参数
+// value 基础value map返回自身 slice返回子
+func checkArgTyp(v reflect.Value) (isPtr, isStruct bool, typ int, value reflect.Value, err error) {
+	isPtr, base := basePtrValue(v)
+	if isPtr {
 		isNil := v.IsNil()
 		if isNil { //数值无效，直接返回false，不再进行合法性检查
-			return 0, errors.New("  is nil")
+			err = errors.New("  is nil")
+			return
 		}
 	}
 
-	//slice string
-	is, base, err := baseSliceValue(base)
+	//map
+	is, key, _, err := baseMapValue(base)
 	if err != nil {
-		return 0, err
+		return
 	}
 	if is {
-		if base.Kind() != reflect.String {
-			return 0, errors.New("  type err slice " + base.Kind().String())
-		}
-		return 1, nil
-	}
-
-	//map string
-	is, key, value, err := baseMapValue(base)
-	if err != nil {
-		return 0, err
-	}
-	if is {
+		typ = 2
 		if key.Kind() != reflect.String {
-			return 0, errors.New(" map type key err no string  ")
+			err = errors.New(" map type key err no string  ")
+			return
 		}
-		if value.Kind() != reflect.Interface {
-			return 0, errors.New(" map type value err no interface  ")
-		}
-		return 2, nil
+		value = base
+		return
+	}
+
+	//slice
+	is, base, err = baseSliceValue(base)
+	if err != nil {
+		return
+	}
+	if is {
+		typ = 1
 	}
 
 	// base
 	is = baseBaseValue(base)
 	if is {
-		return 4, nil
+		value = base
+		return
 	}
 
 	is, base = baseStructValue(base)
 	if !is {
-		return 0, errors.New("  type err   " + base.Kind().String())
+		err = errors.New("  type err   " + base.Kind().String())
+		return
 	}
 	//struct-base
 	_, ok := base.Interface().(driver.Valuer)
 	if ok {
-		return 4, nil
+		value = base
+		return
 	}
 
 	numField := base.NumField()
@@ -324,10 +329,13 @@ func checkArgTyp(v reflect.Value) (int, error) {
 		field := base.Field(i)
 		ok := checkStructValidField(field)
 		if !ok {
-			return 0,errors.New("  type err struct filed  " )
+			err = errors.New("  type err struct filed  ")
+			return
 		}
 	}
-	return 3,nil
+	value = base
+	isStruct = true
+	return
 }
 
 //用于检查，id  base 或  struct field nuller
