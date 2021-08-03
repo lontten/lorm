@@ -107,6 +107,28 @@ base:
 	}
 }
 
+func checkStructValidField(v reflect.Value) bool {
+	code, _ := basePtrStructBaseValue(v)
+	if code > 0 {
+		return true
+	}
+	if v.Kind() == reflect.Struct {
+		_, ok := v.Interface().(driver.Valuer)
+		if !ok {
+			return false
+		}
+		_, ok = v.Interface().(types.NullEr)
+		if !ok {
+			return false
+		}
+		return true
+	}
+	if v.Kind() == reflect.Slice {
+		return true
+	}
+	return false
+}
+
 // *struct
 func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 	switch t.Kind() {
@@ -239,6 +261,73 @@ func checkValidFieldTypOne(v reflect.Value) (bool, error) {
 	}
 
 	return false, errors.New("need a struct or base type")
+}
+
+// string[] - ptr				1
+// map[string]intface - ptr		2
+// struct - ptr					3
+// base struct-base- ptr		4
+func checkArgTyp(v reflect.Value) (int, error) {
+	is, base := basePtrValue(v)
+	if is {
+		isNil := v.IsNil()
+		if isNil { //数值无效，直接返回false，不再进行合法性检查
+			return 0, errors.New("  is nil")
+		}
+	}
+
+	//slice string
+	is, base, err := baseSliceValue(base)
+	if err != nil {
+		return 0, err
+	}
+	if is {
+		if base.Kind() != reflect.String {
+			return 0, errors.New("  type err slice " + base.Kind().String())
+		}
+		return 1, nil
+	}
+
+	//map string
+	is, key, value, err := baseMapValue(base)
+	if err != nil {
+		return 0, err
+	}
+	if is {
+		if key.Kind() != reflect.String {
+			return 0, errors.New(" map type key err no string  ")
+		}
+		if value.Kind() != reflect.Interface {
+			return 0, errors.New(" map type value err no interface  ")
+		}
+		return 2, nil
+	}
+
+	// base
+	is = baseBaseValue(base)
+	if is {
+		return 4, nil
+	}
+
+	is, base = baseStructValue(base)
+	if !is {
+		return 0, errors.New("  type err   " + base.Kind().String())
+	}
+	//struct-base
+	_, ok := base.Interface().(driver.Valuer)
+	if ok {
+		return 4, nil
+	}
+
+	numField := base.NumField()
+	for i := 0; i < numField; i++ {
+		field := base.Field(i)
+		ok := checkStructValidField(field)
+		if !ok {
+			return 0,errors.New("  type err struct filed  " )
+		}
+	}
+	return 3,nil
 }
 
 //用于检查，id  base 或  struct field nuller

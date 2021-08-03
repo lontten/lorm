@@ -51,14 +51,25 @@ func baseBaseValue(v reflect.Value) bool {
 	return false
 }
 
-func baseSliceValue(v reflect.Value) (ok bool, structType reflect.Value,err error) {
+func baseMapValue(v reflect.Value) (ok bool, key, value reflect.Value, err error) {
+	if v.Kind() == reflect.Map {
+		if v.Len() == 0 {
+			return false, v, v, errors.New("map len is 0 ,can't base value")
+		}
+		key = v.MapKeys()[0]
+		return true, key, v.MapIndex(key), nil
+	}
+	return false, v, v, nil
+}
+
+func baseSliceValue(v reflect.Value) (ok bool, structType reflect.Value, err error) {
 	if v.Kind() == reflect.Slice {
 		if v.Len() == 0 {
 			return false, v, errors.New("slice len is 0 ,can't base value")
 		}
-		return true, v.Index(0),nil
+		return true, v.Index(0), nil
 	}
-	return false, v,nil
+	return false, v, nil
 }
 
 func basePtrValue(v reflect.Value) (is bool, structType reflect.Value) {
@@ -146,7 +157,6 @@ func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 	}
 	return -2, t
 }
-
 
 //struct
 func checkScanTypeLn(t reflect.Type) (reflect.Type, error) {
