@@ -37,24 +37,21 @@ func (t Time) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Time) Scan(v interface{}) error {
+	var str = ""
 	switch src := v.(type) {
 	case string:
-		now, err := time.ParseInLocation(`"15:04:05"`, src, time.Local)
-		if err != nil {
-			return err
-		}
-		*t = Time{now}
+		str = "\n" + src + "\n"
 	case []byte:
-		now, err := time.ParseInLocation(`"15:04:05"`, string(src), time.Local)
-		if err != nil {
-			return err
-		}
-		*t = Time{now}
+		str = "\n" + string(src) + "\n"
 	case time.Time:
 		*t = Time{src}
 		return nil
 	}
-
+	now, err := time.ParseInLocation(`"15:04:05"`, str, time.Local)
+	if err != nil {
+		return err
+	}
+	*t = Time{now}
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
 
@@ -128,24 +125,21 @@ func (t Date) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Date) Scan(v interface{}) error {
+	var str = ""
 	switch src := v.(type) {
 	case string:
-		now, err := time.ParseInLocation(`"2006-01-02"`, src, time.Local)
-		if err != nil {
-			return err
-		}
-		*t = Date{now}
+		str = "\n" + src + "\n"
 	case []byte:
-		now, err := time.ParseInLocation(`"2006-01-02"`, string(src), time.Local)
-		if err != nil {
-			return err
-		}
-		*t = Date{now}
+		str = "\n" + string(src) + "\n"
 	case time.Time:
 		*t = Date{src}
 		return nil
 	}
-
+	now, err := time.ParseInLocation(`"2006-01-02"`, str, time.Local)
+	if err != nil {
+		return err
+	}
+	*t = Date{now}
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
 func (t Date) ToGoTime() time.Time {
