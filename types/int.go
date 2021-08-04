@@ -1,6 +1,8 @@
 package types
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"github.com/jackc/pgtype"
 )
 
@@ -50,4 +52,52 @@ func Arr2Pg16(arr []int16) pgtype.Int2Array {
 	var list = pgtype.Int2Array{}
 	list.Set(arr)
 	return list
+}
+
+
+
+
+
+type IntList []int
+
+// gorm 自定义结构需要实现 Value Scan 两个方法
+// Value 实现方法
+func (p IntList) Value() (driver.Value, error) {
+	var k []int
+	k = p
+	marshal, err := json.Marshal(k)
+	if err != nil {
+		return nil, err
+	}
+	var s = string(marshal)
+	if s != "null" {
+		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
+	} else {
+		s = "{}"
+	}
+	return s, nil
+}
+
+func (p IntList) IsNull() bool {
+	return len(p) == 0
+}
+
+// Scan 实现方法
+func (p *IntList) Scan(data interface{}) error {
+	array := pgtype.VarcharArray{}
+	err := array.Scan(data)
+	if err != nil {
+		return err
+	}
+	var list []string
+	list = make([]string, len(array.Elements))
+	for i, element := range array.Elements {
+		list[i] = element.String
+	}
+	marshal, err := json.Marshal(list)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(marshal, &p)
+	return err
 }

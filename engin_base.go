@@ -10,7 +10,7 @@ type EngineBase struct {
 }
 
 func (engine EngineBase) Select(args ...string) OrmSelect {
-	engine.core.selectArgsArr2SqlStr(args,&engine.context)
+	engine.context.selectArgsArr2SqlStr(args)
 	return OrmSelect{engine}
 }
 

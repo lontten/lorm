@@ -54,7 +54,7 @@ func baseBaseValue(v reflect.Value) bool {
 func baseMapValue(v reflect.Value) (ok bool, key, value reflect.Value, err error) {
 	if v.Kind() == reflect.Map {
 		if v.Len() == 0 {
-			return false, v, v, errors.New("map len is 0 ,can't base value")
+			return false, v, v, ErrContainEmpty
 		}
 		key = v.MapKeys()[0]
 		return true, key, v.MapIndex(key), nil
@@ -65,7 +65,7 @@ func baseMapValue(v reflect.Value) (ok bool, key, value reflect.Value, err error
 func baseSliceValue(v reflect.Value) (ok bool, structType reflect.Value, err error) {
 	if v.Kind() == reflect.Slice {
 		if v.Len() == 0 {
-			return false, v, errors.New("slice len is 0 ,can't base value")
+			return false, v, ErrContainEmpty
 		}
 		return true, v.Index(0), nil
 	}

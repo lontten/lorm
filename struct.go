@@ -271,28 +271,50 @@ func checkValidFieldTypOne(v reflect.Value) (bool, error) {
 // typ  0 -    1 slice   2 map
 // isStruct 是否struct，false为单个filed参数
 // value 基础value map返回自身 slice返回子
-func checkArgTyp(v reflect.Value) (isPtr, isStruct bool, typ int, value reflect.Value, err error) {
+
+type ArgTyp struct {
+	isPtr bool
+	//0 -
+	//1 slice
+	//2 map
+	typ int
+
+	isStruct bool
+	base     reflect.Value
+
+	args map[string]interface{}
+}
+
+func checkArgTyp(v reflect.Value) (a ArgTyp, err error) {
 	isPtr, base := basePtrValue(v)
 	if isPtr {
 		isNil := v.IsNil()
 		if isNil { //数值无效，直接返回false，不再进行合法性检查
-			err = errors.New("  is nil")
+			err = ErrNil
 			return
 		}
 	}
+	a.isPtr = isPtr
 
 	//map
 	is, key, _, err := baseMapValue(base)
 	if err != nil {
+		if errors.Is(err, ErrContainEmpty) {
+			a.typ = 2
+			a.base = base
+		}
 		return
 	}
 	if is {
-		typ = 2
+		a.typ = 2
+		a.base = base
 		if key.Kind() != reflect.String {
 			err = errors.New(" map type key err no string  ")
 			return
 		}
-		value = base
+		for _, k := range base.MapKeys() {
+			a.args[k.String()]=base.MapIndex(k).Interface()
+		}
 		return
 	}
 
@@ -302,13 +324,16 @@ func checkArgTyp(v reflect.Value) (isPtr, isStruct bool, typ int, value reflect.
 		return
 	}
 	if is {
-		typ = 1
+		a.typ = 1
 	}
 
 	// base
 	is = baseBaseValue(base)
 	if is {
-		value = base
+		a.base = base
+		for i := 0; i < base.Len(); i++ {
+
+		}
 		return
 	}
 
@@ -320,7 +345,7 @@ func checkArgTyp(v reflect.Value) (isPtr, isStruct bool, typ int, value reflect.
 	//struct-base
 	_, ok := base.Interface().(driver.Valuer)
 	if ok {
-		value = base
+		a.base = base
 		return
 	}
 
@@ -333,8 +358,8 @@ func checkArgTyp(v reflect.Value) (isPtr, isStruct bool, typ int, value reflect.
 			return
 		}
 	}
-	value = base
-	isStruct = true
+	a.isStruct = true
+	a.base = base
 	return
 }
 
