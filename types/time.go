@@ -49,6 +49,7 @@ func (t *Time) Scan(v interface{}) error {
 
 type TimeList []Time
 
+// Value
 // gorm 自定义结构需要实现 Value Scan 两个方法
 // Value 实现方法
 func (p TimeList) Value() (driver.Value, error) {
