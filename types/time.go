@@ -1,6 +1,7 @@
 package types
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -37,22 +38,13 @@ func (t Time) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Time) Scan(v interface{}) error {
-	var str = ""
-	switch src := v.(type) {
-	case string:
-		str = "\n" + src + "\n"
-	case []byte:
-		str = "\n" + string(src) + "\n"
-	case time.Time:
-		*t = Time{src}
-		return nil
-	}
-	now, err := time.ParseInLocation(`"15:04:05"`, str, time.Local)
+	nullTime := sql.NullTime{}
+	err := nullTime.Scan(v)
 	if err != nil {
 		return err
 	}
-	*t = Time{now}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	t.Time = nullTime.Time
+	return nil
 }
 
 type TimeList []Time
@@ -125,22 +117,13 @@ func (t Date) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Date) Scan(v interface{}) error {
-	var str = ""
-	switch src := v.(type) {
-	case string:
-		str = "\n" + src + "\n"
-	case []byte:
-		str = "\n" + string(src) + "\n"
-	case time.Time:
-		*t = Date{src}
-		return nil
-	}
-	now, err := time.ParseInLocation(`"2006-01-02"`, str, time.Local)
+	nullTime := sql.NullTime{}
+	err := nullTime.Scan(v)
 	if err != nil {
 		return err
 	}
-	*t = Date{now}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	t.Time = nullTime.Time
+	return nil
 }
 func (t Date) ToGoTime() time.Time {
 	return time.Unix(t.Unix(), 0)
