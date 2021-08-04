@@ -37,14 +37,26 @@ func (t Time) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Time) Scan(v interface{}) error {
-	value, ok := v.(Time)
-	if ok {
-		*t = value
+	switch src := v.(type) {
+	case string:
+		now, err := time.ParseInLocation(`"15:04:05"`, src, time.Local)
+		if err != nil {
+			return err
+		}
+		*t = Time{now}
+	case []byte:
+		now, err := time.ParseInLocation(`"15:04:05"`, string(src), time.Local)
+		if err != nil {
+			return err
+		}
+		*t = Time{now}
+	case time.Time:
+		*t = Time{src}
 		return nil
 	}
+
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
-
 
 type TimeList []Time
 
@@ -116,11 +128,24 @@ func (t Date) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Date) Scan(v interface{}) error {
-	value, ok := v.(Date)
-	if ok {
-		*t = value
+	switch src := v.(type) {
+	case string:
+		now, err := time.ParseInLocation(`"2006-01-02"`, src, time.Local)
+		if err != nil {
+			return err
+		}
+		*t = Date{now}
+	case []byte:
+		now, err := time.ParseInLocation(`"2006-01-02"`, string(src), time.Local)
+		if err != nil {
+			return err
+		}
+		*t = Date{now}
+	case time.Time:
+		*t = Date{src}
 		return nil
 	}
+
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
 func (t Date) ToGoTime() time.Time {
