@@ -1,7 +1,6 @@
 package types
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -9,12 +8,10 @@ import (
 	"time"
 )
 
-type Time struct {
-	time.Time
-}
+type Time time.Time
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	tune := t.Format(`"15:04:05"`)
+	tune := time.Time(t).Format(`"15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -23,33 +20,12 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
-	*t = Time{now}
+	*t = Time(now)
 	return err
-}
-
-// Value insert timestamp into mysql need this function.
-func (t Time) Value() (driver.Value, error) {
-	var zeroTime time.Time
-	if t.Time.UnixNano() == zeroTime.UnixNano() {
-		return nil, nil
-	}
-	return t.Time, nil
-}
-
-// Scan valueof jstime.Time
-func (t *Time) Scan(v interface{}) error {
-	nullTime := sql.NullTime{}
-	err := nullTime.Scan(v)
-	if err != nil {
-		return err
-	}
-	t.Time = nullTime.Time
-	return nil
 }
 
 type TimeList []Time
 
-// Value
 // gorm 自定义结构需要实现 Value Scan 两个方法
 // Value 实现方法
 func (p TimeList) Value() (driver.Value, error) {
@@ -78,7 +54,7 @@ func (p *TimeList) Scan(data interface{}) error {
 	var list []Time
 	list = make([]Time, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = Time{element.Time}
+		list[i] = Time(element.Time)
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -118,13 +94,12 @@ func (t Date) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Date) Scan(v interface{}) error {
-	nullTime := sql.NullTime{}
-	err := nullTime.Scan(v)
-	if err != nil {
-		return err
+	value, ok := v.(time.Time)
+	if ok {
+		*t = Date{Time: value}
+		return nil
 	}
-	t.Time = nullTime.Time
-	return nil
+	return fmt.Errorf("can not convert %v to timestamp", v)
 }
 func (t Date) ToGoTime() time.Time {
 	return time.Unix(t.Unix(), 0)
@@ -257,9 +232,9 @@ func (d Date) AddTime(t Time) DateTime {
 		d.Time.Year(),
 		d.Time.Month(),
 		d.Time.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(), 0, nil,
+		time.Time(t).Hour(),
+		time.Time(t).Minute(),
+		time.Time(t).Second(), 0, nil,
 	)}
 }
 
@@ -268,9 +243,9 @@ func (t Time) AddData(d Date) DateTime {
 		d.Time.Year(),
 		d.Time.Month(),
 		d.Time.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(), 0, nil,
+		time.Time(t).Hour(),
+		time.Time(t).Minute(),
+		time.Time(t).Second(), 0, nil,
 	)}
 }
 
