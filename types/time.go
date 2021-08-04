@@ -37,9 +37,9 @@ func (t Time) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Time) Scan(v interface{}) error {
-	value, ok := v.(time.Time)
+	value, ok := v.(Time)
 	if ok {
-		*t = Time{Time: value}
+		*t = value
 		return nil
 	}
 	return fmt.Errorf("can not convert %v to timestamp", v)
@@ -116,9 +116,9 @@ func (t Date) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Date) Scan(v interface{}) error {
-	value, ok := v.(time.Time)
+	value, ok := v.(Date)
 	if ok {
-		*t = Date{Time: value}
+		*t = value
 		return nil
 	}
 	return fmt.Errorf("can not convert %v to timestamp", v)
