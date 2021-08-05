@@ -35,7 +35,18 @@ func (t Time) Value() (driver.Value, error) {
 }
 
 func (t *Time) Scan(v interface{}) error {
-	s := v.(string)[:8]
+	var s = ""
+	switch v := v.(type) {
+	case string:
+		s = v[:8]
+	case []byte:
+		s = string(v)[:8]
+	case time.Time:
+		*t = Time{v}
+		return nil
+	default:
+		return fmt.Errorf("can not convert %v to timestamp", v)
+	}
 	now, err := time.Parse(`15:04:05`, s)
 	if err != nil {
 		return err
