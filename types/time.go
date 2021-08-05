@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-type Time time.Time
+type Time struct {
+	time.Time
+}
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	tune := time.Time(t).Format(`"15:04:05"`)
+	tune := t.Time.Format(`"15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -20,8 +22,25 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
-	*t = Time(now)
+	*t = Time{now}
 	return err
+}
+
+func (t Time) Value() (driver.Value, error) {
+	var zeroTime time.Time
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
+		return nil, nil
+	}
+	return t.Time, nil
+}
+
+func (t *Time) Scan(v interface{}) error {
+	now, err := time.ParseInLocation(`"15:04:05"`, "\""+v.(string)+"\"", time.Local)
+	if err != nil {
+		return err
+	}
+	*t = Time{Time: now}
+	return nil
 }
 
 type TimeList []Time
@@ -54,7 +73,7 @@ func (p *TimeList) Scan(data interface{}) error {
 	var list []Time
 	list = make([]Time, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = Time(element.Time)
+		list[i] = Time{element.Time}
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -232,9 +251,9 @@ func (d Date) AddTime(t Time) DateTime {
 		d.Time.Year(),
 		d.Time.Month(),
 		d.Time.Day(),
-		time.Time(t).Hour(),
-		time.Time(t).Minute(),
-		time.Time(t).Second(), 0, nil,
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
 	)}
 }
 
@@ -243,9 +262,9 @@ func (t Time) AddData(d Date) DateTime {
 		d.Time.Year(),
 		d.Time.Month(),
 		d.Time.Day(),
-		time.Time(t).Hour(),
-		time.Time(t).Minute(),
-		time.Time(t).Second(), 0, nil,
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
 	)}
 }
 
