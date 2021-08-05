@@ -35,7 +35,7 @@ func (t Time) Value() (driver.Value, error) {
 }
 
 func (t *Time) Scan(v interface{}) error {
-	now, err := time.ParseInLocation(`"15:04:05"`, "\""+v.(string)+"\"", time.Local)
+	now, err := time.ParseInLocation(`15:04:05`, v.(string), time.Local)
 	if err != nil {
 		return err
 	}
