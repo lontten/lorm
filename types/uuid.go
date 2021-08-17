@@ -7,6 +7,15 @@ import (
 	"github.com/jackc/pgtype"
 )
 
+func MustUuid(v string) uuid.UUID {
+	id, err := uuid.Parse(v)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+
 type UUIDList []uuid.UUID
 
 // Value 实现方法
