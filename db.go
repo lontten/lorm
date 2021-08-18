@@ -15,8 +15,8 @@ func (db DB) Db(c *OrmConf) Engine {
 		conf = *c
 	}
 	return Engine{
-		db:       db,
-		lormConf: conf,
+		db:      db,
+		ormConf: conf,
 		Base: EngineBase{
 			core:    conf,
 			context: OrmContext{},

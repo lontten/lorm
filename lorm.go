@@ -83,8 +83,8 @@ func (c *PgConf) Open() (*sql.DB, error) {
 
 
 type Engine struct {
-	db       DB
-	lormConf OrmConf
+	db      DB
+	ormConf OrmConf
 
 	Base    EngineBase
 	Extra   EngineExtra
@@ -92,7 +92,7 @@ type Engine struct {
 	Classic EngineNative
 }
 
-type engineEr interface {
+type EngineEr interface {
 	Db(c *OrmConf) Engine
 }
 
@@ -119,7 +119,7 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	}, nil
 }
 
-func MustConnect(c DbConfig, pc *PoolConf) engineEr {
+func MustConnect(c DbConfig, pc *PoolConf) EngineEr {
 	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
@@ -127,7 +127,7 @@ func MustConnect(c DbConfig, pc *PoolConf) engineEr {
 	return db
 }
 
-func Connect(c DbConfig, pc *PoolConf) (engineEr, error) {
+func Connect(c DbConfig, pc *PoolConf) (EngineEr, error) {
 	pool, err := open(c, pc)
 	if err != nil {
 		return nil, err

@@ -6,12 +6,15 @@ import (
 )
 
 type OrmContext struct {
+	core OrmCore
+
 	primaryKeyNames []string
 
 	//当前表名
 	tableName string
 	//当前struct对象
-	dest []interface{}
+	dest             interface{}
+	destBaseValueArr []reflect.Value
 	//去除 ptr
 	destValue reflect.Value
 	//去除 ptr slice
@@ -52,7 +55,7 @@ func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
 //args 为 where 的 字段名列表， 生成where sql
 //sql 为 逻辑删除 附加where
 //todo 应该改为 统一 where sql 统一生成、  逻辑删除、 多租户
-func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string, c OrmConf) string {
+func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string) string {
 	var sb strings.Builder
 	for i, where := range args {
 		if i == 0 {
@@ -65,6 +68,7 @@ func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string, c OrmConf) string {
 		sb.WriteString(where)
 		sb.WriteString(" = ? ")
 	}
+
 	lgSql := strings.ReplaceAll(c.LogicDeleteNoSql, "lg.", "")
 	if c.LogicDeleteNoSql != lgSql {
 		sb.WriteString(" AND ")

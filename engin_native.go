@@ -6,7 +6,6 @@ import (
 
 //对 query exec 的简单封装
 type EngineNative struct {
-	core    OrmCore
 	dialect Dialect
 	context OrmContext
 }
@@ -37,7 +36,7 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.core.ScanLn(rows, dest)
+	return q.base.context.core.ScanLn(rows, dest)
 }
 
 func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
@@ -47,7 +46,7 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.core.Scan(rows, dest)
+	return q.base.context.core.Scan(rows, dest)
 }
 
 func (engine EngineNative) Exec(query string, args ...interface{}) (rowsNum int64, err error) {

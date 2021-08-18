@@ -4,7 +4,6 @@ import "log"
 
 //对基础SQL的简单封装
 type EngineBase struct {
-	core    OrmCore
 	dialect Dialect
 	context OrmContext
 }
@@ -52,7 +51,7 @@ func (orm *OrmWhere) GetOne(dest interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return base.core.ScanLn(rows, dest)
+	return base.context.core.ScanLn(rows, dest)
 }
 
 func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
@@ -65,5 +64,5 @@ func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return base.core.Scan(rows, dest)
+	return base.context.core.Scan(rows, dest)
 }
