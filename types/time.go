@@ -195,7 +195,7 @@ func (t DateTime) Value() (driver.Value, error) {
 	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return t, nil
+	return time.Time(t), nil
 }
 
 // Scan valueof jstime.Time
