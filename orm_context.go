@@ -14,6 +14,8 @@ type OrmContext struct {
 	tableName string
 	//当前struct对象
 	dest             interface{}
+	isSlice bool
+
 	destBaseValueArr []reflect.Value
 	//去除 ptr
 	destValue reflect.Value

@@ -23,23 +23,17 @@ func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 }
 
 func (e *EngineTable) setTargetDest(v interface{}) {
+	e.ctx.initTargetDest(v)
+
 	value := reflect.ValueOf(v)
 
-	slice, base, err := targetDestBaseValue2Slice(v)
+
+	err := checkValidFieldTypStruct(value)
 	if err != nil {
 		e.ctx.err = err
 		return
 	}
 
-	err = checkValidFieldTypStruct(value)
-	if err != nil {
-		e.ctx.err = err
-		return
-	}
-	e.ctx.dest=v
-	e.ctx.destBaseValueArr = slice
-	e.ctx.destBaseValue = base
-	e.ctx.destValue = value
 	err = e.initTableName()
 	e.ctx.err = err
 	return
@@ -706,6 +700,7 @@ func (e *EngineTable) initTableName() error {
 
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() {
+
 	columns, values, err := e.ctx.core.getStructMappingColumnsValueNotNull(e.ctx.destBaseValue)
 	if err != nil {
 		e.ctx.err = err

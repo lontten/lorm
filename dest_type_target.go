@@ -1,9 +1,12 @@
 package lorm
 
 import (
+	"database/sql/driver"
+	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
+	"sync"
 )
 
 // * struct
@@ -13,29 +16,76 @@ import (
 // 检查数据类型，
 //获取基础 value
 //bool 为 是否为 slice类型
-func targetDestBaseValue2Slice(dest interface{}) ([]reflect.Value, reflect.Value, error) {
+func (c *OrmContext) initTargetDest(dest interface{}) {
 	v := reflect.ValueOf(dest)
 	arr := make([]reflect.Value, 0)
-	is, baseValue := basePtrValue(v)
-	if !is { //不是 ptr ，必须是 slice
-		is, base, err := baseSliceValue(baseValue)
-		if err != nil {
-			return arr, v, err
-		}
-		if !is {
-			return arr, base, errors.New("need ptr or slice")
-		}
-		e := base.Index(0)
-		if e.Kind() != reflect.Struct {
-			return arr, base, errors.New("need a slice struct type")
-		}
-		return utils.ToSliceValue(baseValue), e, nil //true 为 slice struct
-	}
-	// ptr
+	isPtr, baseValue := basePtrValue(v)
 	is, base := baseStructValue(baseValue)
-	if is {
+	if isPtr && is {
 		arr = append(arr, base)
-		return arr, base, nil //arr 为空，false 为 struct
+		c.isSlice = false
+		c.destBaseValueArr = arr
+		c.destBaseValue = base
+		return
 	}
-	return arr, base, errors.New("need ptr struct type")
+	//slice
+	is, base, err := baseSliceValue(baseValue)
+	if err != nil {
+		c.err = err
+		return
+	}
+	if !is {
+		c.err = errors.New("need ptr or slice")
+		return
+	}
+	e := base.Index(0)
+	if e.Kind() != reflect.Struct {
+		c.err = errors.New("need a slice struct type")
+		return
+	}
+	c.isSlice = true
+	c.destBaseValueArr = utils.ToSliceValue(baseValue)
+	c.destBaseValue = e
+}
+
+
+var targetDestValidCache = make(map[reflect.Type]error)
+var mutextargetDestValidCache sync.Mutex
+
+func (c *OrmContext)checkTargetDestField()  {
+	v:=c.destBaseValue
+	mutextargetDestValidCache.Lock()
+	defer mutextargetDestValidCache.Unlock()
+
+	typ := v.Type()
+	b, ok := targetDestValidCache[typ]
+	if ok {
+		c.err=b
+		return
+	}
+
+	numField := v.NumField()
+	for i := 0; i < numField; i++ {
+		field := v.Field(i)
+
+		typ, validField, ok := baseStructValidField(field)
+		if !ok {
+			return errors.New("struct field " + field.String() + " need field is ptr slice struct")
+		}
+		//为 struct类型
+		if typ == 3 {
+			_, ok = validField.Interface().(driver.Valuer)
+			if !ok {
+				return errors.New("struct field " + field.String() + " need imp sql Value")
+			}
+			_, ok = validField.Interface().(types.NullEr)
+			if !ok {
+				return errors.New("struct field " + field.String() + " need imp core NullEr ")
+			}
+
+		}
+	}
+	structValidCache[typ] = nil
+	return nil
+
 }
