@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
 )
 
@@ -51,25 +50,27 @@ func baseBaseValue(v reflect.Value) bool {
 	return false
 }
 
-func baseMapValue(v reflect.Value) (ok bool, key, value reflect.Value, err error) {
+// is 是否 slice has 是否有内容
+func baseMapValue(v reflect.Value) (is, has bool, key, value reflect.Value) {
 	if v.Kind() == reflect.Map {
 		if v.Len() == 0 {
-			return false, v, v, ErrContainEmpty
+			return true, false, v, v
 		}
 		key = v.MapKeys()[0]
-		return true, key, v.MapIndex(key), nil
+		return true, true, key, v.MapIndex(key)
 	}
-	return false, v, v, nil
+	return false, false, v, v
 }
 
-func baseSliceValue(v reflect.Value) (ok bool, structType reflect.Value, err error) {
+// is 是否 slice has 是否有内容
+func baseSliceValue(v reflect.Value) (is, has bool, structType reflect.Value) {
 	if v.Kind() == reflect.Slice {
 		if v.Len() == 0 {
-			return false, v, ErrContainEmpty
+			return true, false, v
 		}
-		return true, v.Index(0), nil
+		return true, true, v.Index(0)
 	}
-	return false, v, nil
+	return false, false, v
 }
 
 func basePtrValue(v reflect.Value) (is bool, structType reflect.Value) {
@@ -156,27 +157,4 @@ func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 		return 2, base
 	}
 	return -2, t
-}
-
-//struct
-func checkScanTypeLn(t reflect.Type) (reflect.Type, error) {
-	is, base := basePtrStructBaseType(t)
-	if !is {
-		return t, errors.New("need a ptr struct or base type")
-	}
-	return base, nil
-}
-
-func checkScanType(t reflect.Type) (reflect.Type, error) {
-	_, base := basePtrType(t)
-	is, base := baseSliceType(base)
-	if !is {
-		return t, errors.New("need a slice type")
-	}
-
-	is, base = basePtrStructBaseType(base)
-	if !is {
-		return t, errors.New("need a ptr struct or base type")
-	}
-	return base, nil
 }

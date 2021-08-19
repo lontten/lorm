@@ -29,9 +29,9 @@ func (c *OrmContext) initTargetDest(dest interface{}) {
 		return
 	}
 	//slice
-	is, base, err := baseSliceValue(baseValue)
-	if err != nil {
-		c.err = err
+	is, has, base := baseSliceValue(baseValue)
+	if !has {
+		c.err = ErrContainEmpty
 		return
 	}
 	if !is {
@@ -48,19 +48,18 @@ func (c *OrmContext) initTargetDest(dest interface{}) {
 	c.destBaseValue = e
 }
 
-
 var targetDestValidCache = make(map[reflect.Type]error)
 var mutextargetDestValidCache sync.Mutex
 
-func (c *OrmContext)checkTargetDestField()  {
-	v:=c.destBaseValue
+func (c *OrmContext) checkTargetDestField() {
+	v := c.destBaseValue
 	mutextargetDestValidCache.Lock()
 	defer mutextargetDestValidCache.Unlock()
 
 	typ := v.Type()
 	b, ok := targetDestValidCache[typ]
 	if ok {
-		c.err=b
+		c.err = b
 		return
 	}
 
@@ -70,22 +69,25 @@ func (c *OrmContext)checkTargetDestField()  {
 
 		typ, validField, ok := baseStructValidField(field)
 		if !ok {
-			return errors.New("struct field " + field.String() + " need field is ptr slice struct")
+			c.err = errors.New("struct field " + field.String() + " need field is ptr slice struct")
+			return
 		}
 		//为 struct类型
 		if typ == 3 {
 			_, ok = validField.Interface().(driver.Valuer)
 			if !ok {
-				return errors.New("struct field " + field.String() + " need imp sql Value")
+				c.err = errors.New("struct field " + field.String() + " need imp sql Value")
+				return
 			}
 			_, ok = validField.Interface().(types.NullEr)
 			if !ok {
-				return errors.New("struct field " + field.String() + " need imp core NullEr ")
+				c.err = errors.New("struct field " + field.String() + " need imp core NullEr ")
+				return
 			}
 
 		}
 	}
 	structValidCache[typ] = nil
-	return nil
+	return
 
 }

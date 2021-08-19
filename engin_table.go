@@ -27,7 +27,6 @@ func (e *EngineTable) setTargetDest(v interface{}) {
 
 	value := reflect.ValueOf(v)
 
-
 	err := checkValidFieldTypStruct(value)
 	if err != nil {
 		e.ctx.err = err
@@ -284,44 +283,38 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 		return 0, err
 	}
 
-	targetDestLen := len(base.ctx.dest)
+	targetDestLen := len(base.ctx.destBaseValueArr)
 	pkLen := len(v)
 	if targetDestLen > 1 && targetDestLen != pkLen {
 		return 0, errors.New("need Pk num " + strconv.Itoa(targetDestLen) + "but Pk len is " + strconv.Itoa(pkLen))
 	}
 
 	base.initPrimaryKeyName()
-	idNames := base.ctx.primaryKeyNames
+	base.ctx.checkValidPrimaryKey(v)
 
-	args, err := checkValidPrimaryKey(v, idNames)
-	if err != nil {
-		return 0, err
-	}
-	orm.base.ctx.args = append(orm.base.ctx.args, args...)
-
-	logicDeleteSetSql := base.ormConf.LogicDeleteSetSql
-	logicDeleteYesSql := base.ormConf.LogicDeleteYesSql
-	tableName := base.ctx.tableName
-	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, base.ormConf)
+	//logicDeleteSetSql := base.ormConf.LogicDeleteSetSql
+	//logicDeleteYesSql := base.ormConf.LogicDeleteYesSql
+	//tableName := base.ctx.tableName
+	//whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, base.ormConf)
 
 	var sb strings.Builder
-	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
-	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-	if logicDeleteSetSql == lgSql {
-		sb.WriteString("DELETE FROM ")
-		sb.WriteString(tableName)
-		sb.WriteString("WHERE ")
-		sb.WriteString(whereSql)
-	} else {
-		sb.WriteString("UPDATE ")
-		sb.WriteString(tableName)
-		sb.WriteString(" SET ")
-		sb.WriteString(lgSql)
-		sb.WriteString("WHERE ")
-		sb.WriteString(whereSql)
-		sb.WriteString(" and ")
-		sb.WriteString(logicDeleteYesSql)
-	}
+	//lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
+	//logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
+	//if logicDeleteSetSql == lgSql {
+	//	sb.WriteString("DELETE FROM ")
+	//	sb.WriteString(tableName)
+	//	sb.WriteString("WHERE ")
+	//	sb.WriteString(whereSql)
+	//} else {
+	//	sb.WriteString("UPDATE ")
+	//	sb.WriteString(tableName)
+	//	sb.WriteString(" SET ")
+	//	sb.WriteString(lgSql)
+	//	sb.WriteString("WHERE ")
+	//	sb.WriteString(whereSql)
+	//	sb.WriteString(" and ")
+	//	sb.WriteString(logicDeleteYesSql)
+	//}
 
 	return base.dialect.exec(sb.String(), v)
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"unicode"
@@ -212,6 +211,7 @@ func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type,
 	}
 }
 
+
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
 	if baseBaseType(structTyp) {
@@ -228,186 +228,8 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 	return tPtr
 }
 
-//用于检查，单一值的合法性，base 或 valuer struct
-// bool true 代表有效 false:无效-nil
-// err 不合法
-func checkValidFieldTypOne(v reflect.Value) (bool, error) {
 
-	is, base := basePtrValue(v)
-	if is {
-		isNil := v.IsNil()
-		if isNil { //数值无效，直接返回false，不再进行合法性检查
-			return false, nil
-		}
-	}
 
-	is = baseBaseValue(base)
-	if is {
-		return true, nil
-	}
-
-	is, base = baseStructValue(base)
-	if is {
-		_, ok := base.Interface().(driver.Valuer)
-		if !ok {
-			return false, errors.New("struct field " + base.String() + " need imp sql Value")
-		}
-		_, ok = base.Interface().(types.NullEr)
-		if !ok {
-			return false, errors.New("struct field " + base.String() + " need imp core NullEr ")
-		}
-
-		return true, nil
-	}
-
-	return false, errors.New("need a struct or base type")
-}
-
-// string[] - ptr				1
-// map[string]intface - ptr		2
-// struct - ptr					3
-// base struct-base- ptr		4
-// isPtr  是否指针
-// typ  0 -    1 slice   2 map
-// isStruct 是否struct，false为单个filed参数
-// value 基础value map返回自身 slice返回子
-
-type ArgTyp struct {
-	isPtr bool
-	//0 -
-	//1 slice
-	//2 map
-	typ int
-
-	isStruct bool
-	base     reflect.Value
-
-	args map[string]interface{}
-}
-
-func checkArgTyp(v reflect.Value) (a ArgTyp, err error) {
-	isPtr, base := basePtrValue(v)
-	if isPtr {
-		isNil := v.IsNil()
-		if isNil { //数值无效，直接返回false，不再进行合法性检查
-			err = ErrNil
-			return
-		}
-	}
-	a.isPtr = isPtr
-
-	//map
-	is, key, _, err := baseMapValue(base)
-	if err != nil {
-		if errors.Is(err, ErrContainEmpty) {
-			a.typ = 2
-			a.base = base
-		}
-		return
-	}
-	if is {
-		a.typ = 2
-		a.base = base
-		if key.Kind() != reflect.String {
-			err = errors.New(" map type key err no string  ")
-			return
-		}
-		for _, k := range base.MapKeys() {
-			a.args[k.String()]=base.MapIndex(k).Interface()
-		}
-		return
-	}
-
-	//slice
-	is, base, err = baseSliceValue(base)
-	if err != nil {
-		return
-	}
-	if is {
-		a.typ = 1
-	}
-
-	// base
-	is = baseBaseValue(base)
-	if is {
-		a.base = base
-		for i := 0; i < base.Len(); i++ {
-
-		}
-		return
-	}
-
-	is, base = baseStructValue(base)
-	if !is {
-		err = errors.New("  type err   " + base.Kind().String())
-		return
-	}
-	//struct-base
-	_, ok := base.Interface().(driver.Valuer)
-	if ok {
-		a.base = base
-		return
-	}
-
-	numField := base.NumField()
-	for i := 0; i < numField; i++ {
-		field := base.Field(i)
-		ok := checkStructValidField(field)
-		if !ok {
-			err = errors.New("  type err struct filed  ")
-			return
-		}
-	}
-	a.isStruct = true
-	a.base = base
-	return
-}
-
-//用于检查，id  base 或  struct field nuller
-// bool true 代表有效 false:无效-nil
-// err 不合法
-func checkValidPrimaryKey(v []interface{}, ids []string) ([]interface{}, error) {
-	singlePk := len(ids) == 1
-	arr := make([]interface{}, 0)
-	for i, e := range v {
-		value := reflect.ValueOf(e)
-		is, base := basePtrValue(value)
-		if is {
-			isNil := value.IsNil()
-			if isNil { //数值无效，直接返回false，不再进行合法性检查
-				return nil, errors.New("PrimaryKey " + strconv.Itoa(i) + ": is nil")
-			}
-		}
-		is, err := checkValidFieldTypOne(base)
-		if err != nil {
-			return nil, err
-		}
-		if is {
-			if !singlePk {
-				return nil, errors.New("PrimaryKey arg is err")
-			}
-			arr = append(arr, e)
-			continue
-		}
-		is, base = baseStructValue(base)
-		if !is {
-			return nil, errors.New("need a struct or base type")
-		}
-		err = checkValidFieldTypStruct(base)
-		if err != nil {
-			return nil, err
-		}
-
-		if singlePk {
-			return nil, errors.New("PrimaryKey arg is err")
-		}
-		for _, id := range ids {
-			field := base.FieldByName(id)
-			arr = append(arr, field.Interface())
-		}
-	}
-	return arr, nil
-}
 
 var structValidCache = make(map[reflect.Type]error)
 var mutexStructValidCache sync.Mutex
@@ -432,6 +254,8 @@ func checkValidFieldTypStruct(va reflect.Value) error {
 	numField := base.NumField()
 	for i := 0; i < numField; i++ {
 		field := base.Field(i)
+
+
 
 		typ, validField, ok := baseStructValidField(field)
 		if !ok {

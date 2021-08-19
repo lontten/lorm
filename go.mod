@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/go-sql-driver/mysql v1.4.0
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/jackc/pgtype v1.7.0
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/lib/pq v1.10.2 // indirect

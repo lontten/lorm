@@ -21,12 +21,41 @@ func checkScanDestField(v reflect.Value) error {
 }
 
 
+// slice single filed
+func singleFieldBaseSliceValue(value reflect.Value) (is, has bool, base reflect.Value) {
+	_, base = basePtrValue(value)
+	is, has, base = baseSliceValue(base)
+	if !is { //不是 slice
+		return
+	}
+	if !has { //是slice 内容空
+		return
+	}
 
+base:
+	is, has, base = baseSliceValue(base)
+	if is {
+		if !has { //是slice 内容空
+			return
+		}
+		goto base
+	}
+
+	is, err := checkDestSingleNullerSqlValuer(base)
+	if err != nil {
+		return false, false, base
+	}
+	if is {
+		return true, true, base
+	}
+	return false, false, base
+}
+
+// v0.5
 //用于检查，单一值的合法性，base 或 valuer struct
 // bool true 代表有效 false:无效-nil
 // err 不合法
-
-func checkValidFieldNullEr(v reflect.Value) error {
+func checkFieldNullEr(v reflect.Value) error {
 	isPtr, base := basePtrValue(v)
 	if !isPtr {
 		//必须 nuller struct
@@ -53,7 +82,8 @@ func checkValidFieldNullEr(v reflect.Value) error {
 	return errors.New("struct field " + base.String() + " need ptr or NullEr")
 }
 
-func checkValidFieldSqlValueEr(v reflect.Value) error {
+// v0.5
+func checkFieldSqlValueEr(v reflect.Value) error {
 	_, base := basePtrValue(v)
 	is := baseBaseValue(base)
 	if is {
@@ -71,7 +101,8 @@ func checkValidFieldSqlValueEr(v reflect.Value) error {
 	return errors.New("struct field " + base.String() + " need ptr or NullEr")
 }
 
-func checkValidFieldNullErSqlValuer(v reflect.Value) error {
+// v0.5
+func checkFieldNullErSqlValuer(v reflect.Value) error {
 	isPtr, base := basePtrValue(v)
 	if !isPtr {
 		//必须 nuller struct

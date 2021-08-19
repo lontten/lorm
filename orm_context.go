@@ -1,7 +1,9 @@
 package lorm
 
 import (
+	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -13,7 +15,7 @@ type OrmContext struct {
 	//当前表名
 	tableName string
 	//当前struct对象
-	dest             interface{}
+	dest    interface{}
 	isSlice bool
 
 	destBaseValueArr []reflect.Value
@@ -71,11 +73,11 @@ func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string) string {
 		sb.WriteString(" = ? ")
 	}
 
-	lgSql := strings.ReplaceAll(c.LogicDeleteNoSql, "lg.", "")
-	if c.LogicDeleteNoSql != lgSql {
-		sb.WriteString(" AND ")
-		sb.WriteString(lgSql)
-	}
+	//lgSql := strings.ReplaceAll(c.LogicDeleteNoSql, "lg.", "")
+	//if c.LogicDeleteNoSql != lgSql {
+	//	sb.WriteString(" AND ")
+	//	sb.WriteString(lgSql)
+	//}
 	return sb.String()
 }
 
@@ -149,4 +151,56 @@ func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
 		}
 	}
 	return sb.String()
+}
+
+func (c *OrmContext) checkValidPrimaryKey(v []interface{}) {
+	ids := c.primaryKeyNames
+	//主键名列表长度为1，单主键
+	singlePk := len(ids) == 1
+
+	arr := make([]interface{}, 0)
+	for i, e := range v {
+		value := reflect.ValueOf(e)
+		is, base := basePtrValue(value)
+		if is {
+			isNil := value.IsNil()
+			if isNil { //数值无效，直接返回false，不再进行合法性检查
+				c.err = errors.New("PrimaryKey " + strconv.Itoa(i) + ": is nil")
+				return
+			}
+		}
+		is, err := checkDestSingleSqlValuer(base)
+		if err != nil {
+			c.err = err
+			return
+		}
+		if is {
+			if !singlePk {
+				c.err = errors.New("PrimaryKey arg is err")
+				return
+			}
+			arr = append(arr, e)
+			continue
+		}
+		is, base = baseStructValue(base)
+		if !is {
+			c.err = errors.New("need a struct or base type")
+			return
+		}
+
+		//todo
+		err = checkValidFieldTypStruct(base)
+		if err != nil {
+			c.err = err
+			return
+		}
+
+		for _, id := range ids {
+			field := base.FieldByName(id)
+			arr = append(arr, field.Interface())
+		}
+	}
+
+	c.args = append(c.args, arr...)
+
 }
