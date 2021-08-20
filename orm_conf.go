@@ -368,7 +368,7 @@ func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error)
 }
 
 //获取struct对应的字段名 和 其值   有效部分
-func (c OrmConf) getStructMappingColumnsValueNotNull(v reflect.Value) (columns []string, values []interface{}, err error) {
+func (c OrmConf) getStructMappingColumnsValueNotNil(v reflect.Value) (columns []string, values []interface{}, err error) {
 	columns = make([]string, 0)
 	values = make([]interface{}, 0)
 
@@ -380,35 +380,40 @@ func (c OrmConf) getStructMappingColumnsValueNotNull(v reflect.Value) (columns [
 	}
 
 	for column, i := range mappingColumns {
-		field := v.Field(i)
+		inter := getFieldInter(v.Field(i))
 
-		typ, validField, ok := baseStructValidField(field)
-		if !ok {
-			return nil, nil, errors.New("struct field " + field.String() + " need field is ptr slice struct")
-		}
-
-		if typ == 0 {
+		if inter != nil {
 			columns = append(columns, column)
-			values = append(values, validField.Interface())
+			values = append(values, inter)
 		}
 
-		if typ == 1 || typ == 2 {
-			if !field.IsNil() {
-				columns = append(columns, column)
-				values = append(values, validField.Interface())
-			}
-		}
-
-		if typ == 3 {
-			vv := validField.Interface().(types.NullEr)
-			if !vv.IsNull() {
-				value, _ := validField.Interface().(driver.Valuer).Value()
-				columns = append(columns, column)
-				values = append(values, value)
-			}
-		}
 	}
 	return
+}
+
+//获取struct对应的字段名 和 其值   包含 value nil 的部分
+func (c OrmConf) getStructMappingColumnsValueList(v []reflect.Value) (ModelParam, error) {
+	columns := make([]string, 0)
+	values := make([]interface{}, 0)
+	for _, value := range v {
+		t := value.Type()
+
+		mappingColumns, err := c.getStructMappingColumns(t)
+		if err != nil {
+			return ModelParam{}, err
+		}
+
+		for column, i := range mappingColumns {
+			inter := getFieldInter(value.Field(i))
+			columns = append(columns, column)
+			values = append(values, inter)
+		}
+	}
+
+	return ModelParam{
+		columns:      columns,
+		columnValues: values,
+	}, nil
 }
 
 func (c OrmConf) getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error) {

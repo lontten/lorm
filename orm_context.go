@@ -3,10 +3,13 @@ package lorm
 import (
 	"github.com/pkg/errors"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
+type ModelParam struct {
+	columns      []string
+	columnValues []interface{}
+}
 type OrmContext struct {
 	core OrmCore
 
@@ -14,18 +17,19 @@ type OrmContext struct {
 
 	//当前表名
 	tableName string
-	//当前struct对象
-	dest    interface{}
-	isSlice bool
 
-	destBaseValueArr []reflect.Value
+	//当前struct对象
+	dest interface{}
 	//去除 ptr
 	destValue reflect.Value
-	//去除 ptr slice
+	//用作 参数合法行校验
 	destBaseValue reflect.Value
+	isSlice       bool
+	// dest 的value 列表，用作参数
+	destValueArr []reflect.Value
 
-	columns      []string
-	columnValues []interface{}
+
+	modelParams []ModelParam
 
 	query   *strings.Builder
 	args    []interface{}
@@ -158,49 +162,40 @@ func (c *OrmContext) checkValidPrimaryKey(v []interface{}) {
 	//主键名列表长度为1，单主键
 	singlePk := len(ids) == 1
 
-	arr := make([]interface{}, 0)
-	for i, e := range v {
-		value := reflect.ValueOf(e)
-		is, base := basePtrValue(value)
-		if is {
-			isNil := value.IsNil()
-			if isNil { //数值无效，直接返回false，不再进行合法性检查
-				c.err = errors.New("PrimaryKey " + strconv.Itoa(i) + ": is nil")
-				return
-			}
-		}
-		is, err := checkDestSingleSqlValuer(base)
-		if err != nil {
-			c.err = err
-			return
-		}
-		if is {
-			if !singlePk {
-				c.err = errors.New("PrimaryKey arg is err")
-				return
-			}
-			arr = append(arr, e)
-			continue
-		}
-		is, base = baseStructValue(base)
-		if !is {
-			c.err = errors.New("need a struct or base type")
-			return
-		}
-
-		//todo
-		err = checkValidFieldTypStruct(base)
-		if err != nil {
-			c.err = err
-			return
-		}
-
-		for _, id := range ids {
-			field := base.FieldByName(id)
-			arr = append(arr, field.Interface())
-		}
+	value := reflect.ValueOf(v[0])
+	is, base := basePtrValue(value)
+	if is && value.IsNil() { //数值无效，直接返回false，不再进行合法性检查
+		c.err = errors.New("PrimaryKey  : is nil")
+		return
 	}
 
-	c.args = append(c.args, arr...)
+	is, base, err := checkDestSingle(base)
+	if err != nil {
+		c.err = err
+		return
+	}
+	if is {
+		if !singlePk {
+			c.err = errors.New("PrimaryKey arg is err")
+			return
+		}
+		c.args = append(c.args, v...)
+		return
+	}
+
+	err = checkValidFieldTypStruct(base)
+	if err != nil {
+		c.err = err
+		return
+	}
+
+	for _, e := range v {
+		value = reflect.ValueOf(e)
+		_, base = basePtrValue(value)
+		for _, id := range ids {
+			field := base.FieldByName(id)
+			c.args = append(c.args, field.Interface())
+		}
+	}
 
 }

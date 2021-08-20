@@ -36,7 +36,8 @@ type OrmCore interface {
 	initColumns(v reflect.Value) (c []string, err error)
 	initColumnsValue(v reflect.Value) ([]string, []interface{}, error)
 	getStructMappingColumns(t reflect.Type) (map[string]int, error)
-	getStructMappingColumnsValueNotNull(v reflect.Value) (columns []string, values []interface{}, err error)
+	getStructMappingColumnsValueNotNil(v reflect.Value) (columns []string, values []interface{}, err error)
+	getStructMappingColumnsValueList(v []reflect.Value) (m ModelParam, err error)
 
 	getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error)
 }

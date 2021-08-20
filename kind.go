@@ -23,6 +23,39 @@ func baseSliceType(t reflect.Type) (ok bool, structType reflect.Type) {
 	return false, t
 }
 
+func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
+base:
+	is, base := baseSliceType(t)
+	if is {
+		t = base
+		goto base
+	}
+
+	code, base := baseStructBaseType(base)
+	if code < 0 {
+		return false, t
+	}
+	return true, base
+}
+
+func baseSliceDeepValue(v reflect.Value) (is, has bool, base reflect.Value) {
+	_, base = basePtrValue(v)
+base:
+	is, has, base = baseSliceValue(base)
+	if is {
+		if !has { //是slice 内容空
+			return
+		}
+		goto base
+	}
+
+	code, base := baseStructBaseValue(base)
+	if code < 0 {
+		return false, true, base
+	}
+	return true, true, base
+}
+
 func basePtrType(t reflect.Type) (is bool, structType reflect.Type) {
 	if t.Kind() == reflect.Ptr {
 		return true, t.Elem()
@@ -88,46 +121,6 @@ func baseStructValue(v reflect.Value) (is bool, structType reflect.Value) {
 }
 
 //struct
-
-//必须为 struct或基础类型  的 指针类型
-func basePtrStructBaseType(t reflect.Type) (is bool, structType reflect.Type) {
-	is, base := basePtrType(t)
-	if !is {
-		return false, t
-	}
-	is, base = baseStructType(base)
-	if is {
-		return true, base
-	}
-	is = baseBaseType(base)
-	if is {
-		return true, base
-	}
-	return false, t
-}
-
-//struct
-// no ptr -1
-// struct 1
-// base 2
-// no type -2
-func basePtrStructBaseValue(v reflect.Value) (t int, structType reflect.Value) {
-	is, base := basePtrValue(v)
-	if !is {
-		return -1, v
-	}
-	is, base = baseStructValue(base)
-	if is {
-		return 1, base
-	}
-	is = baseBaseValue(base)
-	if is {
-		return 2, base
-	}
-	return -2, v
-}
-
-//struct
 // struct 1
 // base 2
 // no type -2
@@ -146,6 +139,27 @@ func baseStructBaseValue(v reflect.Value) (int, reflect.Value) {
 //struct
 // struct 1
 // base 2
+// slice 3
+// no type -2
+func baseStructBaseSliceValue(v reflect.Value) (int, reflect.Value) {
+	is, base := baseStructValue(v)
+	if is {
+		return 1, base
+	}
+	is = baseBaseValue(base)
+	if is {
+		return 2, base
+	}
+	is,_, _ = baseSliceDeepValue(base)
+	if is {
+		return 3, base
+	}
+	return -2, v
+}
+
+//struct
+// struct 1
+// base 2
 // no type -2
 func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 	is, base := baseStructType(t)
@@ -155,6 +169,27 @@ func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 	is = baseBaseType(base)
 	if is {
 		return 2, base
+	}
+	return -2, t
+}
+
+//struct
+// struct 1
+// base 2
+// slice 3
+// no type -2
+func baseStructBaseSliceType(t reflect.Type) (int, reflect.Type) {
+	is, base := baseStructType(t)
+	if is {
+		return 1, base
+	}
+	is = baseBaseType(base)
+	if is {
+		return 2, base
+	}
+	is, base = baseSliceDeepType(base)
+	if is {
+		return 3, base
 	}
 	return -2, t
 }

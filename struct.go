@@ -1,9 +1,7 @@
 package lorm
 
 import (
-	"database/sql/driver"
 	"errors"
-	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
@@ -66,6 +64,7 @@ type StructValidFieldValueMap map[string]interface{}
 
 //去除 所有 ptr slice 获取 struct ，不为struct 或 基础类型 为false
 //1 ptr 2slice 3struct  0基础类型
+//Deprecated
 func baseStructValidField(v reflect.Value) (typ int, structValue reflect.Value, b bool) {
 	structValue = v
 	t := v.Type()
@@ -106,29 +105,8 @@ base:
 	}
 }
 
-func checkStructValidField(v reflect.Value) bool {
-	code, _ := basePtrStructBaseValue(v)
-	if code > 0 {
-		return true
-	}
-	if v.Kind() == reflect.Struct {
-		_, ok := v.Interface().(driver.Valuer)
-		if !ok {
-			return false
-		}
-		_, ok = v.Interface().(types.NullEr)
-		if !ok {
-			return false
-		}
-		return true
-	}
-	if v.Kind() == reflect.Slice {
-		return true
-	}
-	return false
-}
-
 // *struct
+//Deprecated
 func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 	switch t.Kind() {
 	case reflect.Ptr:
@@ -149,6 +127,7 @@ func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 }
 
 // *struct
+//Deprecated
 func baseStructValuePtr(v reflect.Value) (structValue reflect.Value, e error) {
 	switch v.Kind() {
 	case reflect.Ptr:
@@ -168,6 +147,7 @@ func baseStructValuePtr(v reflect.Value) (structValue reflect.Value, e error) {
 }
 
 //把 *slice  获取 slice
+//Deprecated
 func baseSliceTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 	switch t.Kind() {
 	case reflect.Ptr:
@@ -189,7 +169,7 @@ func baseSliceTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 
 //把 *[]struct 类型 剔除 * [] 获取 struct 的基础类型
 //typ 最表面的类型 1 ptr  ；   2 slice  ；  0 struct
-
+//Deprecated
 func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type, e error) {
 	switch t.Kind() {
 	case reflect.Ptr:
@@ -211,7 +191,7 @@ func baseStructTypeSliceOrPtr(t reflect.Type) (typ int, structType reflect.Type,
 	}
 }
 
-
+// v0.5
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
 	if baseBaseType(structTyp) {
@@ -228,52 +208,43 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 	return tPtr
 }
 
-
-
-
-var structValidCache = make(map[reflect.Type]error)
+// v0.5 检查一个 struct 是否合法
+var structValidCache = make(map[reflect.Type]reflect.Value)
 var mutexStructValidCache sync.Mutex
 
 func checkValidFieldTypStruct(va reflect.Value) error {
 	mutexStructValidCache.Lock()
 	defer mutexStructValidCache.Unlock()
 
-	_, base := basePtrValue(va)
-
-	typ := base.Type()
-	b, ok := structValidCache[typ]
+	typ := va.Type()
+	_, ok := structValidCache[typ]
 	if ok {
-		return b
+		return nil
 	}
 
-	is, base := baseStructValue(base)
+	is, base := baseStructValue(va)
 	if !is {
 		return errors.New("need a struct")
 	}
 
-	numField := base.NumField()
+	err := _checkStructFieldValid(base)
+	if err != nil {
+		return err
+	}
+
+	structValidCache[typ] = base
+	return nil
+}
+
+//v0.5
+// 检查一个非 single struct 是否合法
+func _checkStructFieldValid(v reflect.Value) error {
+	numField := v.NumField()
 	for i := 0; i < numField; i++ {
-		field := base.Field(i)
-
-
-
-		typ, validField, ok := baseStructValidField(field)
-		if !ok {
-			return errors.New("struct field " + field.String() + " need field is ptr slice struct")
-		}
-		//为 struct类型
-		if typ == 3 {
-			_, ok = validField.Interface().(driver.Valuer)
-			if !ok {
-				return errors.New("struct field " + field.String() + " need imp sql Value")
-			}
-			_, ok = validField.Interface().(types.NullEr)
-			if !ok {
-				return errors.New("struct field " + field.String() + " need imp core NullEr ")
-			}
-
+		err := checkFieldNullErSqlValuer(v.Field(i))
+		if err != nil {
+			return err
 		}
 	}
-	structValidCache[typ] = nil
 	return nil
 }

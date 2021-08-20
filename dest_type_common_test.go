@@ -7,13 +7,14 @@ import (
 )
 
 func Test_checkValidSingleFiled(t *testing.T) {
-	ka := Ka{}
-	field := reflect.ValueOf(ka).Field(0)
+	var n=make([]Ka,0)
 
-	is, has, base := singleFieldBaseSliceValue(field)
-	fmt.Println(is)
-	fmt.Println(has)
-	fmt.Println(base)
+	field := reflect.ValueOf(n)
+	fmt.Println(field.Len())
+	fmt.Println(field.IsNil())
+	fmt.Println(field.IsZero())
+	fmt.Println(field.IsValid())
+
 
 }
 

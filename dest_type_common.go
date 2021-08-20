@@ -11,18 +11,15 @@ import (
 //用于检查，单一值的合法性，base 或 valuer struct
 // bool true 代表有效 false:无效-nil
 // err 不合法
+//Deprecated
 func checkDestSingleSqlValuer(v reflect.Value) (bool, error) {
-	is, base := basePtrValue(v)
-	if is && v.IsNil() { //数值无效，直接返回false，不再进行合法性检查
-		return false, nil
-	}
 
-	is = baseBaseValue(base)
+	is := baseBaseValue(v)
 	if is {
 		return true, nil
 	}
 
-	is, base = baseStructValue(base)
+	is, base := baseStructValue(v)
 	if is {
 		_, ok := base.Interface().(driver.Valuer)
 		if !ok {
@@ -38,6 +35,7 @@ func checkDestSingleSqlValuer(v reflect.Value) (bool, error) {
 //用于检查，单一值的合法性，base 或 valuer struct
 // bool true 代表有效 false:无效-nil
 // err 不合法
+//Deprecated
 func checkDestSingleNullerSqlValuer(v reflect.Value) (bool, error) {
 	is, base := basePtrValue(v)
 	if is && v.IsNil() { //数值无效，直接返回false，不再进行合法性检查
@@ -77,11 +75,14 @@ func checkDestSingleNullerSqlValuer(v reflect.Value) (bool, error) {
 	return false, errors.New("need a struct or base type")
 }
 
+// todo
 // v0.5
+// byid single
 // slice filed 不进行 内部检查，只要是 slice就行
 //用于检查，单一值的合法性，base 或 valuer struct
 // bool true 代表有效 false:无效-nil
 // err 不合法
+//Deprecated
 func checkDestSingleContainSliceNullerSqlValuer(v reflect.Value) (bool, error) {
 	is, base := basePtrValue(v)
 	if is && v.IsNil() { //数值无效，直接返回false，不再进行合法性检查
