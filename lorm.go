@@ -67,7 +67,6 @@ func (c *PgConf) DriverName() string {
 	return POSTGRES
 }
 
-
 func (c *PgConf) Open() (*sql.DB, error) {
 	dsn := "user=" + c.User +
 		" password=" + c.Password +
@@ -80,7 +79,6 @@ func (c *PgConf) Open() (*sql.DB, error) {
 	dsn += c.Other
 	return sql.Open("pgx", dsn)
 }
-
 
 type Engine struct {
 	db      DB

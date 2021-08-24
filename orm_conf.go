@@ -392,28 +392,34 @@ func (c OrmConf) getStructMappingColumnsValueNotNil(v reflect.Value) (columns []
 }
 
 //获取struct对应的字段名 和 其值   包含 value nil 的部分
-func (c OrmConf) getStructMappingColumnsValueList(v []reflect.Value) (ModelParam, error) {
+func (c OrmConf) getStructMappingColumnsValueList(v []reflect.Value) ([]string, [][]interface{}, error) {
 	columns := make([]string, 0)
-	values := make([]interface{}, 0)
-	for _, value := range v {
-		t := value.Type()
+	values := make([][]interface{}, 0)
 
-		mappingColumns, err := c.getStructMappingColumns(t)
-		if err != nil {
-			return ModelParam{}, err
-		}
-
-		for column, i := range mappingColumns {
-			inter := getFieldInter(value.Field(i))
-			columns = append(columns, column)
-			values = append(values, inter)
-		}
+	mappingColumns, err := c.getStructMappingColumns(v[0].Type())
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return ModelParam{
-		columns:      columns,
-		columnValues: values,
-	}, nil
+	for column := range mappingColumns {
+		columns = append(columns, column)
+	}
+
+	for _, value := range v {
+		mappingColumns, err = c.getStructMappingColumns(value.Type())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		vas := make([]interface{}, 0)
+		for _, column := range columns {
+			j := mappingColumns[column]
+			inter := getFieldInter(value.Field(j))
+			vas = append(vas, inter)
+		}
+		values = append(values, vas)
+	}
+	return columns, values, nil
 }
 
 func (c OrmConf) getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error) {

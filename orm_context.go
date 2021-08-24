@@ -6,13 +6,7 @@ import (
 	"strings"
 )
 
-type ModelParam struct {
-	columns      []string
-	columnValues []interface{}
-}
 type OrmContext struct {
-	core OrmCore
-
 	primaryKeyNames []string
 
 	//当前表名
@@ -28,8 +22,10 @@ type OrmContext struct {
 	// dest 的value 列表，用作参数
 	destValueArr []reflect.Value
 
-
-	modelParams []ModelParam
+	//字段名称-列表
+	columns []string
+	//值列表-多个
+	columnValues [][]interface{}
 
 	query   *strings.Builder
 	args    []interface{}
@@ -119,7 +115,8 @@ func (ctx *OrmContext) tableWherePrimaryKey2SqlStr(ids []string, c OrmConf) stri
 }
 
 // create 生成
-func (ctx *OrmContext) tableCreateArgs2SqlStr(args []string) string {
+func (ctx *OrmContext) tableCreateArgs2SqlStr() string {
+	args := ctx.columns
 	var sb strings.Builder
 	sb.WriteString(" ( ")
 	for i, v := range args {

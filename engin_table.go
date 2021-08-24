@@ -9,6 +9,7 @@ import (
 )
 
 type EngineTable struct {
+	ormConf OrmConf
 	dialect Dialect
 
 	ctx OrmContext
@@ -19,7 +20,7 @@ func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return e.ctx.core.ScanLn(rows, e.ctx.dest)
+	return e.ormConf.ScanLn(rows, e.ctx.dest)
 }
 
 func (e *EngineTable) setTargetDest(v interface{}) {
@@ -82,7 +83,7 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 		return
 	}
 
-	createSqlStr := e.ctx.tableCreateArgs2SqlStr(e.ctx.columns)
+	createSqlStr := e.ctx.tableCreateArgs2SqlStr( )
 
 	var sb strings.Builder
 	sb.WriteString("INSERT INTO ")
@@ -167,7 +168,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	c := base.ctx.columns
 	cv := base.ctx.columnValues
 
-	columns, values, err := base.ctx.core.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -296,29 +297,29 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	base.initPrimaryKeyName()
 	base.ctx.checkValidPrimaryKey(v)
 
-	//logicDeleteSetSql := base.ormConf.LogicDeleteSetSql
-	//logicDeleteYesSql := base.ormConf.LogicDeleteYesSql
-	//tableName := base.ctx.tableName
-	//whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, base.ormConf)
+	logicDeleteSetSql := ormConf.LogicDeleteSetSql
+	logicDeleteYesSql := ormConf.LogicDeleteYesSql
+	tableName := base.ctx.tableName
+	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, base.ormConf)
 
 	var sb strings.Builder
-	//lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
-	//logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-	//if logicDeleteSetSql == lgSql {
-	//	sb.WriteString("DELETE FROM ")
-	//	sb.WriteString(tableName)
-	//	sb.WriteString("WHERE ")
-	//	sb.WriteString(whereSql)
-	//} else {
-	//	sb.WriteString("UPDATE ")
-	//	sb.WriteString(tableName)
-	//	sb.WriteString(" SET ")
-	//	sb.WriteString(lgSql)
-	//	sb.WriteString("WHERE ")
-	//	sb.WriteString(whereSql)
-	//	sb.WriteString(" and ")
-	//	sb.WriteString(logicDeleteYesSql)
-	//}
+	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
+	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
+	if logicDeleteSetSql == lgSql {
+		sb.WriteString("DELETE FROM ")
+		sb.WriteString(tableName)
+		sb.WriteString("WHERE ")
+		sb.WriteString(whereSql)
+	} else {
+		sb.WriteString("UPDATE ")
+		sb.WriteString(tableName)
+		sb.WriteString(" SET ")
+		sb.WriteString(lgSql)
+		sb.WriteString("WHERE ")
+		sb.WriteString(whereSql)
+		sb.WriteString(" and ")
+		sb.WriteString(logicDeleteYesSql)
+	}
 
 	return base.dialect.exec(sb.String(), v)
 }
@@ -334,7 +335,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	columns, values, err := base.ctx.core.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
 	if err != nil {
 		return 0, err
 	}
@@ -443,7 +444,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-	columns, values, err := base.ctx.core.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -612,7 +613,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 
 	tableName := base.ctx.tableName
 	c := base.ctx.columns
-	columns, values, err := base.ctx.core.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -683,11 +684,11 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 
 //init
 func (e *EngineTable) initPrimaryKeyName() {
-	e.ctx.primaryKeyNames = e.ctx.core.primaryKeys(e.ctx.tableName, e.ctx.destBaseValue)
+	e.ctx.primaryKeyNames = ormConf.primaryKeys(e.ctx.tableName, e.ctx.destBaseValue)
 }
 
 func (e *EngineTable) initTableName() {
-	tableName, err := e.ctx.core.tableName(e.ctx.destBaseValue)
+	tableName, err := ormConf.tableName(e.ctx.destBaseValue)
 	if err != nil {
 		e.ctx.err = err
 		return
@@ -698,7 +699,7 @@ func (e *EngineTable) initTableName() {
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() {
 	if !e.ctx.isSlice {
-		columns, values, err := e.ctx.core.getStructMappingColumnsValueNotNil(e.ctx.destValueArr[0])
+		columns, values, err := ormConf.getStructMappingColumnsValueNotNil(e.ctx.destValueArr[0])
 		if err != nil {
 			e.ctx.err = err
 			return
@@ -711,7 +712,7 @@ func (e *EngineTable) initColumnsValue() {
 		return
 	}
 
-	modelParam, err := e.ctx.core.getStructMappingColumnsValueList(e.ctx.destValueArr)
+	modelParam, err := ormConf.getStructMappingColumnsValueList(e.ctx.destValueArr)
 	if err != nil {
 		e.ctx.err = err
 		return
@@ -722,7 +723,7 @@ func (e *EngineTable) initColumnsValue() {
 
 //获取struct对应的字段名 有效部分
 func (e *EngineTable) initColumns() error {
-	columns, err := e.ctx.core.initColumns(e.ctx.destBaseValue)
+	columns, err := e.ormConf.initColumns(e.ctx.destBaseValue)
 	if err != nil {
 		return err
 	}

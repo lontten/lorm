@@ -18,18 +18,22 @@ func (db DB) Db(c *OrmConf) Engine {
 		db:      db,
 		ormConf: conf,
 		Base: EngineBase{
+			ormConf: conf,
 			context: OrmContext{},
 			dialect: db.dbConfig.Dialect(db.db),
 		},
 		Extra: EngineExtra{
+			ormConf: conf,
 			context: OrmContext{},
 			dialect: db.dbConfig.Dialect(db.db),
 		},
 		Classic: EngineNative{
+			ormConf: conf,
 			context: OrmContext{},
 			dialect: db.dbConfig.Dialect(db.db),
 		},
 		Table: EngineTable{
+			ormConf: conf,
 			ctx:     OrmContext{},
 			dialect: db.dbConfig.Dialect(db.db),
 		},
