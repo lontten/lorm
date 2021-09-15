@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-type Time time.Time
+type Time struct {
+	time.Time
+}
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	tune := time.Time(t).Format(`"15:04:05"`)
+	tune := t.Time.Format(`"15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -20,16 +22,16 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
-	*t = Time(now)
+	*t = Time{now}
 	return err
 }
 
 func (t Time) Value() (driver.Value, error) {
 	var zeroTime time.Time
-	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return time.Time(t), nil
+	return t.Time, nil
 }
 
 func (t *Time) Scan(v interface{}) error {
@@ -40,16 +42,18 @@ func (t *Time) Scan(v interface{}) error {
 	case []byte:
 		s = string(v)[:8]
 	case time.Time:
-		*t = Time(v)
+		*t = Time{v}
+	case Time:
+		*t = v
 		return nil
 	default:
-		return fmt.Errorf("can not convert %v to timestamp", v)
+		return fmt.Errorf("can not convert %v to Time", v)
 	}
 	now, err := time.Parse(`15:04:05`, s)
 	if err != nil {
 		return err
 	}
-	*t = Time(now)
+	*t = Time{Time: now}
 	return nil
 }
 
@@ -83,7 +87,7 @@ func (p *TimeList) Scan(data interface{}) error {
 	var list []Time
 	list = make([]Time, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = Time(element.Time)
+		list[i] = Time{element.Time}
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -94,10 +98,12 @@ func (p *TimeList) Scan(data interface{}) error {
 }
 
 //date
-type Date time.Time
+type Date struct {
+	time.Time
+}
 
 func (t Date) MarshalJSON() ([]byte, error) {
-	tune := time.Time(t).Format(`"2006-01-02"`)
+	tune := t.Format(`"2006-01-02"`)
 	return []byte(tune), nil
 }
 
@@ -106,30 +112,45 @@ func (t *Date) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"2006-01-02"`, string(data), time.Local)
-	*t = Date(now)
+	*t = Date{Time: now}
 	return err
 }
 
 // Value insert timestamp into mysql need this function.
 func (t Date) Value() (driver.Value, error) {
 	var zeroTime time.Time
-	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return time.Time(t), nil
+	return t.Time, nil
 }
 
 // Scan valueof jstime.Time
 func (t *Date) Scan(v interface{}) error {
-	value, ok := v.(time.Time)
-	if ok {
-		*t = Date(value)
+	var s = ""
+	switch v := v.(type) {
+	case string:
+		s = v[:8]
+	case []byte:
+		s = string(v)[:8]
+	case time.Time:
+		*t = Date{v}
+	case Date:
+		*t = v
 		return nil
+	default:
+		return fmt.Errorf("can not convert %v to types.Date", v)
 	}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	now, err := time.Parse(`2006-01-02`, s)
+	if err != nil {
+		return err
+	}
+	*t = Date{Time: now}
+	return nil
+
 }
 func (t Date) ToGoTime() time.Time {
-	return time.Unix(time.Time(t).Unix(), 0)
+	return time.Unix(t.Unix(), 0)
 }
 
 type DateList []Date
@@ -162,7 +183,7 @@ func (p *DateList) Scan(data interface{}) error {
 	var list []Date
 	list = make([]Date, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = Date(element.Time)
+		list[i] = Date{element.Time}
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -173,10 +194,12 @@ func (p *DateList) Scan(data interface{}) error {
 }
 
 //datetime
-type DateTime time.Time
+type DateTime struct {
+	time.Time
+}
 
 func (t DateTime) MarshalJSON() ([]byte, error) {
-	tune := time.Time(t).Format(`"2006-01-02 15:04:05"`)
+	tune := t.Format(`"2006-01-02 15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -185,31 +208,45 @@ func (t *DateTime) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, string(data), time.Local)
-	*t = DateTime(now)
+	*t = DateTime{Time: now}
 	return err
 }
 
 // Value insert timestamp into mysql need this function.
 func (t DateTime) Value() (driver.Value, error) {
 	var zeroTime time.Time
-	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return time.Time(t), nil
+	return t.Time, nil
 }
 
 // Scan valueof jstime.Time
 func (t *DateTime) Scan(v interface{}) error {
-	value, ok := v.(time.Time)
-	if ok {
-		*t = DateTime(value)
+	var s = ""
+	switch v := v.(type) {
+	case string:
+		s = v[:8]
+	case []byte:
+		s = string(v)[:8]
+	case time.Time:
+		*t = DateTime{v}
+	case DateTime:
+		*t = v
 		return nil
+	default:
+		return fmt.Errorf("can not convert %v to types.DateTime", v)
 	}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	now, err := time.Parse(`2006-01-02`, s)
+	if err != nil {
+		return err
+	}
+	*t = DateTime{Time: now}
+	return nil
 }
 
 func (t DateTime) ToGoTime() time.Time {
-	return time.Unix(time.Time(t).Unix(), 0)
+	return time.Unix(t.Unix(), 0)
 }
 
 type DateTimeList []DateTime
@@ -242,7 +279,7 @@ func (p *DateTimeList) Scan(data interface{}) error {
 	var list []DateTime
 	list = make([]DateTime, len(array.Elements))
 	for i, element := range array.Elements {
-		list[i] = DateTime(element.Time)
+		list[i] = DateTime{element.Time}
 	}
 	marshal, err := json.Marshal(list)
 	if err != nil {
@@ -253,31 +290,25 @@ func (p *DateTimeList) Scan(data interface{}) error {
 }
 
 func (d Date) AddTime(t Time) DateTime {
-	d2 := time.Time(d)
-	t2 := time.Time(t)
-
-	return DateTime(time.Date(
-		d2.Year(),
-		d2.Month(),
-		d2.Day(),
-		t2.Hour(),
-		t2.Minute(),
-		t2.Second(), 0, nil,
-	))
+	return DateTime{time.Date(
+		d.Time.Year(),
+		d.Time.Month(),
+		d.Time.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
+	)}
 }
 
 func (t Time) AddData(d Date) DateTime {
-	d2 := time.Time(d)
-	t2 := time.Time(t)
-
-	return DateTime(time.Date(
-		d2.Year(),
-		d2.Month(),
-		d2.Day(),
-		t2.Hour(),
-		t2.Minute(),
-		t2.Second(), 0, nil,
-	))
+	return DateTime{time.Date(
+		d.Time.Year(),
+		d.Time.Month(),
+		d.Time.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(), 0, nil,
+	)}
 }
 
 //datetime
@@ -315,10 +346,28 @@ func (t AutoDateTime) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *AutoDateTime) Scan(v interface{}) error {
-	value, ok := v.(time.Time)
-	if ok {
-		*t = AutoDateTime{Time: value}
+	var s = ""
+	switch v := v.(type) {
+	case string:
+		s = v[:8]
+	case []byte:
+		s = string(v)[:8]
+	case time.Time:
+		*t = AutoDateTime{v}
+	case Time:
+		*t = AutoDateTime{v.Time}
+	case Date:
+		*t = AutoDateTime{v.Time}
+	case AutoDateTime:
+		*t = v
 		return nil
+	default:
+		return fmt.Errorf("can not convert %v to types.AutoDateTime", v)
 	}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	now, err := time.Parse(`2006-01-02 15:04:05`, s)
+	if err != nil {
+		return err
+	}
+	*t = AutoDateTime{Time: now}
+	return nil
 }
