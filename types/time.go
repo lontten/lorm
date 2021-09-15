@@ -39,12 +39,15 @@ func (t Time) Value() (driver.Value, error) {
 }
 
 func (t *Time) Scan(v interface{}) error {
+	if v == nil {
+		return nil
+	}
 	var s = ""
 	switch v := v.(type) {
 	case string:
-		s = v[:8]
+		s = v
 	case []byte:
-		s = string(v)[:8]
+		s = string(v)
 	case time.Time:
 		*t = Time{v}
 	case Time:
@@ -53,7 +56,10 @@ func (t *Time) Scan(v interface{}) error {
 	default:
 		return fmt.Errorf("can not convert %v to Time", v)
 	}
-	now, err := time.Parse(`15:04:05`, s)
+	if len(s) < 8 {
+		return nil
+	}
+	now, err := time.Parse(`15:04:05`, s[:8])
 	if err != nil {
 		return err
 	}
@@ -135,26 +141,20 @@ func (t Date) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *Date) Scan(v interface{}) error {
-	var s = ""
-	switch v := v.(type) {
-	case string:
-		s = v[:8]
-	case []byte:
-		s = string(v)[:8]
-	case time.Time:
-		*t = Date{v}
-	case Date:
-		*t = v
+
+	value, ok := v.(time.Time)
+	if ok {
+		*t = Date{value}
 		return nil
-	default:
-		return fmt.Errorf("can not convert %v to types.Date", v)
 	}
-	now, err := time.Parse(`2006-01-02`, s)
-	if err != nil {
-		return err
+
+	value2, ok2 := v.(Date)
+	if ok2 {
+		*t = value2
+		return nil
 	}
-	*t = Date{Time: now}
-	return nil
+
+	return fmt.Errorf("can not convert %v to types.Date", v)
 
 }
 func (t Date) ToGoTime() time.Time {
@@ -235,26 +235,20 @@ func (t DateTime) Value() (driver.Value, error) {
 
 // Scan valueof jstime.Time
 func (t *DateTime) Scan(v interface{}) error {
-	var s = ""
-	switch v := v.(type) {
-	case string:
-		s = v[:8]
-	case []byte:
-		s = string(v)[:8]
-	case time.Time:
-		*t = DateTime{v}
-	case DateTime:
-		*t = v
+	value, ok := v.(time.Time)
+	if ok {
+		*t = DateTime{value}
 		return nil
-	default:
-		return fmt.Errorf("can not convert %v to types.DateTime", v)
 	}
-	now, err := time.Parse(`2006-01-02`, s)
-	if err != nil {
-		return err
+
+	value2, ok2 := v.(DateTime)
+	if ok2 {
+		*t = value2
+		return nil
 	}
-	*t = DateTime{Time: now}
-	return nil
+
+	return fmt.Errorf("can not convert %v to types.DateTime", v)
+
 }
 
 func (t DateTime) ToGoTime() time.Time {
