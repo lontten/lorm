@@ -12,6 +12,10 @@ type Time struct {
 	time.Time
 }
 
+func NowTime() Time {
+	return Time{time.Now()}
+}
+
 func (t Time) MarshalJSON() ([]byte, error) {
 	tune := t.Time.Format(`"15:04:05"`)
 	return []byte(tune), nil
@@ -100,6 +104,10 @@ func (p *TimeList) Scan(data interface{}) error {
 //date
 type Date struct {
 	time.Time
+}
+
+func NowDate() Date {
+	return Date{time.Now()}
 }
 
 func (t Date) MarshalJSON() ([]byte, error) {
@@ -196,6 +204,10 @@ func (p *DateList) Scan(data interface{}) error {
 //datetime
 type DateTime struct {
 	time.Time
+}
+
+func NowDateTime() DateTime {
+	return DateTime{time.Now()}
 }
 
 func (t DateTime) MarshalJSON() ([]byte, error) {
