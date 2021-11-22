@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"database/sql"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -22,7 +23,6 @@ type OrmContext struct {
 	// dest 的value 列表，用作参数
 	destValueArr []reflect.Value
 
-	//字段名称-列表
 	columns []string
 	//值列表-多个
 	columnValues [][]interface{}
@@ -117,6 +117,30 @@ func (ctx *OrmContext) tableWherePrimaryKey2SqlStr(ids []string, c OrmConf) stri
 // create 生成
 func (ctx *OrmContext) tableCreateArgs2SqlStr() string {
 	args := ctx.columns
+	var sb strings.Builder
+	sb.WriteString(" ( ")
+	for i, v := range args {
+		if i == 0 {
+			sb.WriteString(v)
+		} else {
+			sb.WriteString(" , " + v)
+		}
+	}
+	sb.WriteString(" ) ")
+	sb.WriteString(" VALUES ")
+	sb.WriteString("( ")
+	for i := range args {
+		if i == 0 {
+			sb.WriteString(" ? ")
+		} else {
+			sb.WriteString(", ? ")
+		}
+	}
+	sb.WriteString(" ) ")
+	return sb.String()
+}
+
+func (ctx *OrmContext) createSqlGenera(args []string)  {
 	var sb strings.Builder
 	sb.WriteString(" ( ")
 	for i, v := range args {

@@ -23,6 +23,25 @@ func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 	return e.ormConf.ScanLn(rows, e.ctx.dest)
 }
 
+func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
+	stmt, err := e.dialect.queryBatch(query)
+	if err != nil {
+		return 0, err
+	}
+
+	e.ctx.core.stmt=stmt
+
+	return e.ctx.core.ScanLnBatch()
+}
+
+func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
+	rows, err := e.dialect.query(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return e.ctx.core.Scan(rows, e.ctx.dest)
+}
+
 func (e *EngineTable) setTargetDest(v interface{}) {
 	e.ctx.initTargetDest(v)
 	if e.ctx.err != nil {
@@ -33,7 +52,6 @@ func (e *EngineTable) setTargetDest(v interface{}) {
 		e.ctx.err = err
 		return
 	}
-
 	e.initTableName()
 }
 
@@ -496,7 +514,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
-	e.setTargetDest(v)
+	e.setTargetDestOnlyTableName(v)
 	if e.ctx.err != nil {
 		return OrmTableSelect{base: e}
 	}

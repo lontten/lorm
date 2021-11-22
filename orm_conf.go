@@ -13,6 +13,8 @@ import (
 )
 
 type OrmConf struct {
+	stmt *sql.Stmt
+
 	//po生成文件目录
 	PoDir string
 	//是否覆盖，默认true
@@ -52,6 +54,46 @@ type OrmConf struct {
 }
 
 func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
+	defer rows.Close()
+	value := reflect.ValueOf(v)
+	code, base := basePtrStructBaseValue(value)
+	if code == -1 {
+		return 0, errors.New("dest need a  ptr")
+	}
+	if code == -2 {
+		return 0, errors.New("need a ptr struct or base type")
+	}
+
+	num = 1
+	t := base.Type()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return
+	}
+	cfm, err := c.getColFieldIndexLinkMap(columns, t)
+	if err != nil {
+		return
+	}
+	if rows.Next() {
+		box, _, v := createColBox(t, cfm)
+		err = rows.Scan(box...)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		base.Set(v)
+	}
+
+	if rows.Next() {
+		return 0, errors.New("result to many for one")
+	}
+	return
+}
+
+func (c OrmConf) ScanLnBatch(rows *sql.Rows, v interface{}) (num int64, err error) {
+	stmt := c.stmt
+
 	defer rows.Close()
 	value := reflect.ValueOf(v)
 	code, base := basePtrStructBaseValue(value)
