@@ -126,7 +126,7 @@ func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 
 }
 
-// v0.5
+// v0.6
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
 	if baseBaseType(structTyp) {
@@ -143,7 +143,7 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 	return tPtr
 }
 
-// v0.5 检查一个 struct 是否合法
+// v0.6 检查一个 struct 是否合法
 var structValidCache = make(map[reflect.Type]reflect.Value)
 var mutexStructValidCache sync.Mutex
 
@@ -171,7 +171,7 @@ func checkValidFieldTypStruct(va reflect.Value) error {
 	return nil
 }
 
-//v0.5
+//v0.6
 // 检查一个非 single struct 是否合法
 func _checkStructFieldValid(v reflect.Value) error {
 	numField := v.NumField()

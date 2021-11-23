@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"reflect"
 )
-
+// v0.6
 //只校验struct 的 field 是否合法
 //1. check single
 //2. valuer
@@ -19,6 +19,7 @@ func checkField(v reflect.Value) error {
 	}
 	return nil
 }
+// v0.6
 //只校验struct 的 field 是否合法
 //1. check single
 //2. valuer

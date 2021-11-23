@@ -108,7 +108,7 @@ func baseSliceType(t reflect.Type) (bool, reflect.Type) {
 	}
 	return false, t
 }
-
+// v0.6
 // is 是否 slice ; has 是否有内容
 func baseSliceValue(v reflect.Value) (is, has bool, structType reflect.Value) {
 	if v.Kind() == reflect.Slice {
@@ -140,6 +140,7 @@ func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
 	}
 	return false, t
 }
+// v0.6
 func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value) {
 	isSlice := false
 	flag := true //base
@@ -185,6 +186,7 @@ base:
 }
 
 //--------------------
+// v0.6
 //检查是 ptr 还是 slice
 type packType int
 
@@ -193,7 +195,7 @@ const (
 	Ptr   packType = iota
 	Slice packType = iota
 )
-
+// v0.6
 //检查是否是ptr，slice类型
 func checkPackType(t reflect.Type) (packType, reflect.Type) {
 	is, base := basePtrDeepType(t)
@@ -220,6 +222,7 @@ func checkPackTypeValue(v reflect.Value) (packType, reflect.Value) {
 }
 
 //-----------------map-------
+// v0.6
 // is 是否 slice has 是否有内容
 func baseMapValue(v reflect.Value) (is, has bool, key reflect.Value) {
 	if v.Kind() == reflect.Map {
@@ -231,7 +234,7 @@ func baseMapValue(v reflect.Value) (is, has bool, key reflect.Value) {
 	}
 	return false, false, v
 }
-
+// v0.6
 // is 是否 slice has 是否有内容
 func baseMapType(t reflect.Type) (is, has bool) {
 	if t.Kind() == reflect.Map {
@@ -246,15 +249,14 @@ func baseMapType(t reflect.Type) (is, has bool) {
 //--------------------------------------------------
 
 //--------------------
+// v0.6
 //检查是 single 还是 composite
 type compType int
-
 const (
 	Invade    compType = iota
 	Single    compType = iota
 	Composite compType = iota
 )
-
 func checkCompTypeValue(v reflect.Value, canEmpty bool) (compType, reflect.Value) {
 	t := v.Type()
 	is := baseBaseType(t)
@@ -279,12 +281,14 @@ func checkCompTypeValue(v reflect.Value, canEmpty bool) (compType, reflect.Value
 	return Invade, v
 }
 //-----------------------nuller---------------------------------
+// v0.6
 //检查是否nuller
 func checkBaseNuller(v reflect.Value) bool {
 	_, ok := v.Interface().(types.NullEr)
 	return ok
 }
 //-----------------------map--------------------------------
+// v0.6
 //检查map key是否string，value是否valuer
 func checkValidMap(v reflect.Value) bool {
 	keys := v.MapKeys()
@@ -309,6 +313,7 @@ func checkValidMap(v reflect.Value) bool {
 	}
 	return true
 }
+// v0.6
 //检查map key是否string，value是否valuer,nuller
 func checkValidMapValuer(v reflect.Value) bool {
 	keys := v.MapKeys()
