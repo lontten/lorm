@@ -348,22 +348,6 @@ func checkValidMapValuer(v reflect.Value) bool {
 
 
 
-//struct
-// struct 1
-// base 2
-// no type -2
-func baseStructBaseValue(v reflect.Value) (int, reflect.Value) {
-	is, base := baseStructValue(v)
-	if is {
-		return 1, base
-	}
-	is = baseBaseValue(base)
-	if is {
-		return 2, base
-	}
-	return -2, v
-}
-
 
 //struct
 // struct 1
