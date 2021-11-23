@@ -26,7 +26,7 @@ func checkFieldNullEr(v reflect.Value) error {
 			return nil
 		}
 
-		is, _, _ = baseSliceDeepValue(base)
+		is, _ = baseSliceDeepValue(base)
 		if is {
 			return nil
 		}
@@ -43,7 +43,7 @@ func checkFieldNullEr(v reflect.Value) error {
 		return nil
 	}
 
-	is, _, _ = baseSliceDeepValue(base)
+	is, _ = baseSliceDeepValue(base)
 	if is {
 		return nil
 	}
@@ -68,7 +68,7 @@ func checkFieldSqlValueEr(v reflect.Value) error {
 		return nil
 	}
 
-	is, _, _ = baseSliceDeepValue(base)
+	is, _ = baseSliceDeepValue(base)
 	if is {
 		return nil
 	}
@@ -94,7 +94,7 @@ func checkFieldNullErSqlValuer(v reflect.Value) error {
 			return nil
 		}
 
-		is, _, _ = baseSliceDeepValue(base)
+		is, _= baseSliceDeepValue(base)
 		if is {
 			return nil
 		}
@@ -116,7 +116,7 @@ func checkFieldNullErSqlValuer(v reflect.Value) error {
 		return nil
 	}
 
-	is, _, _ = baseSliceDeepValue(base)
+	is, _= baseSliceDeepValue(base)
 	if is {
 		return nil
 	}

@@ -11,7 +11,22 @@ const (
 	MYSQL    = "mysql"
 	POSTGRES = "postgres"
 )
-
+var ormConfig=OrmConf{
+	PoDir:                "src/model/po",
+	IsFileOverride:       false,
+	Author:               "lontten",
+	IsActiveRecord:       false,
+	IdType:               0,
+	TableNamePrefix:      "",
+	FieldNamePrefix:      "",
+	PrimaryKeyNames:     []string{"id"},
+	LogicDeleteYesSql:    "",
+	LogicDeleteNoSql:     "",
+	LogicDeleteSetSql:    "",
+	TenantIdFieldName:    "",
+	TenantIdValueFun:     nil,
+	TenantIgnoreTableFun: nil,
+}
 
 type DbConfig interface {
 	DriverName() string
@@ -33,7 +48,6 @@ type MysqlConf struct {
 	User     string
 	Password string
 }
-
 func (c *MysqlConf) DriverName() string {
 	return MYSQL
 }
@@ -82,7 +96,6 @@ func (c *PgConf) Open() (*sql.DB, error) {
 
 type Engine struct {
 	db      DB
-	ormConf OrmConf
 
 	Base    EngineBase
 	Extra   EngineExtra
