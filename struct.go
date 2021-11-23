@@ -176,7 +176,7 @@ func checkValidFieldTypStruct(va reflect.Value) error {
 func _checkStructFieldValid(v reflect.Value) error {
 	numField := v.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkFieldNullErSqlValuer(v.Field(i))
+		err := checkFieldNuller(v.Field(i))
 		if err != nil {
 			return err
 		}

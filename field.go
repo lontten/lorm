@@ -8,121 +8,41 @@ import (
 )
 
 //只校验struct 的 field 是否合法
-
-// v0.5
-//用于检查，单一值的合法性，base 或 valuer struct
-// bool true 代表有效 false:无效-nil
-// err 不合法
-func checkFieldNullEr(v reflect.Value) error {
-	isPtr, base := basePtrValue(v)
-	if !isPtr {
-		//必须 nuller struct   or slice
-		is, base := baseStructValue(base)
-		if is {
-			_, ok := base.Interface().(types.NullEr)
-			if !ok {
-				return errors.New("struct field " + base.String() + " need imp core NullEr ")
-			}
-			return nil
-		}
-
-		is, _ = baseSliceDeepValue(base)
-		if is {
-			return nil
-		}
-		return errors.New("struct field " + base.String() + " need ptr or NullEr")
+//1. check single
+//2. valuer
+// v0.6
+func checkField(v reflect.Value) error {
+	_, base := checkPackTypeValue(v)
+	typ, base := checkCompTypeValue(base, true)
+	if typ!=Single {
+		return errors.New("check field err :: "+	v.String())
+	}
+	return nil
+}
+//只校验struct 的 field 是否合法
+//1. check single
+//2. valuer
+//3. nuller
+func checkFieldNuller(v reflect.Value) error {
+	isNuller:=false
+	typ, base := checkPackTypeValue(v)
+	if typ!=None {
+		isNuller=true
+	}else {
+		isNuller = checkBaseNuller(base)
 	}
 
-	is := baseBaseValue(base)
-	if is {
+	ctyp, base := checkCompTypeValue(base, false)
+	if ctyp!=Single {
+		return errors.New("check field err :: "+	v.String())
+	}
+	//nuller
+	if isNuller {
 		return nil
 	}
-
-	is, base = baseStructValue(base)
-	if is {
-		return nil
-	}
-
-	is, _ = baseSliceDeepValue(base)
-	if is {
-		return nil
-	}
-
-	return errors.New("struct field " + base.String() + " need ptr or NullEr")
+	return errors.New("check field err :: "+	v.String())
 }
 
-// v0.5
-func checkFieldSqlValueEr(v reflect.Value) error {
-	_, base := basePtrValue(v)
-	is := baseBaseValue(base)
-	if is {
-		return nil
-	}
-
-	is, base = baseStructValue(base)
-	if is {
-		_, ok := base.Interface().(driver.Valuer)
-		if !ok {
-			return errors.New("struct field " + base.String() + " need imp sql Value")
-		}
-		return nil
-	}
-
-	is, _ = baseSliceDeepValue(base)
-	if is {
-		return nil
-	}
-
-	return errors.New("struct field " + base.String() + " need ptr or NullEr")
-}
-
-// v0.5
-func checkFieldNullErSqlValuer(v reflect.Value) error {
-	isPtr, base := basePtrValue(v)
-	if !isPtr {
-		//必须 nuller struct
-		is, base := baseStructValue(base)
-		if is {
-			_, ok := base.Interface().(driver.Valuer)
-			if !ok {
-				return errors.New("struct field " + base.String() + " need imp sql Value")
-			}
-			_, ok = base.Interface().(types.NullEr)
-			if !ok {
-				return errors.New("struct field " + base.String() + " need imp core NullEr ")
-			}
-			return nil
-		}
-
-		is, _= baseSliceDeepValue(base)
-		if is {
-			return nil
-		}
-
-		return errors.New("struct field " + base.String() + " need ptr or NullEr")
-	}
-
-	is := baseBaseValue(base)
-	if is {
-		return nil
-	}
-
-	is, base = baseStructValue(base)
-	if is {
-		_, ok := base.Interface().(driver.Valuer)
-		if !ok {
-			return errors.New("struct field " + base.String() + " need imp sql Value")
-		}
-		return nil
-	}
-
-	is, _= baseSliceDeepValue(base)
-	if is {
-		return nil
-	}
-
-	return errors.New("struct field " + base.String() + " need  NullEr sql valuer")
-}
 
 // v0.5
 func getFieldInter(v reflect.Value) interface{} {
