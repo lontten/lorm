@@ -186,7 +186,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	c := base.ctx.columns
 	cv := base.ctx.columnValues
 
-	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -315,8 +315,8 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	base.initPrimaryKeyName()
 	base.ctx.checkValidPrimaryKey(v)
 
-	logicDeleteSetSql := ormConf.LogicDeleteSetSql
-	logicDeleteYesSql := ormConf.LogicDeleteYesSql
+	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
+	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
 	tableName := base.ctx.tableName
 	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, base.ormConf)
 
@@ -353,7 +353,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
 	if err != nil {
 		return 0, err
 	}
@@ -462,7 +462,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -631,7 +631,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 
 	tableName := base.ctx.tableName
 	c := base.ctx.columns
-	columns, values, err := ormConf.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -702,11 +702,11 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 
 //init
 func (e *EngineTable) initPrimaryKeyName() {
-	e.ctx.primaryKeyNames = ormConf.primaryKeys(e.ctx.tableName, e.ctx.destBaseValue)
+	e.ctx.primaryKeyNames = ormConfig.primaryKeys(e.ctx.tableName, e.ctx.destBaseValue)
 }
 
 func (e *EngineTable) initTableName() {
-	tableName, err := ormConf.tableName(e.ctx.destBaseValue)
+	tableName, err := ormConfig.tableName(e.ctx.destBaseValue)
 	if err != nil {
 		e.ctx.err = err
 		return
@@ -717,7 +717,7 @@ func (e *EngineTable) initTableName() {
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() {
 	if !e.ctx.isSlice {
-		columns, values, err := ormConf.getStructMappingColumnsValueNotNil(e.ctx.destValueArr[0])
+		columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(e.ctx.destValueArr[0])
 		if err != nil {
 			e.ctx.err = err
 			return
@@ -730,7 +730,7 @@ func (e *EngineTable) initColumnsValue() {
 		return
 	}
 
-	modelParam, err := ormConf.getStructMappingColumnsValueList(e.ctx.destValueArr)
+	modelParam, err := ormConfig.getStructMappingColumnsValueList(e.ctx.destValueArr)
 	if err != nil {
 		e.ctx.err = err
 		return
