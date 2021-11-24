@@ -28,7 +28,11 @@ func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, er
 		return 0, err
 	}
 
-	e.ctx.core.stmt=stmt
+	for _, arg := range args {
+		stmt.Query()
+	}
+
+	e.ctx.core.stmt = stmt
 
 	return e.ctx.core.ScanLnBatch()
 }
@@ -41,28 +45,29 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	return e.ctx.core.Scan(rows, e.ctx.dest)
 }
 
-func (e *EngineTable) setTargetDest(v interface{}) {
-	e.ctx.initTargetDest(v)
+func (e *EngineTable) setTargetDestSlice(v interface{}) {
 	if e.ctx.err != nil {
 		return
 	}
-	err := checkStructValidFieldNuller(e.ctx.destBaseValue)
-	if err != nil {
-		e.ctx.err = err
+	e.ctx.initTargetDestSlice(v)
+	e.ctx.checkTargetDestField()
+	e.initTableName()
+}
+
+func (e *EngineTable) setTargetDest(v interface{}) {
+	if e.ctx.err != nil {
 		return
 	}
+	e.ctx.initTargetDest(v)
+	e.ctx.checkTargetDestField()
 	e.initTableName()
 }
 
 func (e *EngineTable) setTargetDestOnlyTableName(v interface{}) {
-	value := reflect.ValueOf(v)
-	_, base := basePtrValue(value)
-	is, base := baseStructValue(base)
-	if !is {
-		e.ctx.err = errors.New("need a struct")
+	if e.ctx.err != nil {
 		return
 	}
-	e.ctx.destBaseValue = base
+	e.ctx.initTargetDestOnlyBaseValue(v)
 	e.initTableName()
 }
 
@@ -89,53 +94,61 @@ type OrmTableDelete struct {
 	base EngineTable
 }
 
-//create
+// Create
+//1.ptr-comp-struct
+//2.slice-comp-struct
 func (e EngineTable) Create(v interface{}) (num int64, err error) {
-	e.setTargetDest(v)
-	if e.ctx.err != nil {
-		return
-	}
+	e.setTargetDestSlice(v)
 	e.initColumnsValue()
 	if e.ctx.err != nil {
 		return
 	}
+	sql := e.ctx.tableCreateGen()
 
-	createSqlStr := e.ctx.tableCreateArgs2SqlStr( )
-
-	var sb strings.Builder
-	sb.WriteString("INSERT INTO ")
-	sb.WriteString(e.ctx.tableName + " ")
-	sb.WriteString(createSqlStr)
-
-	return e.dialect.exec(sb.String(), e.ctx.columnValues...)
+	if e.ctx.isSlice {
+		return e.dialect.execBatch(sql, e.ctx.columnValues)
+	}
+	return e.dialect.exec(sql, e.ctx.columnValues[0])
 }
 
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 	e.setTargetDest(v)
-	if e.ctx.err != nil {
-		return OrmTableCreate{base: e}
-	}
 	e.initColumnsValue()
-	if e.ctx.err != nil {
-		return OrmTableCreate{base: e}
-	}
 	return OrmTableCreate{base: e}
 }
 
-func (orm OrmTableCreate) ById() (int64, error) {
+func (orm OrmTableCreate) ById(v ...interface{}) (int64, error) {
 	base := orm.base
-	if err := base.ctx.err; err != nil {
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
 		return 0, err
 	}
-	tableName := base.ctx.tableName
-	c := base.ctx.columns
-	cv := base.ctx.columnValues
-	var idValue interface{}
-	for i, s := range c {
-		if s == "id" {
-			idValue = cv[i]
+
+	keyNum := len(ctx.primaryKeyNames)
+	idNum := len(v)
+
+	tableName := ctx.tableName
+	cs := ctx.columns
+	cvs := ctx.columnValues[0]
+
+	if idNum == 0 {
+		for _, key := range ctx.primaryKeyNames {
+			for i, s := range cs {
+				if s == key {
+					v = append(v, cvs[i])
+					continue
+				}
+			}
+		}
+		if len(v) != keyNum {
+			return 0, errors.New("target 主键数据有 nil")
 		}
 	}
+	if keyNum != idNum {
+		return 0, errors.New("复合主键，数目不对，需要" + strconv.Itoa(keyNum) + "个，传入" + strconv.Itoa(idNum) + "个")
+	}
+
+
 
 	var sb strings.Builder
 	sb.WriteString("SELECT 1 ")
@@ -152,20 +165,20 @@ func (orm OrmTableCreate) ById() (int64, error) {
 		sb.WriteString("UPDATE ")
 		sb.WriteString(tableName)
 		sb.WriteString(" SET ")
-		sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
+		sb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
 		sb.WriteString(" WHERE id = ? ")
-		cv = append(cv, idValue)
+		cvs = append(cvs, idValue)
 
-		return base.dialect.exec(sb.String(), cv...)
+		return base.dialect.exec(sb.String(), cvs...)
 	}
-	columnSqlStr := base.ctx.tableCreateArgs2SqlStr(c)
+	columnSqlStr := ctx.tableCreateArgs2SqlStr(cs)
 
 	sb.Reset()
 	sb.WriteString("INSERT INTO ")
 	sb.WriteString(tableName)
 	sb.WriteString(columnSqlStr)
 
-	return base.dialect.exec(sb.String(), cv...)
+	return base.dialect.exec(sb.String(), cvs...)
 }
 
 func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
@@ -185,7 +198,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	c := base.ctx.columns
 	cv := base.ctx.columnValues
 
-	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -352,7 +365,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(va)
 	if err != nil {
 		return 0, err
 	}
@@ -400,7 +413,7 @@ func (e EngineTable) Update(v interface{}) OrmTableUpdate {
 	if e.ctx.err != nil {
 		return OrmTableUpdate{base: e}
 	}
-	e.setTargetDest(v)
+	e.setTargetDestSlice(v)
 	if e.ctx.err != nil {
 		return OrmTableUpdate{base: e}
 	}
@@ -461,7 +474,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(tableName)
 	sb.WriteString(" SET ")
 	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -630,7 +643,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 
 	tableName := base.ctx.tableName
 	c := base.ctx.columns
-	columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(va)
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(va)
 	if len(columns) < 1 {
 		return 0, errors.New("where model valid field need ")
 	}
@@ -700,11 +713,19 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 }
 
 //init
+//0.6
 func (e *EngineTable) initPrimaryKeyName() {
+	if e.ctx.err != nil {
+		return
+	}
 	e.ctx.primaryKeyNames = ormConfig.primaryKeys(e.ctx.tableName, e.ctx.destBaseValue)
 }
 
+//0.6
 func (e *EngineTable) initTableName() {
+	if e.ctx.err != nil {
+		return
+	}
 	tableName, err := ormConfig.tableName(e.ctx.destBaseValue)
 	if err != nil {
 		e.ctx.err = err
@@ -713,37 +734,46 @@ func (e *EngineTable) initTableName() {
 	e.ctx.tableName = tableName
 }
 
+//0.6
 //获取struct对应的字段名 和 其值   有效部分
 func (e *EngineTable) initColumnsValue() {
+	if e.ctx.err != nil {
+		return
+	}
+	arr := e.ctx.destValueArr
 	if !e.ctx.isSlice {
-		columns, values, err := ormConfig.getStructMappingColumnsValueNotNil(e.ctx.destValueArr[0])
+		columns, values, err := ormConfig.getCompColumnsValueNoNil(arr[0])
 		if err != nil {
 			e.ctx.err = err
 			return
 		}
-		param := ModelParam{
-			columns:      columns,
-			columnValues: values,
-		}
-		e.ctx.modelParams = append(e.ctx.modelParams, param)
+
+		e.ctx.columns = columns
+		e.ctx.columnValues = append(e.ctx.columnValues, values)
 		return
 	}
 
-	modelParam, err := ormConfig.getStructMappingColumnsValueList(e.ctx.destValueArr)
+	//target 是数组，所有字段都要，nil设为 default，而不是null，这样可以避免覆盖db默认值
+	columns, valuess, err := ormConfig.getCompAllColumnsValueList(arr)
 	if err != nil {
 		e.ctx.err = err
 		return
 	}
-	e.ctx.modelParams = append(e.ctx.modelParams, modelParam)
+	e.ctx.columns = columns
+	e.ctx.columnValues = valuess
 	return
 }
 
 //获取struct对应的字段名 有效部分
-func (e *EngineTable) initColumns() error {
+func (e *EngineTable) initColumns() {
+	if e.ctx.err != nil {
+		return
+	}
+
 	columns, err := ormConfig.initColumns(e.ctx.destBaseValue)
 	if err != nil {
-		return err
+		e.ctx.err = err
+		return
 	}
 	e.ctx.columns = columns
-	return nil
 }

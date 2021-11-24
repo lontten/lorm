@@ -40,8 +40,8 @@ type SqlUtil interface {
 //	initColumnsValue(v reflect.Value) ([]string, []interface{}, error)
 //
 //	getStructMappingColumns(t reflect.Type) (map[string]int, error)
-//	getStructMappingColumnsValueNotNil(v reflect.Value) (columns []string, values []interface{}, err error)
-//	getStructMappingColumnsValueList(v []reflect.Value) (m ModelParam, err error)
+//	getCompColumnsValueNoNil(v reflect.Value) (columns []string, values []interface{}, err error)
+//	getCompAllColumnsValueList(v []reflect.Value) (m ModelParam, err error)
 //
 //	getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error)
 //}

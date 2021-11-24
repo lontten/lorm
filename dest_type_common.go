@@ -19,11 +19,11 @@ func checkDestSingleSqlValuer(v reflect.Value) (bool, error) {
 		return true, nil
 	}
 
-	is, base := baseStructValue(v)
+	is = baseStructValue(v)
 	if is {
-		_, ok := base.Interface().(driver.Valuer)
+		_, ok := v.Interface().(driver.Valuer)
 		if !ok {
-			return false, errors.New("struct field " + base.String() + " need imp sql Value")
+			return false, errors.New("struct field " + v.String() + " need imp sql Value")
 		}
 		return true, nil
 	}
@@ -43,7 +43,7 @@ func checkDestSingleNullerSqlValuer(v reflect.Value) (bool, error) {
 	}
 
 	if !is { //不是ptr，必须 Nuller
-		is, base = baseStructValue(base)
+		is = baseStructValue(base)
 		if is {
 			_, ok := base.Interface().(driver.Valuer)
 			if !ok {
@@ -63,7 +63,7 @@ func checkDestSingleNullerSqlValuer(v reflect.Value) (bool, error) {
 		return true, nil
 	}
 
-	is, base = baseStructValue(base)
+	is = baseStructValue(base)
 	if is {
 		_, ok := base.Interface().(driver.Valuer)
 		if !ok {
@@ -90,7 +90,7 @@ func checkDestSingleContainSliceNullerSqlValuer(v reflect.Value) (bool, error) {
 	}
 
 	if !is { //不是ptr，必须 Nuller
-		is, base = baseStructValue(base)
+		is = baseStructValue(base)
 		if is {
 			_, ok := base.Interface().(driver.Valuer)
 			if !ok {
@@ -121,7 +121,7 @@ func checkDestSingleContainSliceNullerSqlValuer(v reflect.Value) (bool, error) {
 		return true, nil
 	}
 
-	is, base = baseStructValue(base)
+	is = baseStructValue(base)
 	if is {
 		_, ok := base.Interface().(driver.Valuer)
 		if !ok {
@@ -188,7 +188,7 @@ func checkDestTyp(v reflect.Value) (a ArgTyp, err error) {
 		return
 	}
 
-	is, base = baseStructValue(base)
+	is = baseStructValue(base)
 	if is {
 		//struct-base
 		_, ok := base.Interface().(driver.Valuer)

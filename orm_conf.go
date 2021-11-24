@@ -69,7 +69,7 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	}
 
 	_, base := checkPackTypeValue(value)
-	typ, base := checkCompTypeValue(base, false)
+	typ := checkCompTypeValue(base, false)
 	if typ != Single {
 		return 0, errors.New("scan target type errr")
 	}
@@ -114,7 +114,7 @@ func (c OrmConf) ScanLnBatch(rows *sql.Rows, v interface{}) (num int64, err erro
 	}
 
 	_, base := checkPackTypeValue(value)
-	typ, base := checkCompTypeValue(base, false)
+	typ := checkCompTypeValue(base, false)
 	if typ != Single {
 		return 0, errors.New("scan target type errr")
 	}
@@ -166,15 +166,11 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	if typ != Slice {
 		return 0, errors.New("need a slice type")
 	}
-	ctyp, elem := checkCompTypeValue(elem, false)
+	ctyp := checkCompTypeValue(elem, false)
 	if ctyp != Single {
 		return 0, errors.New("scan target type errr")
 	}
 	base := elem.Type()
-
-
-
-
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -204,7 +200,6 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	}
 	return num, nil
 }
-
 
 // v0.6
 func (c OrmConf) tableName(v reflect.Value) (string, error) {
@@ -262,8 +257,6 @@ func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
 	if len(primaryKeyName) != 0 {
 		return primaryKeyName
 	}
-
-	//todo 获取 struct 中 tag为id 的 filed ，为 primaryKeyNames 可多个
 
 	// id
 	return []string{"id"}
@@ -381,6 +374,7 @@ func (c OrmConf) initColumnsValue(v reflect.Value) (columns []string, values []i
 
 }
 
+//v0.6
 //获取struct对应的字段名 有效部分
 func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error) {
 	cMap := make(map[string]int)
@@ -439,9 +433,9 @@ func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error)
 
 	return cMap, nil
 }
-
-//获取struct对应的字段名 和 其值   有效部分
-func (c OrmConf) getStructMappingColumnsValueNotNil(v reflect.Value) (columns []string, values []interface{}, err error) {
+//0.6
+//获取comp 对应的字段名 和 其值   排除 nil部分
+func (c OrmConf) getCompColumnsValueNoNil(v reflect.Value) (columns []string, values []interface{}, err error) {
 	columns = make([]string, 0)
 	values = make([]interface{}, 0)
 
@@ -463,9 +457,30 @@ func (c OrmConf) getStructMappingColumnsValueNotNil(v reflect.Value) (columns []
 	}
 	return
 }
+//0.6
+//获取comp 对应的字段名 和 其值   不排除 nil部分
+func (c OrmConf) getCompAllColumnsValue(v reflect.Value) (columns []string, values []interface{}, err error) {
+	columns = make([]string, 0)
+	values = make([]interface{}, 0)
 
-//获取struct对应的字段名 和 其值   包含 value nil 的部分
-func (c OrmConf) getStructMappingColumnsValueList(v []reflect.Value) ([]string, [][]interface{}, error) {
+	t := v.Type()
+
+	mappingColumns, err := c.getStructMappingColumns(t)
+	if err != nil {
+		return
+	}
+
+	for column, i := range mappingColumns {
+		inter := getFieldInter(v.Field(i))
+		columns = append(columns, column)
+		values = append(values, inter)
+	}
+	return
+}
+
+//0.6
+//获取comp 对应的字段名 和 其值   不排除 nil部分
+func (c OrmConf) getCompAllColumnsValueList(v []reflect.Value) ([]string, [][]interface{}, error) {
 	columns := make([]string, 0)
 	values := make([][]interface{}, 0)
 

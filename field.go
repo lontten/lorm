@@ -13,7 +13,7 @@ import (
 // v0.6
 func checkField(v reflect.Value) error {
 	_, base := checkPackTypeValue(v)
-	typ, base := checkCompTypeValue(base, true)
+	typ := checkCompTypeValue(base, true)
 	if typ != Single {
 		return errors.New("check field err :: " + v.String())
 	}
@@ -34,7 +34,7 @@ func checkFieldNuller(v reflect.Value) error {
 		isNuller = checkBaseNuller(base)
 	}
 
-	ctyp, base := checkCompTypeValue(base, false)
+	ctyp := checkCompTypeValue(base, false)
 	if ctyp != Single {
 		return errors.New("check field err :: " + v.String())
 	}

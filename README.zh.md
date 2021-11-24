@@ -1,4 +1,12 @@
 # lorm
+
+target - 必须是struct，用于tableName
+
+model - struct-map，用于 ，生成where
+
+scan ptr-* slice-* map
+
+
 ```javascript
 db.update("t_user").byId(1)
 db.update("t_user").byId([1,2])

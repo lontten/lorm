@@ -8,6 +8,7 @@ import (
 )
 
 type OrmContext struct {
+	//主键名-列表
 	primaryKeyNames []string
 
 	//当前表名
@@ -23,14 +24,21 @@ type OrmContext struct {
 	// dest 的value 列表，用作参数
 	destValueArr []reflect.Value
 
+	//字段列表
 	columns []string
 	//值列表-多个
 	columnValues [][]interface{}
 
+	//要执行的sql语句
 	query   *strings.Builder
+	//参数
 	args    []interface{}
+
+
 	started bool
 	err     error
+
+	//log的层级
 	log     int
 }
 
@@ -118,6 +126,37 @@ func (ctx *OrmContext) tableWherePrimaryKey2SqlStr(ids []string) string {
 func (ctx *OrmContext) tableCreateArgs2SqlStr() string {
 	args := ctx.columns
 	var sb strings.Builder
+	sb.WriteString(" ( ")
+	for i, v := range args {
+		if i == 0 {
+			sb.WriteString(v)
+		} else {
+			sb.WriteString(" , " + v)
+		}
+	}
+	sb.WriteString(" ) ")
+	sb.WriteString(" VALUES ")
+	sb.WriteString("( ")
+	for i := range args {
+		if i == 0 {
+			sb.WriteString(" ? ")
+		} else {
+			sb.WriteString(", ? ")
+		}
+	}
+	sb.WriteString(" ) ")
+	return sb.String()
+}
+
+// create 生成
+func (ctx *OrmContext) tableCreateGen() string {
+	args := ctx.columns
+	var sb strings.Builder
+
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(ctx.tableName + " ")
+
+
 	sb.WriteString(" ( ")
 	for i, v := range args {
 		if i == 0 {

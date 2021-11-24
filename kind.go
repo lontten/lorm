@@ -33,30 +33,30 @@ func baseBaseValue(v reflect.Value) bool {
 //----------------------struct------------------------
 //	v0.6
 //是否struct类型
-func baseStructType(t reflect.Type) (bool, reflect.Type) {
+func baseStructType(t reflect.Type) bool {
 	if t.Kind() == reflect.Struct {
-		return true, t
+		return true
 	}
-	return false, t
+	return false
 }
-func baseStructValue(v reflect.Value) (bool, reflect.Value) {
+func baseStructValue(v reflect.Value) bool {
 	if v.Kind() == reflect.Struct {
-		return true, v
+		return true
 	}
-	return false, v
+	return false
 }
 
 //----------------------struct-valuer------------------------
 //	v0.6
 //是否struct类型 valuer ,
 //是否struct，是否有valuer
-func baseStructValueValuer(v reflect.Value) (bool, bool, reflect.Value) {
-	is, base := baseStructValue(v)
+func baseStructValueValuer(v reflect.Value) (bool, bool) {
+	is := baseStructValue(v)
 	if !is {
-		return false, false, base
+		return false, false
 	}
-	_, ok := base.Interface().(driver.Valuer)
-	return is, ok, base
+	_, ok := v.Interface().(driver.Valuer)
+	return is, ok
 }
 
 //-------------ptr-----------------
@@ -108,6 +108,7 @@ func baseSliceType(t reflect.Type) (bool, reflect.Type) {
 	}
 	return false, t
 }
+
 // v0.6
 // is 是否 slice ; has 是否有内容
 func baseSliceValue(v reflect.Value) (is, has bool, structType reflect.Value) {
@@ -140,6 +141,7 @@ func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
 	}
 	return false, t
 }
+
 // v0.6
 func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value) {
 	isSlice := false
@@ -195,6 +197,7 @@ const (
 	Ptr   packType = iota
 	Slice packType = iota
 )
+
 // v0.6
 //检查是否是ptr，slice类型
 func checkPackType(t reflect.Type) (packType, reflect.Type) {
@@ -234,6 +237,7 @@ func baseMapValue(v reflect.Value) (is, has bool, key reflect.Value) {
 	}
 	return false, false, v
 }
+
 // v0.6
 // is 是否 slice has 是否有内容
 func baseMapType(t reflect.Type) (is, has bool) {
@@ -252,34 +256,44 @@ func baseMapType(t reflect.Type) (is, has bool) {
 // v0.6
 //检查是 single 还是 composite
 type compType int
+
 const (
-	Invade    compType = iota
-	Single    compType = iota
-	Composite compType = iota
+	Invade     compType = iota
+	SliceEmpty compType = iota
+	Single     compType = iota
+	Composite  compType = iota
 )
-func checkCompTypeValue(v reflect.Value, canEmpty bool) (compType, reflect.Value) {
+
+func checkCompTypeValue(v reflect.Value, canEmpty bool) compType {
 	t := v.Type()
 	is := baseBaseType(t)
 	if is {
-		return Single, v
+		return Single
 	}
 	is, has := baseMapType(t)
 	if is {
 		if canEmpty || has {
-			return Composite, v
+			return Composite
 		}
-		return Invade, v
+		return SliceEmpty
 	}
 
-	isStruct, isValuer, base := baseStructValueValuer(v)
+	isStruct, isValuer := baseStructValueValuer(v)
 	if isStruct {
 		if isValuer {
-			return Single, base
+			return Single
 		}
-		return Composite, base
+		return Composite
 	}
-	return Invade, v
+	return Invade
 }
+
+//是 comp类型的struct，返回true
+func checkCompStructValue(v reflect.Value) bool {
+	isStruct, isValuer := baseStructValueValuer(v)
+	return isStruct && !isValuer
+}
+
 //-----------------------nuller---------------------------------
 // v0.6
 //检查是否nuller
@@ -287,6 +301,7 @@ func checkBaseNuller(v reflect.Value) bool {
 	_, ok := v.Interface().(types.NullEr)
 	return ok
 }
+
 //-----------------------map--------------------------------
 // v0.6
 //检查map key是否string，value是否valuer
@@ -305,7 +320,7 @@ func checkValidMap(v reflect.Value) bool {
 		is := baseBaseType(base.Type())
 		if !is {
 			//struct
-			_, is, _ = baseStructValueValuer(base)
+			_, is = baseStructValueValuer(base)
 			if !is {
 				return false
 			}
@@ -313,6 +328,7 @@ func checkValidMap(v reflect.Value) bool {
 	}
 	return true
 }
+
 // v0.6
 //检查map key是否string，value是否valuer,nuller
 func checkValidMapValuer(v reflect.Value) bool {
@@ -330,7 +346,7 @@ func checkValidMapValuer(v reflect.Value) bool {
 		is := baseBaseType(base.Type())
 		if !is {
 			//struct valuer
-			_, is, _ = baseStructValueValuer(base)
+			_, is = baseStructValueValuer(base)
 			if !is {
 				return false
 			}
@@ -344,24 +360,19 @@ func checkValidMapValuer(v reflect.Value) bool {
 	return true
 }
 
-
-
-
-
-
 //struct
 // struct 1
 // base 2
 // no type -2
 //Deprecated
 func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
-	is, base := baseStructType(t)
+	is := baseStructType(t)
 	if is {
-		return 1, base
+		return 1, t
 	}
-	is = baseBaseType(base)
+	is = baseBaseType(t)
 	if is {
-		return 2, base
+		return 2, t
 	}
 	return -2, t
 }
@@ -373,17 +384,17 @@ func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 // no type -2
 //Deprecated
 func baseStructBaseSliceType(t reflect.Type) (int, reflect.Type) {
-	is, base := baseStructType(t)
+	is := baseStructType(t)
 	if is {
-		return 1, base
+		return 1, t
 	}
-	is = baseBaseType(base)
+	is = baseBaseType(t)
 	if is {
-		return 2, base
+		return 2, t
 	}
-	is, base = baseSliceDeepType(base)
+	is, t = baseSliceDeepType(t)
 	if is {
-		return 3, base
+		return 3, t
 	}
 	return -2, t
 }
