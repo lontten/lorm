@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"database/sql"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -179,7 +178,7 @@ func (ctx *OrmContext) tableCreateGen() string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) createSqlGenera(args []string) {
+func (ctx *OrmContext) createSqlGenera(args []string)string {
 	var sb strings.Builder
 	sb.WriteString(" ( ")
 	for i, v := range args {
