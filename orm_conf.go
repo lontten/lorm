@@ -50,30 +50,33 @@ type OrmConf struct {
 }
 
 // ScanLn
+//接受一个结果
 // v0.6
-// 1.base
-// 2.struct-single
-// 3.slice-*
+// 1.ptr single/comp
+// 2.slice- single
 func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	defer func(rows *sql.Rows) {
 		panicErr(rows.Close())
 	}(rows)
 
 	value := reflect.ValueOf(v)
-	is, value := basePtrDeepValue(value)
-
-	if !is {
-		return 0, errors.New("dest need a  ptr or slice")
+	typ, base := checkPackTypeValue(value)
+	if typ==None {
+		return 0, errors.New("scanln: invalid type")
+	}
+	ctyp := checkCompTypeValue(base, true)
+	if ctyp==Invade {
+		return 0, errors.New("scanln: invalid type")
+	}
+	if typ==Slice && ctyp!=Single {
+		return 0, errors.New("scanln: invalid type")
 	}
 
-	_, base := checkPackTypeValue(value)
-	typ := checkCompTypeValue(base, false)
-	if typ != Single {
-		return 0, errors.New("scan target type errr")
-	}
+
+
 
 	num = 1
-	t := value.Type()
+	t := base.Type()
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -99,82 +102,34 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	return
 }
 
-func (c OrmConf) ScanLnBatch(rows *sql.Rows, v interface{}) (num int64, err error) {
-	defer func(rows *sql.Rows) {
-		panicErr(rows.Close())
-	}(rows)
-
-	value := reflect.ValueOf(v)
-	is, value := basePtrDeepValue(value)
-
-	if !is {
-		return 0, errors.New("dest need a  ptr or slice")
-	}
-
-	_, base := checkPackTypeValue(value)
-	typ := checkCompTypeValue(base, false)
-	if typ != Single {
-		return 0, errors.New("scan target type errr")
-	}
-
-	num = 1
-	t := value.Type()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return
-	}
-	cfm, err := c.getColFieldIndexLinkMap(columns, t)
-	if err != nil {
-		return
-	}
-	if rows.Next() {
-		box, _, v := createColBox(t, cfm)
-		err = rows.Scan(box...)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		base.Set(v)
-	}
-
-	if rows.Next() {
-		return 0, errors.New("result to many for one")
-	}
-	return
-}
 
 //Scan
 // v0.6
-//1.[]base
-//2.[]struct-single
+//1.[]- *
 func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	defer func(rows *sql.Rows) {
 		panicErr(rows.Close())
 	}(rows)
 
 	value := reflect.ValueOf(v)
-	isPtr, arr := basePtrDeepValue(value)
-
-	if !isPtr {
-		return 0, errors.New("dest need a  ptr type")
+	typ, base := checkPackTypeValue(value)
+	if typ!=Slice {
+		return 0, errors.New("scan: need a slice")
+	}
+	ctyp := checkCompTypeValue(base, true)
+	if ctyp==Invade {
+		return 0, errors.New("scanln: invalid type")
 	}
 
-	typ, elem := checkPackTypeValue(arr)
-	if typ != Slice {
-		return 0, errors.New("need a slice type")
-	}
-	ctyp := checkCompTypeValue(elem, false)
-	if ctyp != Single {
-		return 0, errors.New("scan target type errr")
-	}
-	base := elem.Type()
+
+
+	baset := base.Type()
 
 	columns, err := rows.Columns()
 	if err != nil {
 		return 0, err
 	}
-	cfm, err := c.getColFieldIndexLinkMap(columns, base)
+	cfm, err := c.getColFieldIndexLinkMap(columns, baset)
 	fmt.Println(len(cfm))
 	fmt.Println("------")
 	if err != nil {
@@ -182,7 +137,7 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	}
 	var num int64 = 0
 	for rows.Next() {
-		box, vp, v := createColBox(base, cfm)
+		box, vp, v := createColBox(baset, cfm)
 
 		err = rows.Scan(box...)
 		if err != nil {
