@@ -9,7 +9,6 @@ import (
 )
 
 type EngineTable struct {
-	ormConf OrmConf
 	dialect Dialect
 
 	ctx OrmContext
@@ -20,7 +19,7 @@ func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return e.ormConf.ScanLn(rows, e.ctx.dest)
+	return ormConfig.ScanLn(rows, e.ctx.dest)
 }
 
 func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
@@ -47,7 +46,7 @@ func (e *EngineTable) setTargetDest(v interface{}) {
 	if e.ctx.err != nil {
 		return
 	}
-	err := checkValidFieldTypStruct(e.ctx.destBaseValue)
+	err := checkStructValidFieldNuller(e.ctx.destBaseValue)
 	if err != nil {
 		e.ctx.err = err
 		return
@@ -178,7 +177,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	va := reflect.ValueOf(v)
 	_, va = basePtrValue(va)
 
-	err := checkValidFieldTypStruct(va)
+	err := checkStructValidFieldNuller(va)
 	if err != nil {
 		return 0, err
 	}
@@ -318,7 +317,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
 	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
 	tableName := base.ctx.tableName
-	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames, base.ormConf)
+	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames)
 
 	var sb strings.Builder
 	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
@@ -348,7 +347,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 	va := reflect.ValueOf(v)
-	err := checkValidFieldTypStruct(va)
+	err := checkStructValidFieldNuller(va)
 	if err != nil {
 		return 0, err
 	}
@@ -418,7 +417,7 @@ func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) (int64, error) {
 		return 0, err
 	}
 
-	err := checkValidFieldTypStruct(reflect.ValueOf(v))
+	err := checkStructValidFieldNuller(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
 	}
@@ -448,7 +447,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 	va := reflect.ValueOf(v)
-	err := checkValidFieldTypStruct(va)
+	err := checkStructValidFieldNuller(va)
 	if err != nil {
 		return 0, err
 	}
@@ -527,7 +526,7 @@ func (orm OrmTableSelect) ById(v ...interface{}) (int64, error) {
 		return 0, err
 	}
 
-	err := checkValidFieldTypStruct(reflect.ValueOf(v))
+	err := checkStructValidFieldNuller(reflect.ValueOf(v))
 	if err != nil {
 		return 0, err
 	}
@@ -619,7 +618,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 	va := reflect.ValueOf(v)
-	err := checkValidFieldTypStruct(va)
+	err := checkStructValidFieldNuller(va)
 	if err != nil {
 		return 0, err
 	}
@@ -741,7 +740,7 @@ func (e *EngineTable) initColumnsValue() {
 
 //获取struct对应的字段名 有效部分
 func (e *EngineTable) initColumns() error {
-	columns, err := e.ormConf.initColumns(e.ctx.destBaseValue)
+	columns, err := ormConfig.initColumns(e.ctx.destBaseValue)
 	if err != nil {
 		return err
 	}

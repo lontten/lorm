@@ -7,7 +7,7 @@ import (
 )
 
 // v0.6
-//只校验struct 的 field 是否合法
+//校验struct 的 field 是否合法
 //1. check single
 //2. valuer
 // v0.6
@@ -21,7 +21,7 @@ func checkField(v reflect.Value) error {
 }
 
 // v0.6
-//只校验struct 的 field 是否合法
+//校验struct 的 field 是否合法
 //1. check single
 //2. valuer
 //3. nuller

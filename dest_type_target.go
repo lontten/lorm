@@ -49,7 +49,7 @@ func (c *OrmContext) initTargetDest(dest interface{}) {
 
 func (c *OrmContext) checkTargetDestField() {
 	v := c.destBaseValue
-	err := checkValidFieldTypStruct(v)
+	err := checkStructValidFieldNuller(v)
 	if err != nil {
 		c.err = err
 	}

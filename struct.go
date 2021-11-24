@@ -126,6 +126,18 @@ func baseStructTypePtr(t reflect.Type) (structType reflect.Type, e error) {
 
 }
 
+
+
+
+
+
+
+
+
+
+
+
+//---------------struct-new-----------------
 // v0.6
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
@@ -143,11 +155,21 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 	return tPtr
 }
 
+
+
+
+
+
+
+
+
+
+//--------------------struct-field-nuller---------
 // v0.6 检查一个 struct 是否合法
 var structValidCache = make(map[reflect.Type]reflect.Value)
 var mutexStructValidCache sync.Mutex
 
-func checkValidFieldTypStruct(va reflect.Value) error {
+func checkStructValidField(va reflect.Value) error {
 	mutexStructValidCache.Lock()
 	defer mutexStructValidCache.Unlock()
 
@@ -162,7 +184,7 @@ func checkValidFieldTypStruct(va reflect.Value) error {
 		return errors.New("need a struct")
 	}
 
-	err := _checkStructFieldValid(base)
+	err := _checkStructValidField(base)
 	if err != nil {
 		return err
 	}
@@ -173,7 +195,49 @@ func checkValidFieldTypStruct(va reflect.Value) error {
 
 //v0.6
 // 检查一个非 single struct 是否合法
-func _checkStructFieldValid(v reflect.Value) error {
+func _checkStructValidField(v reflect.Value) error {
+	numField := v.NumField()
+	for i := 0; i < numField; i++ {
+		err := checkField(v.Field(i))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+//--------------------struct-field-valuer-nuller---------
+// v0.6 检查一个 struct 是否合法
+var structValidNullerCache = make(map[reflect.Type]reflect.Value)
+var mutexStructValidNullerCache sync.Mutex
+
+func checkStructValidFieldNuller(va reflect.Value) error {
+	mutexStructValidNullerCache.Lock()
+	defer mutexStructValidNullerCache.Unlock()
+
+	typ := va.Type()
+	_, ok := structValidNullerCache[typ]
+	if ok {
+		return nil
+	}
+
+	is, base := baseStructValue(va)
+	if !is {
+		return errors.New("need a struct")
+	}
+
+	err := _checkStructValidFieldNuller(base)
+	if err != nil {
+		return err
+	}
+
+	structValidNullerCache[typ] = base
+	return nil
+}
+
+//v0.6
+// 检查一个非 single struct 是否合法
+func _checkStructValidFieldNuller(v reflect.Value) error {
 	numField := v.NumField()
 	for i := 0; i < numField; i++ {
 		err := checkFieldNuller(v.Field(i))

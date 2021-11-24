@@ -84,8 +84,8 @@ func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string) string {
 //args 为 where 的 字段名列表， 生成where sql
 //sql 为 逻辑删除 附加where
 //todo 应该改为 统一 where sql 统一生成、  逻辑删除、 多租户
-func (ctx *OrmContext) tableWherePrimaryKey2SqlStr(ids []string, c OrmConf) string {
-
+func (ctx *OrmContext) tableWherePrimaryKey2SqlStr(ids []string) string {
+	c := ormConfig
 	var sb strings.Builder
 	for i, where := range ids {
 		if i == 0 {
@@ -140,7 +140,7 @@ func (ctx *OrmContext) tableCreateArgs2SqlStr() string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) createSqlGenera(args []string)  {
+func (ctx *OrmContext) createSqlGenera(args []string) {
 	var sb strings.Builder
 	sb.WriteString(" ( ")
 	for i, v := range args {
@@ -204,7 +204,7 @@ func (c *OrmContext) checkValidPrimaryKey(v []interface{}) {
 		return
 	}
 
-	err = checkValidFieldTypStruct(base)
+	err = checkStructValidFieldNuller(base)
 	if err != nil {
 		c.err = err
 		return

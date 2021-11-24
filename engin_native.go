@@ -6,7 +6,6 @@ import (
 
 //对 query exec 的简单封装
 type EngineNative struct {
-	ormConf OrmConf
 	dialect Dialect
 	context OrmContext
 }

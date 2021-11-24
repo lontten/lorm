@@ -353,6 +353,7 @@ func checkValidMapValuer(v reflect.Value) bool {
 // struct 1
 // base 2
 // no type -2
+//Deprecated
 func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 	is, base := baseStructType(t)
 	if is {
@@ -370,6 +371,7 @@ func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
 // base 2
 // slice 3
 // no type -2
+//Deprecated
 func baseStructBaseSliceType(t reflect.Type) (int, reflect.Type) {
 	is, base := baseStructType(t)
 	if is {
