@@ -13,8 +13,6 @@ import (
 )
 
 type OrmConf struct {
-	stmt *sql.Stmt
-
 	//po生成文件目录
 	PoDir string
 	//是否覆盖，默认true
@@ -53,19 +51,31 @@ type OrmConf struct {
 	TenantIgnoreTableFun func(tableName string, base reflect.Value) bool
 }
 
+// ScanLn
+// v0.6
+// 1.base
+// 2.struct-single
+// 3.slice-*
 func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		panicErr(rows.Close())
+	}(rows)
+
 	value := reflect.ValueOf(v)
-	code, base := basePtrStructBaseValue(value)
-	if code == -1 {
-		return 0, errors.New("dest need a  ptr")
+	is, value := basePtrDeepValue(value)
+
+	if !is {
+		return 0, errors.New("dest need a  ptr or slice")
 	}
-	if code == -2 {
-		return 0, errors.New("need a ptr struct or base type")
+
+	_, base := checkPackTypeValue(value)
+	typ, base := checkCompTypeValue(base, false)
+	if typ != Single {
+		return 0, errors.New("scan target type errr")
 	}
 
 	num = 1
-	t := base.Type()
+	t := value.Type()
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -92,20 +102,25 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 }
 
 func (c OrmConf) ScanLnBatch(rows *sql.Rows, v interface{}) (num int64, err error) {
-	stmt := c.stmt
+	defer func(rows *sql.Rows) {
+		panicErr(rows.Close())
+	}(rows)
 
-	defer rows.Close()
 	value := reflect.ValueOf(v)
-	code, base := basePtrStructBaseValue(value)
-	if code == -1 {
-		return 0, errors.New("dest need a  ptr")
+	is, value := basePtrDeepValue(value)
+
+	if !is {
+		return 0, errors.New("dest need a  ptr or slice")
 	}
-	if code == -2 {
-		return 0, errors.New("need a ptr struct or base type")
+
+	_, base := checkPackTypeValue(value)
+	typ, base := checkCompTypeValue(base, false)
+	if typ != Single {
+		return 0, errors.New("scan target type errr")
 	}
 
 	num = 1
-	t := base.Type()
+	t := value.Type()
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -131,25 +146,35 @@ func (c OrmConf) ScanLnBatch(rows *sql.Rows, v interface{}) (num int64, err erro
 	return
 }
 
+//Scan
+// v0.6
+//1.[]base
+//2.[]struct-single
 func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		panicErr(rows.Close())
+	}(rows)
+
 	value := reflect.ValueOf(v)
-	if value.Kind() != reflect.Ptr {
-		return 0, errors.New("need a ptr type")
+	isPtr, arr := basePtrDeepValue(value)
+
+	if !isPtr {
+		return 0, errors.New("dest need a  ptr type")
 	}
-	arr := value.Elem()
-	if arr.Kind() != reflect.Slice {
+
+	typ, elem := checkPackTypeValue(arr)
+	if typ != Slice {
 		return 0, errors.New("need a slice type")
 	}
-
-	slice := arr.Type()
-
-	base := slice.Elem()
-	isPtr := base.Kind() == reflect.Ptr
-	code, base := baseStructBaseType(base)
-	if code == -2 {
-		return 0, errors.New("need a struct or base type in  slice")
+	ctyp, elem := checkCompTypeValue(elem, false)
+	if ctyp != Single {
+		return 0, errors.New("scan target type errr")
 	}
+	base := elem.Type()
+
+
+
+
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -180,6 +205,8 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	return num, nil
 }
 
+
+// v0.6
 func (c OrmConf) tableName(v reflect.Value) (string, error) {
 	base := v.Type()
 
@@ -222,12 +249,15 @@ func (c OrmConf) tableName(v reflect.Value) (string, error) {
 	return name, nil
 }
 
+// v0.6
 func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
+	//fun
 	primaryKeyNameFun := c.PrimaryKeyNameFun
 	if primaryKeyNameFun != nil {
 		return primaryKeyNameFun(tableName, v)
 	}
 
+	//conifg id name
 	primaryKeyName := c.PrimaryKeyNames
 	if len(primaryKeyName) != 0 {
 		return primaryKeyName
@@ -235,6 +265,7 @@ func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
 
 	//todo 获取 struct 中 tag为id 的 filed ，为 primaryKeyNames 可多个
 
+	// id
 	return []string{"id"}
 }
 func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
