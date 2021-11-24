@@ -51,7 +51,7 @@ func (orm *OrmWhere) GetOne(dest interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return base.context.core.ScanLn(rows, dest)
+	return ormConfig.ScanLn(rows, dest)
 }
 
 func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
@@ -64,5 +64,5 @@ func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return base.context.core.Scan(rows, dest)
+	return ormConfig.Scan(rows, dest)
 }

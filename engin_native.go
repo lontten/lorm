@@ -36,7 +36,7 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.context.core.ScanLn(rows, dest)
+	return ormConfig.ScanLn(rows, dest)
 }
 
 func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
@@ -46,7 +46,7 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.context.core.Scan(rows, dest)
+	return ormConfig.Scan(rows, dest)
 }
 
 func (engine EngineNative) Exec(query string, args ...interface{}) (rowsNum int64, err error) {

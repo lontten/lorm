@@ -34,7 +34,7 @@ func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, er
 
 	e.ctx.core.stmt = stmt
 
-	return e.ctx.core.ScanLnBatch()
+	return ormConfig.ScanLnBatch()
 }
 
 func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
@@ -42,7 +42,7 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return e.ctx.core.Scan(rows, e.ctx.dest)
+	return ormConfig.Scan(rows, e.ctx.dest)
 }
 
 func (e *EngineTable) setTargetDestSlice(v interface{}) {
