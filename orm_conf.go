@@ -2,9 +2,7 @@ package lorm
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
-	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
@@ -261,12 +259,10 @@ func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
 	// id
 	return []string{"id"}
 }
+
+//v0.6
 func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
-	typ := v.Type()
-	base, err := baseStructTypePtr(typ)
-	if err != nil {
-		return
-	}
+	base := v.Type()
 
 	cMap := make(map[string]int)
 
@@ -330,48 +326,18 @@ func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
 	return arr, nil
 }
 
-func (c OrmConf) initColumnsValue(v reflect.Value) (columns []string, values []interface{}, err error) {
-	columns = make([]string, 0)
-	values = make([]interface{}, 0)
-
-	t := v.Type()
-
-	mappingColumns, err := c.getStructMappingColumns(t)
-	if err != nil {
+//v0.6
+func (c OrmConf) initColumnsValue(arr []reflect.Value) (columns []string, valuess [][]interface{}, err error) {
+	if len(arr) == 1 {
+		cs, vs, err := ormConfig.getCompColumnsValueNoNil(arr[0])
+		if err != nil {
+			return
+		}
+		columns = cs
+		valuess = append(valuess, vs)
 		return
 	}
-
-	for column, i := range mappingColumns {
-		field := v.Field(i)
-
-		typ, validField, ok := baseStructValidField(field)
-		if !ok {
-			return nil, nil, errors.New("struct field " + field.String() + " need field is ptr slice struct")
-		}
-
-		if typ == 0 {
-			columns = append(columns, column)
-			values = append(values, validField.Interface())
-		}
-
-		if typ == 1 || typ == 2 {
-			if !field.IsNil() {
-				columns = append(columns, column)
-				values = append(values, validField.Interface())
-			}
-		}
-
-		if typ == 3 {
-			vv := validField.Interface().(types.NullEr)
-			if !vv.IsNull() {
-				value, _ := validField.Interface().(driver.Valuer).Value()
-				columns = append(columns, column)
-				values = append(values, value)
-			}
-		}
-	}
-	return
-
+	return ormConfig.getCompAllColumnsValueList(arr)
 }
 
 //v0.6
@@ -433,6 +399,7 @@ func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error)
 
 	return cMap, nil
 }
+
 //0.6
 //获取comp 对应的字段名 和 其值   排除 nil部分
 func (c OrmConf) getCompColumnsValueNoNil(v reflect.Value) (columns []string, values []interface{}, err error) {
@@ -457,6 +424,7 @@ func (c OrmConf) getCompColumnsValueNoNil(v reflect.Value) (columns []string, va
 	}
 	return
 }
+
 //0.6
 //获取comp 对应的字段名 和 其值   不排除 nil部分
 func (c OrmConf) getCompAllColumnsValue(v reflect.Value) (columns []string, values []interface{}, err error) {

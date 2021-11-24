@@ -148,8 +148,6 @@ func (orm OrmTableCreate) ById(v ...interface{}) (int64, error) {
 		return 0, errors.New("复合主键，数目不对，需要" + strconv.Itoa(keyNum) + "个，传入" + strconv.Itoa(idNum) + "个")
 	}
 
-
-
 	var sb strings.Builder
 	sb.WriteString("SELECT 1 ")
 	sb.WriteString(" FROM ")
@@ -676,10 +674,7 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 	if w == nil {
 		return 0, errors.New("table select where can't nil")
 	}
-	err := orm.base.initColumns()
-	if err != nil {
-		return 0, err
-	}
+	orm.base.initColumns()
 	orm.base.initPrimaryKeyName()
 
 	wheres := w.context.wheres
@@ -712,8 +707,8 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 	return orm.base.queryLn(sb.String(), args...)
 }
 
-//init
 //0.6
+//初始化主键
 func (e *EngineTable) initPrimaryKeyName() {
 	if e.ctx.err != nil {
 		return
@@ -722,6 +717,7 @@ func (e *EngineTable) initPrimaryKeyName() {
 }
 
 //0.6
+//初始化 表名
 func (e *EngineTable) initTableName() {
 	if e.ctx.err != nil {
 		return
@@ -740,21 +736,7 @@ func (e *EngineTable) initColumnsValue() {
 	if e.ctx.err != nil {
 		return
 	}
-	arr := e.ctx.destValueArr
-	if !e.ctx.isSlice {
-		columns, values, err := ormConfig.getCompColumnsValueNoNil(arr[0])
-		if err != nil {
-			e.ctx.err = err
-			return
-		}
-
-		e.ctx.columns = columns
-		e.ctx.columnValues = append(e.ctx.columnValues, values)
-		return
-	}
-
-	//target 是数组，所有字段都要，nil设为 default，而不是null，这样可以避免覆盖db默认值
-	columns, valuess, err := ormConfig.getCompAllColumnsValueList(arr)
+	columns, valuess, err := ormConfig.initColumnsValue(e.ctx.destValueArr)
 	if err != nil {
 		e.ctx.err = err
 		return
@@ -764,6 +746,7 @@ func (e *EngineTable) initColumnsValue() {
 	return
 }
 
+//v0.6
 //获取struct对应的字段名 有效部分
 func (e *EngineTable) initColumns() {
 	if e.ctx.err != nil {
