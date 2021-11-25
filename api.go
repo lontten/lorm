@@ -3,6 +3,7 @@ package lorm
 import (
 	"database/sql"
 )
+
 //
 //type DBer interface {
 //	ScanLn(rows *sql.Rows, v interface{}) (int64, error)
@@ -26,25 +27,6 @@ type SqlUtil interface {
 	tableUpdateArgs2SqlStr(args []string) string
 	tableWherePrimaryKey2SqlStr(ids []string, c OrmConf) string
 }
-
-//
-//type OrmCore interface {
-//
-//	//获取主键列表
-//	primaryKeys(tableName string, v reflect.Value) []string
-//	//获取表名
-//	tableName(v reflect.Value) (string, error)
-//
-//
-//	initColumns(v reflect.Value) (c []string, err error)
-//	initColumnsValue(v reflect.Value) ([]string, []interface{}, error)
-//
-//	getStructMappingColumns(t reflect.Type) (map[string]int, error)
-//	getCompColumnsValueNoNil(v reflect.Value) (columns []string, values []interface{}, err error)
-//	getCompAllColumnsValueList(v []reflect.Value) (m ModelParam, err error)
-//
-//	getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error)
-//}
 
 type Queryer interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)

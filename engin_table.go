@@ -1,6 +1,8 @@
 package lorm
 
 import (
+	"database/sql"
+	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"log"
 	"reflect"
@@ -14,6 +16,7 @@ type EngineTable struct {
 	ctx OrmContext
 }
 
+//v0.6
 func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
@@ -22,21 +25,26 @@ func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 	return ormConfig.ScanLn(rows, e.ctx.dest)
 }
 
+//v0.6
 func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
 	stmt, err := e.dialect.queryBatch(query)
 	if err != nil {
 		return 0, err
 	}
 
+	rowss := make([]*sql.Rows, 0)
 	for _, arg := range args {
-		stmt.Query()
+		rows, err := stmt.Query(arg...)
+		if err != nil {
+			return 0, err
+		}
+		rowss = append(rowss, rows)
 	}
 
-	e.ctx.core.stmt = stmt
-
-	return ormConfig.ScanLnBatch()
+	return ormConfig.ScanLnBatch(rowss, utils.ToSlice(e.ctx.destValue))
 }
 
+//v0.6
 func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
@@ -45,6 +53,7 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	return ormConfig.Scan(rows, e.ctx.dest)
 }
 
+//v0.6
 func (e *EngineTable) setTargetDestSlice(v interface{}) {
 	if e.ctx.err != nil {
 		return
@@ -54,6 +63,7 @@ func (e *EngineTable) setTargetDestSlice(v interface{}) {
 	e.initTableName()
 }
 
+//v0.6
 func (e *EngineTable) setTargetDest(v interface{}) {
 	if e.ctx.err != nil {
 		return
@@ -63,6 +73,7 @@ func (e *EngineTable) setTargetDest(v interface{}) {
 	e.initTableName()
 }
 
+//v0.6
 func (e *EngineTable) setTargetDestOnlyTableName(v interface{}) {
 	if e.ctx.err != nil {
 		return
@@ -95,6 +106,7 @@ type OrmTableDelete struct {
 }
 
 // Create
+//v0.6
 //1.ptr-comp-struct
 //2.slice-comp-struct
 func (e EngineTable) Create(v interface{}) (num int64, err error) {
@@ -111,6 +123,7 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	return e.dialect.exec(sql, e.ctx.columnValues[0])
 }
 
+//v0.6
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 	e.setTargetDest(v)
 	e.initColumnsValue()
@@ -633,7 +646,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	err = base.initColumns()
+	base.initColumns()
 	if err != nil {
 		return 0, err
 	}

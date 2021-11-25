@@ -159,7 +159,7 @@ func checkDestTyp(v reflect.Value) (a ArgTyp, err error) {
 	a.isPtr = isPtr
 
 	//map
-	is, has, key, _ := baseMapValue(base)
+	is, has, key := baseMapValue(base)
 	if is {
 		if key.Kind() != reflect.String {
 			err = errors.New(" map type key err no string  ")

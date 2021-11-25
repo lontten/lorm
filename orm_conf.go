@@ -56,7 +56,7 @@ type OrmConf struct {
 // 2.slice- single
 func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	defer func(rows *sql.Rows) {
-		panicErr(rows.Close())
+		utils.PanicErr(rows.Close())
 	}(rows)
 
 	value := reflect.ValueOf(v)
@@ -99,13 +99,29 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	return
 }
 
-//Scan
-//接收多行结果
+// ScanLnBatch
+//接收一行结果-批量
 // v0.6
+// 1.ptr single/comp
+// 2.slice- single
+func (c OrmConf) ScanLnBatch(rowss []*sql.Rows, v []interface{}) (num int64, err error) {
+	for i, rows := range rowss {
+		n, err := c.ScanLn(rows, v[i])
+		if err != nil {
+			return num, err
+		}
+		num += n
+	}
+	return
+}
+
+//Scan
+// v0.6
+//接收多行结果
 //1.[]- *
 func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	defer func(rows *sql.Rows) {
-		panicErr(rows.Close())
+		utils.PanicErr(rows.Close())
 	}(rows)
 
 	value := reflect.ValueOf(v)
@@ -149,6 +165,21 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 		num++
 	}
 	return num, nil
+}
+
+//ScanBatch
+// v0.6
+//接收多行结果-批量
+//1.[]- *
+func (c OrmConf) ScanBatch(rowss []*sql.Rows, v []interface{}) (num int64, err error) {
+	for i, rows := range rowss {
+		n, err := c.Scan(rows, v[i])
+		if err != nil {
+			return num, err
+		}
+		num += n
+	}
+	return
 }
 
 // v0.6
