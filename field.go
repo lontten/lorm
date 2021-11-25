@@ -15,7 +15,7 @@ func checkField(v reflect.Value) error {
 	_, base := checkPackTypeValue(v)
 	typ := checkCompTypeValue(base, true)
 	if typ != Single {
-		return errors.New("check field err :: " + v.String())
+		return errors.New("field没有实现valuer " + v.String())
 	}
 	return nil
 }
@@ -36,13 +36,13 @@ func checkFieldNuller(v reflect.Value) error {
 
 	ctyp := checkCompTypeValue(base, false)
 	if ctyp != Single {
-		return errors.New("check field err :: " + v.String())
+		return errors.New("field  no imp valuer:: " + v.String())
 	}
 	//nuller
 	if isNuller {
 		return nil
 	}
-	return errors.New("check field err :: " + v.String())
+	return errors.New("field  no imp valuer:: " + v.String())
 }
 
 // v0.6

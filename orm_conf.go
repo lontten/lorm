@@ -310,15 +310,18 @@ func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
 }
 
 //v0.6
-func (c OrmConf) initColumnsValue(arr []reflect.Value) (columns []string, valuess [][]interface{}, err error) {
+func (c OrmConf) initColumnsValue(arr []reflect.Value) ([]string, [][]interface{}, error) {
+	columns := make([]string, 0)
+	valuess := make([][]interface{}, 0)
+
 	if len(arr) == 1 {
 		cs, vs, err := ormConfig.getCompColumnsValueNoNil(arr[0])
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 		columns = cs
 		valuess = append(valuess, vs)
-		return
+		return columns, valuess, nil
 	}
 	return ormConfig.getCompAllColumnsValueList(arr)
 }

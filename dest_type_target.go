@@ -20,7 +20,7 @@ func (c *OrmContext) initTargetDestSlice(dest interface{}) {
 	typ, base := checkPackTypeValue(v)
 	ctyp := checkCompTypeValue(base, false)
 
-	if ctyp != SliceEmpty {
+	if ctyp == SliceEmpty {
 		c.err = errors.New("slice no's empty")
 		return
 	}

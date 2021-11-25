@@ -1,9 +1,5 @@
 package lorm
 
-import (
-	"reflect"
-)
-
 //对 query exec 的简单封装
 type EngineNative struct {
 	dialect Dialect
@@ -25,11 +21,6 @@ func (engine EngineNative) Query(query string, args ...interface{}) *ClassicQuer
 }
 
 func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
-	_, err = checkScanTypeLn(reflect.TypeOf(dest))
-	if err != nil {
-		return 0, err
-	}
-
 	query := q.query
 	args := q.args
 	rows, err := q.base.dialect.query(query, args...)
