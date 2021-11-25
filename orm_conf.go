@@ -50,7 +50,7 @@ type OrmConf struct {
 }
 
 // ScanLn
-//接受一个结果
+//接收一行结果
 // v0.6
 // 1.ptr single/comp
 // 2.slice- single
@@ -61,19 +61,16 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 
 	value := reflect.ValueOf(v)
 	typ, base := checkPackTypeValue(value)
-	if typ==None {
+	if typ == None {
 		return 0, errors.New("scanln: invalid type")
 	}
 	ctyp := checkCompTypeValue(base, true)
-	if ctyp==Invade {
+	if ctyp == Invade {
 		return 0, errors.New("scanln: invalid type")
 	}
-	if typ==Slice && ctyp!=Single {
+	if typ == Slice && ctyp != Single {
 		return 0, errors.New("scanln: invalid type")
 	}
-
-
-
 
 	num = 1
 	t := base.Type()
@@ -102,8 +99,8 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	return
 }
 
-
 //Scan
+//接收多行结果
 // v0.6
 //1.[]- *
 func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
@@ -112,16 +109,16 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	}(rows)
 
 	value := reflect.ValueOf(v)
-	typ, base := checkPackTypeValue(value)
-	if typ!=Slice {
+	_, arr := basePtrDeepValue(value)
+	is, base := baseSliceDeepValue(arr)
+	if !is {
 		return 0, errors.New("scan: need a slice")
 	}
 	ctyp := checkCompTypeValue(base, true)
-	if ctyp==Invade {
+	if ctyp == Invade {
 		return 0, errors.New("scanln: invalid type")
 	}
-
-
+	isPtr := base.Kind() == reflect.Ptr
 
 	baset := base.Type()
 
