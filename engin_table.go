@@ -122,73 +122,97 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 }
 
 //v0.6
+//只能一个
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	return OrmTableCreate{base: e}
 }
 
-//func (orm OrmTableCreate) ById(v ...interface{}) (int64, error) {
-//	base := orm.base
-//	ctx := base.ctx
-//	if err := ctx.err; err != nil {
-//		return 0, err
-//	}
-//
-//	keyNum := len(ctx.primaryKeyNames)
-//	idNum := len(v)
-//
-//	tableName := ctx.tableName
-//	cs := ctx.columns
-//	cvs := ctx.columnValues[0]
-//
-//	if idNum == 0 {
-//		for _, key := range ctx.primaryKeyNames {
-//			for i, s := range cs {
-//				if s == key {
-//					v = append(v, cvs[i])
-//					continue
-//				}
-//			}
-//		}
-//		if len(v) != keyNum {
-//			return 0, errors.New("target 主键数据有 nil")
-//		}
-//	}
-//	if keyNum != idNum {
-//		return 0, errors.New("复合主键，数目不对，需要" + strconv.Itoa(keyNum) + "个，传入" + strconv.Itoa(idNum) + "个")
-//	}
-//
-//	var sb strings.Builder
-//	sb.WriteString("SELECT 1 ")
-//	sb.WriteString(" FROM ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(" WHERE id = ? ")
-//	rows, err := base.dialect.query(sb.String(), idValue)
-//	if err != nil {
-//		return 0, err
-//	}
-//	//update
-//	if rows.Next() {
-//		sb.Reset()
-//		sb.WriteString("UPDATE ")
-//		sb.WriteString(tableName)
-//		sb.WriteString(" SET ")
-//		sb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
-//		sb.WriteString(" WHERE id = ? ")
-//		cvs = append(cvs, idValue)
-//
-//		return base.dialect.exec(sb.String(), cvs...)
-//	}
-//	columnSqlStr := ctx.tableCreateArgs2SqlStr(cs)
-//
-//	sb.Reset()
-//	sb.WriteString("INSERT INTO ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(columnSqlStr)
-//
-//	return base.dialect.exec(sb.String(), cvs...)
-//}
+//v0.6
+//ptr
+//single / comp复合主键
+func (orm OrmTableCreate) ById(v interface{}) (int64, error) {
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+
+	keyNum := len(ctx.primaryKeyNames)
+
+	tableName := ctx.tableName
+	cs := ctx.columns
+	cvs := ctx.columnValues[0]
+
+	idValues := make([]interface{}, 0)
+	//主键为nil，从dest中获取id value
+	if v == nil {
+		for _, key := range ctx.primaryKeyNames {
+			for i, s := range cs {
+				if s == key {
+					idValues = append(idValues, cvs[i])
+					continue
+				}
+			}
+		}
+	} else {
+		columns, values, err := getCompCV(v)
+		if err != nil {
+			return 0, err
+		}
+
+		for _, key := range ctx.primaryKeyNames {
+			for i, c := range columns {
+				if c == key {
+					idValues = append(idValues, values[i])
+					continue
+				}
+			}
+		}
+	}
+
+	idLen := len(idValues)
+	if idLen == 0 {
+		return 0, errors.New("no pk")
+	}
+	if keyNum != idLen {
+		return 0, errors.New("comp pk num err")
+	}
+
+	whereStr := ctx.tableWherePrimaryKey2SqlStr(ctx.primaryKeyNames)
+
+	var sb strings.Builder
+	sb.WriteString("SELECT 1 ")
+	sb.WriteString(" FROM ")
+	sb.WriteString(tableName)
+	sb.WriteString(whereStr)
+	rows, err := base.dialect.query(sb.String(), idValues)
+	if err != nil {
+		return 0, err
+	}
+	//update
+	if rows.Next() {
+		sb.Reset()
+		sb.WriteString("UPDATE ")
+		sb.WriteString(tableName)
+		sb.WriteString(" SET ")
+		sb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
+		sb.WriteString(whereStr)
+		cvs = append(cvs, idValues)
+
+		return base.dialect.exec(sb.String(), cvs...)
+	}
+
+	columnSqlStr := ctx.tableCreateArgs2SqlStr()
+
+	sb.Reset()
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(tableName)
+	sb.WriteString(columnSqlStr)
+
+	return base.dialect.exec(sb.String(), cvs...)
+}
 
 //func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 //	base := orm.base
@@ -393,24 +417,11 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	value := reflect.ValueOf(v)
-	_, value = basePtrDeepValue(value)
-	ctyp := checkCompTypeValue(value, false)
-	if ctyp != Composite {
-		return 0, errors.New("ByModel typ err")
-	}
-	err := checkCompValidFieldNuller(value)
+	columns, values, err := getCompCV(v)
 	if err != nil {
 		return 0, err
 	}
 
-	columns, values, err := ormConfig.getCompColumnsValueNoNil(value)
-	if err != nil {
-		return 0, err
-	}
-	if len(columns) < 1 {
-		return 0, errors.New("where model valid field need ")
-	}
 	whereArgs2SqlStr := ctx.tableWhereArgs2SqlStr(columns)
 	var sb strings.Builder
 	sb.WriteString("DELETE ")
@@ -419,6 +430,28 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	sb.WriteString(whereArgs2SqlStr)
 
 	return base.dialect.exec(sb.String(), values...)
+}
+
+func getCompCV(v interface{}) ([]string, []interface{}, error) {
+	value := reflect.ValueOf(v)
+	_, value = basePtrDeepValue(value)
+	ctyp := checkCompTypeValue(value, false)
+	if ctyp != Composite {
+		return nil, nil, errors.New("ByModel typ err")
+	}
+	err := checkCompValidFieldNuller(value)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(value)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(columns) < 1 {
+		return nil, nil, errors.New("where model valid field need ")
+	}
+	return columns, values, nil
 }
 
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {

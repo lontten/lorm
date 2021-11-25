@@ -265,12 +265,11 @@ const (
 )
 
 func checkCompTypeValue(v reflect.Value, canEmpty bool) compType {
-	t := v.Type()
-	is := baseBaseType(t)
+	is := baseBaseValue(v)
 	if is {
 		return Single
 	}
-	is, has := baseMapType(t)
+	is, has,_ := baseMapValue(v)
 	if is {
 		if canEmpty || has {
 			return Composite
