@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -286,65 +287,65 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	return base.dialect.exec(sb.String(), cv...)
 }
 
-//func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
-//	base := orm.base
-//
-//	if err := base.ctx.err; err != nil {
-//		return 0, err
-//	}
-//	tableName := base.ctx.tableName
-//	c := base.ctx.columns
-//	cv := base.ctx.columnValues
-//
-//	if w == nil {
-//		return 0, nil
-//	}
-//	wheres := w.context.wheres
-//	args := w.context.args
-//
-//	var sb strings.Builder
-//	sb.WriteString("WHERE ")
-//	for i, where := range wheres {
-//		if i == 0 {
-//			sb.WriteString(" WHERE " + where)
-//			continue
-//		}
-//		sb.WriteString(" AND " + where)
-//	}
-//	whereSql := sb.String()
-//
-//	sb.Reset()
-//	sb.WriteString("SELECT 1 ")
-//	sb.WriteString(" FROM ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(whereSql)
-//
-//	log.Println(sb.String(), args)
-//	rows, err := base.dialect.query(sb.String(), args...)
-//	if err != nil {
-//		return 0, err
-//	}
-//	//update
-//	if rows.Next() {
-//		sb.Reset()
-//		sb.WriteString("UPDATE ")
-//		sb.WriteString(tableName)
-//		sb.WriteString(" SET ")
-//		sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-//		sb.WriteString(whereSql)
-//		cv = append(cv, args)
-//
-//		return base.dialect.exec(sb.String(), cv...)
-//	}
-//	columnSqlStr := base.ctx.tableCreateArgs2SqlStr(c)
-//
-//	sb.Reset()
-//	sb.WriteString("INSERT INTO ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(columnSqlStr)
-//
-//	return base.dialect.exec(sb.String(), cv...)
-//}
+func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
+	base := orm.base
+
+	if err := base.ctx.err; err != nil {
+		return 0, err
+	}
+	tableName := base.ctx.tableName
+	c := base.ctx.columns
+	cv := base.ctx.columnValues[0]
+
+	if w == nil {
+		return 0, nil
+	}
+	wheres := w.context.wheres
+	args := w.context.args
+
+	var sb strings.Builder
+	sb.WriteString("WHERE ")
+	for i, where := range wheres {
+		if i == 0 {
+			sb.WriteString(" WHERE " + where)
+			continue
+		}
+		sb.WriteString(" AND " + where)
+	}
+	whereSql := sb.String()
+
+	sb.Reset()
+	sb.WriteString("SELECT 1 ")
+	sb.WriteString(" FROM ")
+	sb.WriteString(tableName)
+	sb.WriteString(whereSql)
+
+	log.Println(sb.String(), args)
+	rows, err := base.dialect.query(sb.String(), args...)
+	if err != nil {
+		return 0, err
+	}
+	//update
+	if rows.Next() {
+		sb.Reset()
+		sb.WriteString("UPDATE ")
+		sb.WriteString(tableName)
+		sb.WriteString(" SET ")
+		sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
+		sb.WriteString(whereSql)
+		cv = append(cv, args)
+
+		return base.dialect.exec(sb.String(), cv...)
+	}
+	columnSqlStr := base.ctx.tableCreateArgs2SqlStr()
+
+	sb.Reset()
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(tableName)
+	sb.WriteString(columnSqlStr)
+
+	return base.dialect.exec(sb.String(), cv...)
+}
 
 //delete
 func (e EngineTable) Delete(v interface{}) OrmTableDelete {
@@ -569,40 +570,40 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	return base.dialect.exec(sb.String(), cv...)
 }
 
-//func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
-//	base := orm.base
-//	if err := base.ctx.err; err != nil {
-//		return 0, err
-//	}
-//
-//	if w == nil {
-//		return 0, nil
-//	}
-//	wheres := w.context.wheres
-//	args := w.context.args
-//
-//	tableName := base.ctx.tableName
-//	c := base.ctx.columns
-//	cv := base.ctx.columnValues
-//
-//	var sb strings.Builder
-//	sb.WriteString(" UPDATE ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(" SET ")
-//	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-//	sb.WriteString(" WHERE ")
-//	for i, where := range wheres {
-//		if i == 0 {
-//			sb.WriteString(where)
-//			continue
-//		}
-//		sb.WriteString(" AND " + where)
-//	}
-//
-//	cv = append(cv, args...)
-//
-//	return base.dialect.exec(sb.String(), cv...)
-//}
+func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
+	base := orm.base
+	if err := base.ctx.err; err != nil {
+		return 0, err
+	}
+
+	if w == nil {
+		return 0, nil
+	}
+	wheres := w.context.wheres
+	args := w.context.args
+
+	tableName := base.ctx.tableName
+	c := base.ctx.columns
+	cv := base.ctx.columnValues[0]
+
+	var sb strings.Builder
+	sb.WriteString(" UPDATE ")
+	sb.WriteString(tableName)
+	sb.WriteString(" SET ")
+	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
+	sb.WriteString(" WHERE ")
+	for i, where := range wheres {
+		if i == 0 {
+			sb.WriteString(where)
+			continue
+		}
+		sb.WriteString(" AND " + where)
+	}
+
+	cv = append(cv, args...)
+
+	return base.dialect.exec(sb.String(), cv...)
+}
 
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
