@@ -52,6 +52,25 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 }
 
 //v0.6
+func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
+	stmt, err := e.dialect.queryBatch(query)
+	if err != nil {
+		return 0, err
+	}
+
+	rowss := make([]*sql.Rows, 0)
+	for _, arg := range args {
+		rows, err := stmt.Query(arg...)
+		if err != nil {
+			return 0, err
+		}
+		rowss = append(rowss, rows)
+	}
+
+	return ormConfig.ScanBatch(rowss, utils.ToSlice(e.ctx.destValue))
+}
+
+//v0.6
 func (e *EngineTable) setTargetDestSlice(v interface{}) {
 	if e.ctx.err != nil {
 		return
@@ -214,63 +233,58 @@ func (orm OrmTableCreate) ById(v interface{}) (int64, error) {
 	return base.dialect.exec(sb.String(), cvs...)
 }
 
-//func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
-//	base := orm.base
-//	if err := base.ctx.err; err != nil {
-//		return 0, err
-//	}
-//
-//	va := reflect.ValueOf(v)
-//	_, va = basePtrValue(va)
-//
-//	err := checkStructValidFieldNuller(va)
-//	if err != nil {
-//		return 0, err
-//	}
-//	tableName := base.ctx.tableName
-//	c := base.ctx.columns
-//	cv := base.ctx.columnValues
-//
-//	columns, values, err := ormConfig.getCompColumnsValueNoNil(va)
-//	if len(columns) < 1 {
-//		return 0, errors.New("where model valid field need ")
-//	}
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns)
-//
-//	var sb strings.Builder
-//	sb.WriteString("SELECT 1 ")
-//	sb.WriteString(" FROM ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(whereArgs2SqlStr)
-//	rows, err := base.dialect.query(sb.String(), values...)
-//	if err != nil {
-//		return 0, err
-//	}
-//	//update
-//	if rows.Next() {
-//		sb.Reset()
-//		sb.WriteString("UPDATE ")
-//		sb.WriteString(tableName)
-//		sb.WriteString(" SET ")
-//		sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-//		sb.WriteString(whereArgs2SqlStr)
-//		cv = append(cv, values...)
-//
-//		return base.dialect.exec(sb.String(), cv...)
-//	}
-//	columnSqlStr := base.ctx.tableCreateArgs2SqlStr(c)
-//
-//	sb.Reset()
-//	sb.WriteString("INSERT INTO ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(columnSqlStr)
-//
-//	return base.dialect.exec(sb.String(), cv...)
-//}
+//v0.6
+//ptr-comp
+func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+
+	tableName := ctx.tableName
+	c := ctx.columns
+	cv := ctx.columnValues[0]
+
+	columns, values, err := getCompCV(v)
+	if err != nil {
+		return 0, err
+	}
+
+	where := genWhere(columns)
+
+	var sb strings.Builder
+	sb.WriteString("SELECT 1 ")
+	sb.WriteString(" FROM ")
+	sb.WriteString(tableName)
+	sb.WriteString(" WHERE ")
+	sb.WriteString(string(where))
+	rows, err := base.dialect.query(sb.String(), values...)
+	if err != nil {
+		return 0, err
+	}
+	//update
+	if rows.Next() {
+		sb.Reset()
+		sb.WriteString("UPDATE ")
+		sb.WriteString(tableName)
+		sb.WriteString(" SET ")
+		sb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+		sb.WriteString(" WHERE ")
+		sb.WriteString(string(where))
+		cv = append(cv, values...)
+
+		return base.dialect.exec(sb.String(), cv...)
+	}
+	columnSqlStr := ctx.tableCreateArgs2SqlStr()
+
+	sb.Reset()
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(tableName)
+	sb.WriteString(columnSqlStr)
+
+	return base.dialect.exec(sb.String(), cv...)
+}
 
 //func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 //	base := orm.base
@@ -525,41 +539,35 @@ func (e EngineTable) Update(v interface{}) OrmTableUpdate {
 //	return base.dialect.exec(sb.String(), cv...)
 //}
 
-//func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
-//	base := orm.base
-//
-//	if err := base.ctx.err; err != nil {
-//		return 0, err
-//	}
-//	va := reflect.ValueOf(v)
-//	err := checkStructValidFieldNuller(va)
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	tableName := base.ctx.tableName
-//	c := base.ctx.columns
-//	cv := base.ctx.columnValues
-//
-//	var sb strings.Builder
-//	sb.WriteString(" UPDATE ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(" SET ")
-//	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-//	columns, values, err := ormConfig.getCompColumnsValueNoNil(va)
-//	if len(columns) < 1 {
-//		return 0, errors.New("where model valid field need ")
-//	}
-//	if err != nil {
-//		return 0, err
-//	}
-//	whereArgs2SqlStr := base.ctx.tableWhereArgs2SqlStr(columns)
-//	sb.WriteString(whereArgs2SqlStr)
-//
-//	cv = append(cv, values...)
-//
-//	return base.dialect.exec(sb.String(), cv...)
-//}
+func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+	columns, values, err := getCompCV(v)
+	if err != nil {
+		return 0, err
+	}
+
+	tableName := ctx.tableName
+	c := ctx.columns
+	cv := ctx.columnValues[0]
+
+	var sb strings.Builder
+	sb.WriteString(" UPDATE ")
+	sb.WriteString(tableName)
+	sb.WriteString(" SET ")
+	sb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+
+	where := genWhere(columns)
+	sb.WriteString(" WHERE ")
+	sb.WriteString(string(where))
+
+	cv = append(cv, values...)
+
+	return base.dialect.exec(sb.String(), cv...)
+}
 
 //func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 //	base := orm.base
@@ -696,32 +704,22 @@ func (orm OrmTableSelectWhere) getList() (int64, error) {
 	return orm.base.queryLn(sb.String(), orm.base.ctx.dest)
 }
 
+//v0.6
+//ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
 
-	if err := base.ctx.err; err != nil {
-		return 0, err
-	}
-	va := reflect.ValueOf(v)
-	err := checkStructValidFieldNuller(va)
+	columns, values, err := getCompCV(v)
 	if err != nil {
 		return 0, err
 	}
-	base.initColumns()
-	if err != nil {
-		return 0, err
-	}
-	base.initPrimaryKeyName()
 
-	tableName := base.ctx.tableName
-	c := base.ctx.columns
-	columns, values, err := ormConfig.getCompColumnsValueNoNil(va)
-	if len(columns) < 1 {
-		return 0, errors.New("where model valid field need ")
-	}
-	if err != nil {
-		return 0, err
-	}
+	tableName := ctx.tableName
+	c := ctx.columns
 
 	var sb strings.Builder
 	sb.WriteString("SELECT ")
@@ -735,7 +733,7 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	}
 	sb.WriteString(" FROM ")
 	sb.WriteString(tableName)
-	sb.WriteString(base.ctx.tableWhereArgs2SqlStr(columns))
+	sb.WriteString(ctx.tableWhereArgs2SqlStr(columns))
 
 	return base.queryLn(sb.String(), values...)
 }
