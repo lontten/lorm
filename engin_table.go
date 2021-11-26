@@ -403,32 +403,8 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	base.initPrimaryKeyName()
 	ctx.checkValidPrimaryKey(v)
 
-	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
-	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
-	tableName := ctx.tableName
-
-	whereSql := genWhere(idNames)
-
-	var sb strings.Builder
-	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
-	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-	if logicDeleteSetSql == lgSql {
-		sb.WriteString("DELETE FROM ")
-		sb.WriteString(tableName)
-		sb.WriteString("WHERE ")
-		sb.WriteString(string(whereSql))
-	} else {
-		sb.WriteString("UPDATE ")
-		sb.WriteString(tableName)
-		sb.WriteString(" SET ")
-		sb.WriteString(lgSql)
-		sb.WriteString("WHERE ")
-		sb.WriteString(string(whereSql))
-		sb.WriteString(" and ")
-		sb.WriteString(logicDeleteYesSql)
-	}
-
-	return base.dialect.exec(sb.String(), v)
+	delSql := ctx.genDelSql()
+	return base.dialect.exec(string(delSql), v...)
 }
 
 //v0.6

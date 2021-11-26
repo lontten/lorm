@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"bytes"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -29,16 +30,15 @@ type OrmContext struct {
 	columnValues [][]interface{}
 
 	//要执行的sql语句
-	query   *strings.Builder
+	query *strings.Builder
 	//参数
-	args    []interface{}
-
+	args []interface{}
 
 	started bool
 	err     error
 
 	//log的层级
-	log     int
+	log int
 }
 
 //select 生成
@@ -155,7 +155,6 @@ func (ctx *OrmContext) tableCreateGen() string {
 	sb.WriteString("INSERT INTO ")
 	sb.WriteString(ctx.tableName + " ")
 
-
 	sb.WriteString(" ( ")
 	for i, v := range args {
 		if i == 0 {
@@ -178,7 +177,7 @@ func (ctx *OrmContext) tableCreateGen() string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) createSqlGenera(args []string)string {
+func (ctx *OrmContext) createSqlGenera(args []string) string {
 	var sb strings.Builder
 	sb.WriteString(" ( ")
 	for i, v := range args {
@@ -256,5 +255,35 @@ func (c *OrmContext) checkValidPrimaryKey(v []interface{}) {
 			c.args = append(c.args, field.Interface())
 		}
 	}
+
+}
+
+func (ctx *OrmContext) genDelSql() []byte {
+	var bb bytes.Buffer
+	keys := ctx.primaryKeyNames
+	tableName := ctx.tableName
+
+	whereSql := genWhere(keys)
+
+	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
+	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
+	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
+	if logicDeleteSetSql == lgSql {
+		bb.WriteString("DELETE FROM ")
+		bb.WriteString(tableName)
+		bb.WriteString("WHERE ")
+		bb.WriteString(string(whereSql))
+	} else {
+		bb.WriteString("UPDATE ")
+		bb.WriteString(tableName)
+		bb.WriteString(" SET ")
+		bb.WriteString(lgSql)
+		bb.WriteString("WHERE ")
+		bb.WriteString(string(whereSql))
+		bb.WriteString(" and ")
+		bb.WriteString(logicDeleteYesSql)
+	}
+	return bb.Bytes()
 
 }

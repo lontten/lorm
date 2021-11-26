@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"github.com/lontten/lorm/utils"
@@ -492,4 +493,30 @@ func (c OrmConf) getColFieldIndexLinkMap(columns []string, typ reflect.Type) (Co
 		return ColFieldIndexLinkMap{}, nil
 	}
 	return cfm, nil
+}
+
+func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
+	var bb bytes.Buffer
+	whereSql := genWhere(keys)
+
+	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
+	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
+	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
+	if logicDeleteSetSql == lgSql {
+		bb.WriteString("DELETE FROM ")
+		bb.WriteString(tableName)
+		bb.WriteString("WHERE ")
+		bb.WriteString(string(whereSql))
+	} else {
+		bb.WriteString("UPDATE ")
+		bb.WriteString(tableName)
+		bb.WriteString(" SET ")
+		bb.WriteString(lgSql)
+		bb.WriteString("WHERE ")
+		bb.WriteString(string(whereSql))
+		bb.WriteString(" and ")
+		bb.WriteString(logicDeleteYesSql)
+	}
+	return bb.Bytes()
 }
