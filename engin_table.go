@@ -354,74 +354,82 @@ func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 }
 
 //v0.6
-//[]-single -> 单主键
-//[]-comp -> 复合主键
-//func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
-//	base := orm.base
-//
-//	if err := base.ctx.err; err != nil {
-//		return 0, err
-//	}
-//
-//	idLen := len(v)
-//	if idLen == 0 {
-//		return 0, errors.New("ByPrimaryKey arg num 0")
-//	}
-//
-//	pkLen := len(base.ctx.primaryKeyNames)
-//	if pkLen==1 { //单主键
-//		for _, i := range v {
-//			value := reflect.ValueOf(i)
-//			_, value = basePtrDeepValue(value)
-//			ctyp := checkCompTypeValue(value, false)
-//			if ctyp != Single {
-//				return 0,  errors.New("ByPrimaryKey typ err")
-//			}
-//		}
-//	}else {
-//        for _, i := range v {
-//            value := reflect.ValueOf(i)
-//            _, value = basePtrDeepValue(value)
-//            ctyp := checkCompTypeValue(value, false)
-//            if ctyp != Composite {
-//                return 0,  errors.New("ByPrimaryKey typ err")
-//            }
-//        }
-//
-//		//todo 多主键数量，和pkLen 是否相等
-//	}
-//
-//
-//
-//	base.initPrimaryKeyName()
-//	base.ctx.checkValidPrimaryKey(v)
-//
-//	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
-//	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
-//	tableName := base.ctx.tableName
-//	whereSql := base.ctx.tableWherePrimaryKey2SqlStr(idNames)
-//
-//	var sb strings.Builder
-//	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
-//	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-//	if logicDeleteSetSql == lgSql {
-//		sb.WriteString("DELETE FROM ")
-//		sb.WriteString(tableName)
-//		sb.WriteString("WHERE ")
-//		sb.WriteString(whereSql)
-//	} else {
-//		sb.WriteString("UPDATE ")
-//		sb.WriteString(tableName)
-//		sb.WriteString(" SET ")
-//		sb.WriteString(lgSql)
-//		sb.WriteString("WHERE ")
-//		sb.WriteString(whereSql)
-//		sb.WriteString(" and ")
-//		sb.WriteString(logicDeleteYesSql)
-//	}
-//
-//	return base.dialect.exec(sb.String(), v)
-//}
+//[]
+//single -> 单主键
+//comp -> 复合主键
+func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+
+	idLen := len(v)
+	if idLen == 0 {
+		return 0, errors.New("ByPrimaryKey arg num 0")
+	}
+
+	idNames := ctx.primaryKeyNames
+	pkLen := len(idNames)
+	if pkLen == 1 { //单主键
+		for _, i := range v {
+			value := reflect.ValueOf(i)
+			_, value = basePtrDeepValue(value)
+			ctyp := checkCompTypeValue(value, false)
+			if ctyp != Single {
+				return 0, errors.New("ByPrimaryKey typ err")
+			}
+		}
+	} else {
+		for _, i := range v {
+			value := reflect.ValueOf(i)
+			_, value = basePtrDeepValue(value)
+			ctyp := checkCompTypeValue(value, false)
+			if ctyp != Composite {
+				return 0, errors.New("ByPrimaryKey typ err")
+			}
+
+			cv, _, err := getCompValueCV(value)
+			if err != nil {
+				return 0, err
+			}
+			if len(cv) != pkLen {
+				return 0, errors.New("复合主键，filed数量 len err")
+			}
+
+		}
+	}
+
+	base.initPrimaryKeyName()
+	ctx.checkValidPrimaryKey(v)
+
+	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
+	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	tableName := ctx.tableName
+
+	whereSql := genWhere(idNames)
+
+	var sb strings.Builder
+	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
+	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
+	if logicDeleteSetSql == lgSql {
+		sb.WriteString("DELETE FROM ")
+		sb.WriteString(tableName)
+		sb.WriteString("WHERE ")
+		sb.WriteString(string(whereSql))
+	} else {
+		sb.WriteString("UPDATE ")
+		sb.WriteString(tableName)
+		sb.WriteString(" SET ")
+		sb.WriteString(lgSql)
+		sb.WriteString("WHERE ")
+		sb.WriteString(string(whereSql))
+		sb.WriteString(" and ")
+		sb.WriteString(logicDeleteYesSql)
+	}
+
+	return base.dialect.exec(sb.String(), v)
+}
 
 //v0.6
 //comp,只能一个comp-struct
@@ -460,6 +468,26 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	}
 
 	columns, values, err := ormConfig.getCompColumnsValueNoNil(value)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(columns) < 1 {
+		return nil, nil, errors.New("where model valid field need ")
+	}
+	return columns, values, nil
+}
+
+func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
+	ctyp := checkCompTypeValue(v, false)
+	if ctyp != Composite {
+		return nil, nil, errors.New("ByModel typ err")
+	}
+	err := checkCompValidFieldNuller(v)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(v)
 	if err != nil {
 		return nil, nil, err
 	}
