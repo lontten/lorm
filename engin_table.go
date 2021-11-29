@@ -1,10 +1,10 @@
 package lorm
 
 import (
+	"bytes"
 	"database/sql"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
-	"log"
 	"reflect"
 	"strings"
 )
@@ -72,6 +72,8 @@ func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, erro
 }
 
 //v0.6
+// *.comp / slice.comp
+//target dest 一个comp-struct，或者一个slice-comp-struct
 func (e *EngineTable) setTargetDestSlice(v interface{}) {
 	if e.ctx.err != nil {
 		return
@@ -82,6 +84,8 @@ func (e *EngineTable) setTargetDestSlice(v interface{}) {
 }
 
 //v0.6
+//*.comp
+//target dest 一个comp-struct
 func (e *EngineTable) setTargetDest(v interface{}) {
 	if e.ctx.err != nil {
 		return
@@ -125,8 +129,9 @@ type OrmTableDelete struct {
 
 // Create
 //v0.6
-//1.ptr-comp-struct
-//2.slice-comp-struct
+//1.ptr
+//2.comp-struct
+//3.slice-comp-struct
 func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	e.setTargetDestSlice(v)
 	e.initColumnsValue()
@@ -141,18 +146,25 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	return e.dialect.exec(sqlStr, e.ctx.columnValues[0])
 }
 
+// CreateOrUpdate
 //v0.6
 //只能一个
+//1.ptr
+//2.comp-struct
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	return OrmTableCreate{base: e}
 }
 
+// ByPrimaryKey
 //v0.6
 //ptr
 //single / comp复合主键
-func (orm OrmTableCreate) ById(v interface{}) (int64, error) {
+func (orm OrmTableCreate) ByPrimaryKey(v interface{}) (int64, error) {
+	if v == nil {
+		return 0, errors.New("ByPrimaryKey is nil")
+	}
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
@@ -161,33 +173,22 @@ func (orm OrmTableCreate) ById(v interface{}) (int64, error) {
 
 	keyNum := len(ctx.primaryKeyNames)
 
-	tableName := ctx.tableName
 	cs := ctx.columns
 	cvs := ctx.columnValues[0]
+	tableName := ctx.tableName
 
 	idValues := make([]interface{}, 0)
-	//主键为nil，从dest中获取id value
-	if v == nil {
-		for _, key := range ctx.primaryKeyNames {
-			for i, s := range cs {
-				if s == key {
-					idValues = append(idValues, cvs[i])
-					continue
-				}
-			}
-		}
-	} else {
-		columns, values, err := getCompCV(v)
-		if err != nil {
-			return 0, err
-		}
 
-		for _, key := range ctx.primaryKeyNames {
-			for i, c := range columns {
-				if c == key {
-					idValues = append(idValues, values[i])
-					continue
-				}
+	columns, values, err := getCompCV(v)
+	if err != nil {
+		return 0, err
+	}
+	//只要主键字段
+	for _, key := range ctx.primaryKeyNames {
+		for i, c := range columns {
+			if c == key {
+				idValues = append(idValues, values[i])
+				continue
 			}
 		}
 	}
@@ -200,151 +201,154 @@ func (orm OrmTableCreate) ById(v interface{}) (int64, error) {
 		return 0, errors.New("comp pk num err")
 	}
 
-	whereStr := ctx.tableWherePrimaryKey2SqlStr(ctx.primaryKeyNames)
+	whereStr := ctx.genWhereByPrimaryKey()
 
-	var sb strings.Builder
-	sb.WriteString("SELECT 1 ")
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString(whereStr)
-	rows, err := base.dialect.query(sb.String(), idValues)
+	var bb bytes.Buffer
+	bb.WriteString("SELECT 1 ")
+	bb.WriteString(" FROM ")
+	bb.WriteString(tableName)
+	bb.Write(whereStr)
+	bb.WriteString("limit 1")
+	rows, err := base.dialect.query(bb.String(), idValues)
 	if err != nil {
 		return 0, err
 	}
 	//update
 	if rows.Next() {
-		sb.Reset()
-		sb.WriteString("UPDATE ")
-		sb.WriteString(tableName)
-		sb.WriteString(" SET ")
-		sb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
-		sb.WriteString(whereStr)
+		bb.Reset()
+		bb.WriteString("UPDATE ")
+		bb.WriteString(tableName)
+		bb.WriteString(" SET ")
+		bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
+		bb.Write(whereStr)
 		cvs = append(cvs, idValues)
 
-		return base.dialect.exec(sb.String(), cvs...)
+		return base.dialect.exec(bb.String(), cvs...)
 	}
 
 	columnSqlStr := ctx.tableCreateArgs2SqlStr()
 
-	sb.Reset()
-	sb.WriteString("INSERT INTO ")
-	sb.WriteString(tableName)
-	sb.WriteString(columnSqlStr)
+	bb.Reset()
+	bb.WriteString("INSERT INTO ")
+	bb.WriteString(tableName)
+	bb.WriteString(columnSqlStr)
 
-	return base.dialect.exec(sb.String(), cvs...)
+	return base.dialect.exec(bb.String(), cvs...)
 }
 
 //v0.6
 //ptr-comp
 func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
+	if v == nil {
+		return 0, errors.New("ByModel is nil")
+	}
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	tableName := ctx.tableName
 	c := ctx.columns
 	cv := ctx.columnValues[0]
+	tableName := ctx.tableName
 
 	columns, values, err := getCompCV(v)
 	if err != nil {
 		return 0, err
 	}
+	where := ctx.genWhere(columns)
 
-	where := genWhere(columns)
-
-	var sb strings.Builder
-	sb.WriteString("SELECT 1 ")
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString(" WHERE ")
-	sb.WriteString(string(where))
-	rows, err := base.dialect.query(sb.String(), values...)
+	var bb bytes.Buffer
+	bb.WriteString("SELECT 1 ")
+	bb.WriteString(" FROM ")
+	bb.WriteString(tableName)
+	bb.Write(where)
+	bb.WriteString("limit 1")
+	rows, err := base.dialect.query(bb.String(), values...)
 	if err != nil {
 		return 0, err
 	}
 	//update
 	if rows.Next() {
-		sb.Reset()
-		sb.WriteString("UPDATE ")
-		sb.WriteString(tableName)
-		sb.WriteString(" SET ")
-		sb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
-		sb.WriteString(" WHERE ")
-		sb.WriteString(string(where))
+		bb.Reset()
+		bb.WriteString("UPDATE ")
+		bb.WriteString(tableName)
+		bb.WriteString(" SET ")
+		bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+		bb.Write(where)
 		cv = append(cv, values...)
 
-		return base.dialect.exec(sb.String(), cv...)
+		return base.dialect.exec(bb.String(), cv...)
 	}
 	columnSqlStr := ctx.tableCreateArgs2SqlStr()
 
-	sb.Reset()
-	sb.WriteString("INSERT INTO ")
-	sb.WriteString(tableName)
-	sb.WriteString(columnSqlStr)
+	bb.Reset()
+	bb.WriteString("INSERT INTO ")
+	bb.WriteString(tableName)
+	bb.WriteString(columnSqlStr)
 
-	return base.dialect.exec(sb.String(), cv...)
+	return base.dialect.exec(bb.String(), cv...)
 }
 
 func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
+	if w == nil {
+		return 0, errors.New("ByWhere is nil")
+	}
 	base := orm.base
-
-	if err := base.ctx.err; err != nil {
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
 		return 0, err
 	}
-	tableName := base.ctx.tableName
-	c := base.ctx.columns
-	cv := base.ctx.columnValues[0]
+	c := ctx.columns
+	cv := ctx.columnValues[0]
+	tableName := ctx.tableName
 
-	if w == nil {
-		return 0, nil
-	}
+
 	wheres := w.context.wheres
 	args := w.context.args
 
-	var sb strings.Builder
-	sb.WriteString("WHERE ")
+	var bb bytes.Buffer
+	bb.WriteString("WHERE ")
 	for i, where := range wheres {
 		if i == 0 {
-			sb.WriteString(" WHERE " + where)
+			bb.WriteString(" WHERE " + where)
 			continue
 		}
-		sb.WriteString(" AND " + where)
+		bb.WriteString(" AND " + where)
 	}
-	whereSql := sb.String()
+	whereSql := bb.String()
 
-	sb.Reset()
-	sb.WriteString("SELECT 1 ")
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString(whereSql)
+	bb.Reset()
+	bb.WriteString("SELECT 1 ")
+	bb.WriteString(" FROM ")
+	bb.WriteString(tableName)
+	bb.WriteString(whereSql)
+	bb.WriteString("limit 1")
 
-	log.Println(sb.String(), args)
-	rows, err := base.dialect.query(sb.String(), args...)
+	rows, err := base.dialect.query(bb.String(), args...)
 	if err != nil {
 		return 0, err
 	}
 	//update
 	if rows.Next() {
-		sb.Reset()
-		sb.WriteString("UPDATE ")
-		sb.WriteString(tableName)
-		sb.WriteString(" SET ")
-		sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-		sb.WriteString(whereSql)
+		bb.Reset()
+		bb.WriteString("UPDATE ")
+		bb.WriteString(tableName)
+		bb.WriteString(" SET ")
+		bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+		bb.WriteString(whereSql)
 		cv = append(cv, args)
 
-		return base.dialect.exec(sb.String(), cv...)
+		return base.dialect.exec(bb.String(), cv...)
 	}
-	columnSqlStr := base.ctx.tableCreateArgs2SqlStr()
+	columnSqlStr := ctx.tableCreateArgs2SqlStr()
 
-	sb.Reset()
-	sb.WriteString("INSERT INTO ")
-	sb.WriteString(tableName)
-	sb.WriteString(columnSqlStr)
+	bb.Reset()
+	bb.WriteString("INSERT INTO ")
+	bb.WriteString(tableName)
+	bb.WriteString(columnSqlStr)
 
-	return base.dialect.exec(sb.String(), cv...)
+	return base.dialect.exec(bb.String(), cv...)
 }
 
 //delete
@@ -366,7 +370,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 
 	idLen := len(v)
 	if idLen == 0 {
-		return 0, errors.New("ByPrimaryKey arg num 0")
+		return 0, errors.New("ByPrimaryKey arg len num 0")
 	}
 
 	idNames := ctx.primaryKeyNames
@@ -403,13 +407,18 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	base.initPrimaryKeyName()
 	ctx.checkValidPrimaryKey(v)
 
-	delSql := ctx.genDelSql()
+	delSql := ctx.genDelByPrimaryKey()
 	return base.dialect.exec(string(delSql), v...)
 }
 
+// ByModel
 //v0.6
+//ptr
 //comp,只能一个comp-struct
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
+	if v == nil {
+		return 0, errors.New("ByModel is nil")
+	}
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
@@ -421,16 +430,12 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	whereArgs2SqlStr := ctx.tableWhereArgs2SqlStr(columns)
-	var sb strings.Builder
-	sb.WriteString("DELETE ")
-	sb.WriteString(" FROM ")
-	sb.WriteString(ctx.tableName)
-	sb.WriteString(whereArgs2SqlStr)
-
-	return base.dialect.exec(sb.String(), values...)
+	delSql := ctx.genDel(columns)
+	return base.dialect.exec(string(delSql), values...)
 }
 
+//v0.6
+//排除 nil 字段
 func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	value := reflect.ValueOf(v)
 	_, value = basePtrDeepValue(value)
@@ -452,7 +457,8 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	}
 	return columns, values, nil
 }
-
+//v0.6
+//排除 nil 字段
 func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 	ctyp := checkCompTypeValue(v, false)
 	if ctyp != Composite {
@@ -473,76 +479,62 @@ func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 	return columns, values, nil
 }
 
+// ByWhere
+//v0.6
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-
 	if w == nil {
 		return 0, nil
 	}
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+
 	wheres := w.context.wheres
 	args := w.context.args
 
-	var sb strings.Builder
-	sb.WriteString("DELETE FROM ")
-	sb.WriteString(orm.base.ctx.tableName)
-	sb.WriteString(" WHERE ")
-	for i, where := range wheres {
-		if i == 0 {
-			sb.WriteString(where)
-			continue
-		}
-		sb.WriteString(" AND " + where)
-	}
-
-	return orm.base.dialect.exec(sb.String(), args)
+	delSql := ctx.genDel(wheres)
+	return base.dialect.exec(string(delSql), args...)
 }
 
-//update
+// Update
+//v0.6
 func (e EngineTable) Update(v interface{}) OrmTableUpdate {
-	if e.ctx.err != nil {
-		return OrmTableUpdate{base: e}
-	}
 	e.setTargetDestSlice(v)
-	if e.ctx.err != nil {
-		return OrmTableUpdate{base: e}
-	}
 	e.initColumnsValue()
-	if e.ctx.err != nil {
-		return OrmTableUpdate{base: e}
-	}
 	return OrmTableUpdate{base: e}
 }
 
-//func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) (int64, error) {
-//	base := orm.base
-//	if err := base.ctx.err; err != nil {
-//		return 0, err
-//	}
-//
-//	err := checkStructValidFieldNuller(reflect.ValueOf(v))
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	base.initPrimaryKeyName()
-//
-//	tableName := base.ctx.tableName
-//	c := base.ctx.columns
-//	cv := base.ctx.columnValues
-//
-//	var sb strings.Builder
-//	sb.WriteString(" UPDATE ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(" SET ")
-//	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-//	sb.WriteString(" WHERE ")
-//	//sb.WriteString(orm.base.primaryKeyNames)
-//	sb.WriteString(" = ? ")
-//	cv = append(cv, v)
-//	return base.dialect.exec(sb.String(), cv...)
-//}
+func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) (int64, error) {
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+
+	err := checkStructValidFieldNuller(reflect.ValueOf(v))
+	if err != nil {
+		return 0, err
+	}
+
+	base.initPrimaryKeyName()
+
+	tableName := ctx.tableName
+	c := ctx.columns
+	cv := ctx.columnValues
+
+	var sb strings.Builder
+	sb.WriteString(" UPDATE ")
+	sb.WriteString(tableName)
+	sb.WriteString(" SET ")
+	sb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+	sb.WriteString(" WHERE ")
+	//sb.WriteString(orm.base.primaryKeyNames)
+	sb.WriteString(" = ? ")
+	cv = append(cv, v)
+	return base.dialect.exec(sb.String(), cv)
+}
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	base := orm.base
@@ -619,7 +611,7 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 	return OrmTableSelect{base: e}
 }
 
-//func (orm OrmTableSelect) ById(v ...interface{}) (int64, error) {
+//func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 //	if err := orm.base.ctx.err; err != nil {
 //		return 0, err
 //	}
@@ -808,7 +800,8 @@ func (e *EngineTable) initTableName() {
 }
 
 //0.6
-//获取struct对应的字段名 和 其值   有效部分
+//获取struct对应的字段名 和 其值，
+//slice为全部，一个为非nil字段。
 func (e *EngineTable) initColumnsValue() {
 	if e.ctx.err != nil {
 		return

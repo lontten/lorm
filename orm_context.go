@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"bytes"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -85,39 +84,6 @@ func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string) string {
 	//	sb.WriteString(" AND ")
 	//	sb.WriteString(lgSql)
 	//}
-	return sb.String()
-}
-
-//args 为 where 的 字段名列表， 生成where sql
-//sql 为 逻辑删除 附加where
-//todo 应该改为 统一 where sql 统一生成、  逻辑删除、 多租户
-func (ctx *OrmContext) tableWherePrimaryKey2SqlStr(ids []string) string {
-	c := ormConfig
-	var sb strings.Builder
-	for i, where := range ids {
-		if i == 0 {
-			sb.WriteString(" WHERE ")
-			sb.WriteString(where)
-			sb.WriteString(" = ? ")
-			continue
-		}
-		sb.WriteString(" AND ")
-		sb.WriteString(where)
-		sb.WriteString(" = ? ")
-	}
-	lgSql := strings.ReplaceAll(c.LogicDeleteNoSql, "lg.", "")
-	if c.LogicDeleteNoSql != lgSql {
-		sb.WriteString(" AND ")
-		sb.WriteString(lgSql)
-	}
-
-	if c.TenantIdFieldName != "" {
-		sb.WriteString(" AND ")
-		sb.WriteString(c.TenantIdFieldName)
-		sb.WriteString(" = ? ")
-
-		ctx.args = append(ctx.args, c.TenantIdValueFun())
-	}
 	return sb.String()
 }
 
@@ -215,35 +181,35 @@ func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (c *OrmContext) checkValidPrimaryKey(v []interface{}) {
-	ids := c.primaryKeyNames
+func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
+	ids := ctx.primaryKeyNames
 	//主键名列表长度为1，单主键
 	singlePk := len(ids) == 1
 
 	value := reflect.ValueOf(v[0])
 	is, base := basePtrValue(value)
 	if is && value.IsNil() { //数值无效，直接返回false，不再进行合法性检查
-		c.err = errors.New("PrimaryKey  : is nil")
+		ctx.err = errors.New("PrimaryKey  : is nil")
 		return
 	}
 
 	is, base, err := checkDestSingle(base)
 	if err != nil {
-		c.err = err
+		ctx.err = err
 		return
 	}
 	if is {
 		if !singlePk {
-			c.err = errors.New("PrimaryKey arg is err")
+			ctx.err = errors.New("PrimaryKey arg is err")
 			return
 		}
-		c.args = append(c.args, v...)
+		ctx.args = append(ctx.args, v...)
 		return
 	}
 
 	err = checkStructValidFieldNuller(base)
 	if err != nil {
-		c.err = err
+		ctx.err = err
 		return
 	}
 
@@ -252,38 +218,48 @@ func (c *OrmContext) checkValidPrimaryKey(v []interface{}) {
 		_, base = basePtrValue(value)
 		for _, id := range ids {
 			field := base.FieldByName(id)
-			c.args = append(c.args, field.Interface())
+			ctx.args = append(ctx.args, field.Interface())
 		}
 	}
 
 }
 
-func (ctx *OrmContext) genDelSql() []byte {
-	var bb bytes.Buffer
+//v0.6
+//生成del sql
+func (ctx *OrmContext) genDelByPrimaryKey() []byte {
 	keys := ctx.primaryKeyNames
 	tableName := ctx.tableName
+	//开启多租户，并且该表不跳过
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	return ormConfig.genDelSqlCommon(tableName, keys, hasTen)
 
-	whereSql := genWhere(keys)
+}
 
-	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
-	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
-	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
-	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-	if logicDeleteSetSql == lgSql {
-		bb.WriteString("DELETE FROM ")
-		bb.WriteString(tableName)
-		bb.WriteString("WHERE ")
-		bb.WriteString(string(whereSql))
-	} else {
-		bb.WriteString("UPDATE ")
-		bb.WriteString(tableName)
-		bb.WriteString(" SET ")
-		bb.WriteString(lgSql)
-		bb.WriteString("WHERE ")
-		bb.WriteString(string(whereSql))
-		bb.WriteString(" and ")
-		bb.WriteString(logicDeleteYesSql)
-	}
-	return bb.Bytes()
+//v0.6
+//生成del sql
+func (ctx *OrmContext) genDel(keys []string) []byte {
+	tableName := ctx.tableName
+	//开启多租户，并且该表不跳过
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	return ormConfig.genDelSqlCommon(tableName, keys, hasTen)
 
+}
+
+//v0.6
+//生成where sql
+func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
+	keys := ctx.primaryKeyNames
+	tableName := ctx.tableName
+	//开启多租户，并且该表不跳过
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	return ormConfig.GenWhere(keys, hasTen)
+}
+
+//v0.6
+//生成where sql
+func (ctx *OrmContext) genWhere(keys []string) []byte {
+	tableName := ctx.tableName
+	//开启多租户，并且该表不跳过
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	return ormConfig.GenWhere(keys, hasTen)
 }

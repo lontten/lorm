@@ -311,6 +311,8 @@ func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
 }
 
 //v0.6
+//1.一个comp-struct
+//2.slice-comp-struct,slice时，全部column
 func (c OrmConf) initColumnsValue(arr []reflect.Value) ([]string, [][]interface{}, error) {
 	columns := make([]string, 0)
 	valuess := make([][]interface{}, 0)
@@ -495,9 +497,12 @@ func (c OrmConf) getColFieldIndexLinkMap(columns []string, typ reflect.Type) (Co
 	return cfm, nil
 }
 
-func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
+//tableName表名
+//keys
+//hasTen true开启多租户
+func (c OrmConf) genDelSqlCommon(tableName string, keys []string, hasTen bool) []byte {
 	var bb bytes.Buffer
-	whereSql := genWhere(keys)
+	whereSql := c.GenWhere(keys, hasTen)
 
 	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
 	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
@@ -519,4 +524,24 @@ func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
 		bb.WriteString(logicDeleteYesSql)
 	}
 	return bb.Bytes()
+}
+
+//有tenantid功能
+func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
+	if hasTen {
+		keys = append(keys, ormConfig.TenantIdFieldName)
+	}
+	if len(keys) == 0 {
+		return []byte("")
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(" WHERE ")
+	buf.WriteString(keys[0])
+	for i := 1; i < len(keys); i++ {
+		buf.WriteString(" AND ")
+		buf.WriteString(keys[i])
+	}
+
+	return buf.Bytes()
 }
