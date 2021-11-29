@@ -103,3 +103,34 @@ func do_slice_ptr(v interface{}) {
 	va.FieldByName("Name").Set(reflect.ValueOf(newString))
 	//va.FieldByName("Name").SetString("waaaaaao")
 }
+
+func TestBasePtrDeepType(t *testing.T) {
+	v4 := types.NewV4()
+	type args struct {
+		t reflect.Type
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  bool
+		want1 reflect.Type
+	}{
+		{
+			name: "deep",
+			args: args{t: reflect.TypeOf(&v4)},
+			want: true,
+			want1: reflect.TypeOf(v4),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := basePtrDeepType(tt.args.t)
+			if got != tt.want {
+				t.Errorf("basePtrDeepType() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("basePtrDeepType() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

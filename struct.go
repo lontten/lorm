@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"errors"
+	"fmt"
 	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
@@ -62,14 +63,11 @@ func getFieldMap(typ reflect.Type, fieldNamePrefix string) (fieldMap, error) {
 
 type StructValidFieldValueMap map[string]interface{}
 
-
-
-
 //---------------struct-new-----------------
 // v0.6
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
-	if baseBaseType(structTyp) {
+	if isBaseType(structTyp) {
 		return tPtr
 	}
 	numField := structTyp.NumField()
@@ -82,15 +80,6 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 	}
 	return tPtr
 }
-
-
-
-
-
-
-
-
-
 
 //--------------------struct-field-nuller---------
 // v0.6 检查一个 struct 是否合法
@@ -108,7 +97,7 @@ func checkStructValidField(va reflect.Value) error {
 		return nil
 	}
 
-	is := baseStructValue(va)
+	is := isValuerValue(va)
 	if !is {
 		return errors.New("need a struct")
 	}
@@ -139,9 +128,10 @@ func _checkStructValidField(v reflect.Value) error {
 // v0.6 检查一个 struct 是否合法
 var structValidNullerCache = make(map[reflect.Type]reflect.Value)
 var mutexStructValidNullerCache sync.Mutex
+
 //valuer
 //nuller
-func checkStructValidFieldNuller(va reflect.Value) error {
+func checkStructFieldNuller(va reflect.Value) error {
 	mutexStructValidNullerCache.Lock()
 	defer mutexStructValidNullerCache.Unlock()
 
@@ -151,7 +141,7 @@ func checkStructValidFieldNuller(va reflect.Value) error {
 		return nil
 	}
 
-	is := baseStructValue(va)
+	is := isValuerType(typ)
 	if !is {
 		return errors.New("need a struct")
 	}
@@ -170,15 +160,16 @@ func checkStructValidFieldNuller(va reflect.Value) error {
 func _checkStructValidFieldNuller(v reflect.Value) error {
 	numField := v.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkFieldNuller(v.Field(i))
+		t := v.Field(i).Type()
+		fmt.Println(t.Kind())
+		fmt.Println(t.String())
+		err := checkFieldNuller(t)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
-
-
 
 //--------------------comp-field-nuller---------
 // v0.6 检查一个 struct 是否合法
@@ -196,7 +187,8 @@ func checkCompValidField(va reflect.Value) error {
 	}
 
 	kind := typ.Kind()
-	if kind==reflect.Struct {
+
+	if isValuerType(typ) {
 		err := _checkStructValidField(va)
 		if err != nil {
 			return err
@@ -204,7 +196,7 @@ func checkCompValidField(va reflect.Value) error {
 		compValidCache[typ] = va
 		return nil
 	}
-	if kind==reflect.Map {
+	if kind == reflect.Map {
 		is := checkValidMap(va)
 		if is {
 			compValidCache[typ] = va
@@ -243,7 +235,8 @@ func checkCompValidFieldNuller(va reflect.Value) error {
 	}
 
 	kind := typ.Kind()
-	if kind==reflect.Struct {
+
+	if isValuerType(typ) {
 		err := _checkCompValidFieldNuller(va)
 		if err != nil {
 			return err
@@ -251,7 +244,7 @@ func checkCompValidFieldNuller(va reflect.Value) error {
 		compValidNullerCache[typ] = va
 		return nil
 	}
-	if kind==reflect.Map {
+	if kind == reflect.Map {
 		is := checkValidMapValuer(va)
 		if is {
 			compValidNullerCache[typ] = va
@@ -266,7 +259,7 @@ func checkCompValidFieldNuller(va reflect.Value) error {
 func _checkCompValidFieldNuller(v reflect.Value) error {
 	numField := v.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkFieldNuller(v.Field(i))
+		err := checkFieldNuller(v.Field(i).Type())
 		if err != nil {
 			return err
 		}

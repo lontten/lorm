@@ -14,12 +14,12 @@ import (
 //Deprecated
 func checkDestSingleSqlValuer(v reflect.Value) (bool, error) {
 
-	is := baseBaseValue(v)
+	is := isBaseValue(v)
 	if is {
 		return true, nil
 	}
 
-	is = baseStructValue(v)
+	is = isValuerValue(v)
 	if is {
 		_, ok := v.Interface().(driver.Valuer)
 		if !ok {
@@ -43,7 +43,7 @@ func checkDestSingleNullerSqlValuer(v reflect.Value) (bool, error) {
 	}
 
 	if !is { //不是ptr，必须 Nuller
-		is = baseStructValue(base)
+		is = isValuerValue(base)
 		if is {
 			_, ok := base.Interface().(driver.Valuer)
 			if !ok {
@@ -58,12 +58,12 @@ func checkDestSingleNullerSqlValuer(v reflect.Value) (bool, error) {
 		return false, errors.New("struct field " + base.String() + " need ptr or NullEr")
 	}
 
-	is = baseBaseValue(base)
+	is = isBaseValue(base)
 	if is {
 		return true, nil
 	}
 
-	is = baseStructValue(base)
+	is = isValuerValue(base)
 	if is {
 		_, ok := base.Interface().(driver.Valuer)
 		if !ok {
@@ -90,7 +90,7 @@ func checkDestSingleContainSliceNullerSqlValuer(v reflect.Value) (bool, error) {
 	}
 
 	if !is { //不是ptr，必须 Nuller
-		is = baseStructValue(base)
+		is = isValuerValue(base)
 		if is {
 			_, ok := base.Interface().(driver.Valuer)
 			if !ok {
@@ -111,7 +111,7 @@ func checkDestSingleContainSliceNullerSqlValuer(v reflect.Value) (bool, error) {
 		return false, errors.New("struct field " + base.String() + " need ptr or NullEr")
 	}
 
-	is = baseBaseValue(base)
+	is = isBaseValue(base)
 	if is {
 		return true, nil
 	}
@@ -121,7 +121,7 @@ func checkDestSingleContainSliceNullerSqlValuer(v reflect.Value) (bool, error) {
 		return true, nil
 	}
 
-	is = baseStructValue(base)
+	is = isValuerValue(base)
 	if is {
 		_, ok := base.Interface().(driver.Valuer)
 		if !ok {
@@ -181,14 +181,14 @@ func checkDestTyp(v reflect.Value) (a ArgTyp, err error) {
 	}
 
 	// base
-	is = baseBaseValue(base)
+	is = isBaseValue(base)
 	if is {
 		a.typ = 4
 		a.base = base
 		return
 	}
 
-	is = baseStructValue(base)
+	is = isValuerValue(base)
 	if is {
 		//struct-base
 		_, ok := base.Interface().(driver.Valuer)

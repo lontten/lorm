@@ -61,11 +61,11 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	}(rows)
 
 	value := reflect.ValueOf(v)
-	typ, base := checkPackTypeValue(value)
+	typ, base := checkPackValue(value)
 	if typ == None {
 		return 0, errors.New("scanln: invalid type")
 	}
-	ctyp := checkCompTypeValue(base, true)
+	ctyp := checkCompValue(base, true)
 	if ctyp == Invade {
 		return 0, errors.New("scanln: invalid type")
 	}
@@ -131,7 +131,7 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	if !is {
 		return 0, errors.New("scan: need a slice")
 	}
-	ctyp := checkCompTypeValue(base, true)
+	ctyp := checkCompValue(base, true)
 	if ctyp == Invade {
 		return 0, errors.New("scanln: invalid type")
 	}
@@ -468,7 +468,7 @@ func (c OrmConf) getCompAllColumnsValueList(v []reflect.Value) ([]string, [][]in
 }
 
 func (c OrmConf) getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error) {
-	is := baseBaseType(typ)
+	is := isBaseType(typ)
 	if is {
 		return ColFieldIndexLinkMap{}, nil
 	}

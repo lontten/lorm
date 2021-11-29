@@ -17,8 +17,8 @@ func (c *OrmContext) initTargetDestSlice(dest interface{}) {
 
 	arr := make([]reflect.Value, 0)
 
-	typ, base := checkPackTypeValue(v)
-	ctyp := checkCompTypeValue(base, false)
+	typ, base := checkPackValue(v)
+	ctyp := checkCompValue(base, false)
 
 	if ctyp == SliceEmpty {
 		c.err = errors.New("slice no's empty")
@@ -105,6 +105,6 @@ func (c *OrmContext) checkTargetDestField() {
 		return
 	}
 	v := c.destBaseValue
-	err := checkStructValidFieldNuller(v)
+	err := checkStructFieldNuller(v)
 	c.err = err
 }

@@ -2,16 +2,23 @@ package lorm
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
+	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
+	"reflect"
 	"time"
 )
+
+var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
 
 const (
 	MYSQL    = "mysql"
 	POSTGRES = "postgres"
 )
-var ormConfig=OrmConf{
+
+var ormConfig = OrmConf{
 	PoDir:                "src/model/po",
 	IsFileOverride:       false,
 	Author:               "lontten",
@@ -19,7 +26,7 @@ var ormConfig=OrmConf{
 	IdType:               0,
 	TableNamePrefix:      "",
 	FieldNamePrefix:      "",
-	PrimaryKeyNames:     []string{"id"},
+	PrimaryKeyNames:      []string{"id"},
 	LogicDeleteYesSql:    "",
 	LogicDeleteNoSql:     "",
 	LogicDeleteSetSql:    "",
@@ -48,6 +55,7 @@ type MysqlConf struct {
 	User     string
 	Password string
 }
+
 func (c *MysqlConf) DriverName() string {
 	return MYSQL
 }
@@ -95,7 +103,7 @@ func (c *PgConf) Open() (*sql.DB, error) {
 }
 
 type Engine struct {
-	db      DB
+	db DB
 
 	Base    EngineBase
 	Extra   EngineExtra

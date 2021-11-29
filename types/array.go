@@ -10,6 +10,7 @@ func ArrayOf(v ...interface{}) Array {
 	array := Array{}
 	for _, i := range v {
 		value := reflect.ValueOf(i)
+
 		if value.Kind() == reflect.Struct {
 			array.ints = append(array.ints, i.(driver.Valuer))
 		}

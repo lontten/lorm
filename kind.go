@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"github.com/lontten/lorm/types"
 	"reflect"
 )
@@ -9,7 +10,7 @@ import (
 //------------------base------------------
 //	v0.6
 //是否基本类型
-func baseBaseType(t reflect.Type) bool {
+func isBaseType(t reflect.Type) bool {
 	kind := t.Kind()
 	if reflect.Invalid < kind && kind < reflect.Array {
 		return true
@@ -19,7 +20,7 @@ func baseBaseType(t reflect.Type) bool {
 	}
 	return false
 }
-func baseBaseValue(v reflect.Value) bool {
+func isBaseValue(v reflect.Value) bool {
 	kind := v.Kind()
 	if reflect.Invalid < kind && kind < reflect.Array {
 		return true
@@ -30,20 +31,33 @@ func baseBaseValue(v reflect.Value) bool {
 	return false
 }
 
-//----------------------struct------------------------
-//	v0.6
-//是否struct类型
-func baseStructType(t reflect.Type) bool {
-	if t.Kind() == reflect.Struct {
-		return true
-	}
-	return false
+//-----------------------nuller---------------------------------
+// v0.6
+//检查是否nuller
+func isNullerValue(v reflect.Value) bool {
+	_, ok := v.Interface().(types.NullEr)
+	return ok
 }
-func baseStructValue(v reflect.Value) bool {
-	if v.Kind() == reflect.Struct {
+
+func isNullerType(t reflect.Type) bool {
+	return t.Implements(ImpNuller)
+}
+
+//----------------------valuer------------------------
+//	v0.6
+//是否valuer
+func isValuerType(t reflect.Type) bool {
+	if isBaseType(t) {
 		return true
 	}
-	return false
+	return t.Implements(ImpValuer)
+}
+func isValuerValue(v reflect.Value) bool {
+	if isBaseValue(v) {
+		return true
+	}
+	_, ok := v.Interface().(driver.Valuer)
+	return ok
 }
 
 //----------------------struct-valuer------------------------
@@ -51,12 +65,19 @@ func baseStructValue(v reflect.Value) bool {
 //是否struct类型 valuer ,
 //是否struct，是否有valuer
 func baseStructValueValuer(v reflect.Value) (bool, bool) {
-	is := baseStructValue(v)
+	is := isValuerValue(v)
 	if !is {
 		return false, false
 	}
 	_, ok := v.Interface().(driver.Valuer)
 	return is, ok
+}
+func baseStructTypeValuer(t reflect.Type) (bool, bool) {
+	is := isValuerType(t)
+	if !is {
+		return false, false
+	}
+	return is, t.Implements(ImpValuer)
 }
 
 //-------------ptr-----------------
@@ -81,6 +102,8 @@ func basePtrValue(v reflect.Value) (is bool, structType reflect.Value) {
 func basePtrDeepType(t reflect.Type) (bool, reflect.Type) {
 	isPtr := false
 base:
+	fmt.Println(t.Kind())
+	fmt.Println(t.String())
 	if t.Kind() == reflect.Ptr {
 		isPtr = true
 		t = t.Elem()
@@ -212,7 +235,7 @@ func checkPackType(t reflect.Type) (packType, reflect.Type) {
 	return None, t
 }
 
-func checkPackTypeValue(v reflect.Value) (packType, reflect.Value) {
+func checkPackValue(v reflect.Value) (packType, reflect.Value) {
 	is, base := basePtrDeepValue(v)
 	if is {
 		return Ptr, base
@@ -241,13 +264,14 @@ func baseMapValue(v reflect.Value) (is, has bool, key reflect.Value) {
 // v0.6
 // is 是否 slice has 是否有内容
 func baseMapType(t reflect.Type) (is, has bool) {
-	if t.Kind() == reflect.Map {
-		if t.Len() == 0 {
-			return true, false
-		}
-		return true, true
+	if t.Kind() != reflect.Map {
+		return false, false
 	}
-	return false, false
+	if t.Len() == 0 {
+		return true, false
+	}
+
+	return true, true
 }
 
 //--------------------------------------------------
@@ -264,12 +288,12 @@ const (
 	Composite  compType = iota
 )
 
-func checkCompTypeValue(v reflect.Value, canEmpty bool) compType {
-	is := baseBaseValue(v)
+func checkCompValue(v reflect.Value, canEmpty bool) compType {
+	is := isBaseValue(v)
 	if is {
 		return Single
 	}
-	is, has,_ := baseMapValue(v)
+	is, has, _ := baseMapValue(v)
 	if is {
 		if canEmpty || has {
 			return Composite
@@ -287,18 +311,37 @@ func checkCompTypeValue(v reflect.Value, canEmpty bool) compType {
 	return Invade
 }
 
+func checkCompType(t reflect.Type) compType {
+	is := isBaseType(t)
+	if is {
+		return Single
+	}
+
+	is, _ = baseMapType(t)
+	if is {
+		return Composite
+	}
+
+	isStruct, isValuer := baseStructTypeValuer(t)
+	if isStruct {
+		if isValuer {
+			return Single
+		}
+		return Composite
+	}
+	return Invade
+}
+
 //是 comp类型的struct，返回true
 func checkCompStructValue(v reflect.Value) bool {
 	isStruct, isValuer := baseStructValueValuer(v)
 	return isStruct && !isValuer
 }
 
-//-----------------------nuller---------------------------------
-// v0.6
-//检查是否nuller
-func checkBaseNuller(v reflect.Value) bool {
-	_, ok := v.Interface().(types.NullEr)
-	return ok
+//是 comp类型的struct，返回true
+func checkCompStructType(t reflect.Type) bool {
+	isStruct, isValuer := baseStructTypeValuer(t)
+	return isStruct && !isValuer
 }
 
 //-----------------------map--------------------------------
@@ -314,12 +357,12 @@ func checkValidMap(v reflect.Value) bool {
 
 		//nuller
 		value := v.MapIndex(key)
-		_, base := checkPackTypeValue(value)
+		_, base := checkPackValue(value)
 		//base
-		is := baseBaseType(base.Type())
+		is := isBaseType(base.Type())
 		if !is {
 			//struct
-			_, is = baseStructValueValuer(base)
+			_, is = baseStructTypeValuer(base.Type())
 			if !is {
 				return false
 			}
@@ -340,60 +383,21 @@ func checkValidMapValuer(v reflect.Value) bool {
 
 		//nuller
 		value := v.MapIndex(key)
-		_, base := checkPackTypeValue(value)
+		_, base := checkPackValue(value)
 		//base
-		is := baseBaseType(base.Type())
+		is := isBaseType(base.Type())
 		if !is {
 			//struct valuer
-			_, is = baseStructValueValuer(base)
+			_, is = baseStructTypeValuer(base.Type())
 			if !is {
 				return false
 			}
 			//nuller
-			is = checkBaseNuller(base)
+			is = isNullerValue(base)
 			if !is {
 				return false
 			}
 		}
 	}
 	return true
-}
-
-//struct
-// struct 1
-// base 2
-// no type -2
-//Deprecated
-func baseStructBaseType(t reflect.Type) (int, reflect.Type) {
-	is := baseStructType(t)
-	if is {
-		return 1, t
-	}
-	is = baseBaseType(t)
-	if is {
-		return 2, t
-	}
-	return -2, t
-}
-
-//struct
-// struct 1
-// base 2
-// slice 3
-// no type -2
-//Deprecated
-func baseStructBaseSliceType(t reflect.Type) (int, reflect.Type) {
-	is := baseStructType(t)
-	if is {
-		return 1, t
-	}
-	is = baseBaseType(t)
-	if is {
-		return 2, t
-	}
-	is, t = baseSliceDeepType(t)
-	if is {
-		return 3, t
-	}
-	return -2, t
 }

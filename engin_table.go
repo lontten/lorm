@@ -101,6 +101,7 @@ func (e *EngineTable) setTargetDestOnlyTableName(v interface{}) {
 		return
 	}
 	e.ctx.initTargetDestOnlyBaseValue(v)
+	e.ctx.checkTargetDestField()
 	e.initTableName()
 }
 
@@ -303,7 +304,6 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	cv := ctx.columnValues[0]
 	tableName := ctx.tableName
 
-
 	wheres := w.context.wheres
 	args := w.context.args
 
@@ -379,7 +379,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 		for _, i := range v {
 			value := reflect.ValueOf(i)
 			_, value = basePtrDeepValue(value)
-			ctyp := checkCompTypeValue(value, false)
+			ctyp := checkCompValue(value, false)
 			if ctyp != Single {
 				return 0, errors.New("ByPrimaryKey typ err")
 			}
@@ -388,7 +388,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 		for _, i := range v {
 			value := reflect.ValueOf(i)
 			_, value = basePtrDeepValue(value)
-			ctyp := checkCompTypeValue(value, false)
+			ctyp := checkCompValue(value, false)
 			if ctyp != Composite {
 				return 0, errors.New("ByPrimaryKey typ err")
 			}
@@ -439,7 +439,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	value := reflect.ValueOf(v)
 	_, value = basePtrDeepValue(value)
-	ctyp := checkCompTypeValue(value, false)
+	ctyp := checkCompValue(value, false)
 	if ctyp != Composite {
 		return nil, nil, errors.New("ByModel typ err")
 	}
@@ -457,10 +457,11 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	}
 	return columns, values, nil
 }
+
 //v0.6
 //排除 nil 字段
 func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
-	ctyp := checkCompTypeValue(v, false)
+	ctyp := checkCompValue(v, false)
 	if ctyp != Composite {
 		return nil, nil, errors.New("ByModel typ err")
 	}
@@ -501,151 +502,198 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 // Update
 //v0.6
 func (e EngineTable) Update(v interface{}) OrmTableUpdate {
-	e.setTargetDestSlice(v)
+	e.setTargetDest(v)
 	e.initColumnsValue()
 	return OrmTableUpdate{base: e}
 }
 
 func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) (int64, error) {
+	if v == nil {
+		return 0, errors.New("ByPrimaryKey is nil")
+	}
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	err := checkStructValidFieldNuller(reflect.ValueOf(v))
-	if err != nil {
-		return 0, err
-	}
+	keyNum := len(ctx.primaryKeyNames)
 
-	base.initPrimaryKeyName()
-
+	cs := ctx.columns
+	cvs := ctx.columnValues[0]
 	tableName := ctx.tableName
-	c := ctx.columns
-	cv := ctx.columnValues
 
-	var sb strings.Builder
-	sb.WriteString(" UPDATE ")
-	sb.WriteString(tableName)
-	sb.WriteString(" SET ")
-	sb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
-	sb.WriteString(" WHERE ")
-	//sb.WriteString(orm.base.primaryKeyNames)
-	sb.WriteString(" = ? ")
-	cv = append(cv, v)
-	return base.dialect.exec(sb.String(), cv)
-}
+	idValues := make([]interface{}, 0)
 
-func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
 	columns, values, err := getCompCV(v)
 	if err != nil {
 		return 0, err
 	}
+	//只要主键字段
+	for _, key := range ctx.primaryKeyNames {
+		for i, c := range columns {
+			if c == key {
+				idValues = append(idValues, values[i])
+				continue
+			}
+		}
+	}
 
-	tableName := ctx.tableName
-	c := ctx.columns
-	cv := ctx.columnValues[0]
+	idLen := len(idValues)
+	if idLen == 0 {
+		return 0, errors.New("no pk")
+	}
+	if keyNum != idLen {
+		return 0, errors.New("comp pk num err")
+	}
 
-	var sb strings.Builder
-	sb.WriteString(" UPDATE ")
-	sb.WriteString(tableName)
-	sb.WriteString(" SET ")
-	sb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+	whereStr := ctx.genWhereByPrimaryKey()
 
-	where := genWhere(columns)
-	sb.WriteString(" WHERE ")
-	sb.WriteString(string(where))
+	var bb bytes.Buffer
 
-	cv = append(cv, values...)
+	bb.WriteString("UPDATE ")
+	bb.WriteString(tableName)
+	bb.WriteString(" SET ")
+	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
+	bb.Write(whereStr)
+	cvs = append(cvs, idValues)
 
-	return base.dialect.exec(sb.String(), cv...)
+	return base.dialect.exec(bb.String(), cvs...)
 }
 
-func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
+func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
+	if v == nil {
+		return 0, errors.New("ByModel is nil")
+	}
 	base := orm.base
-	if err := base.ctx.err; err != nil {
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	if w == nil {
-		return 0, nil
+	c := ctx.columns
+	cv := ctx.columnValues[0]
+	tableName := ctx.tableName
+
+	columns, values, err := getCompCV(v)
+	if err != nil {
+		return 0, err
 	}
+	where := ctx.genWhere(columns)
+
+	var bb bytes.Buffer
+	bb.WriteString("UPDATE ")
+	bb.WriteString(tableName)
+	bb.WriteString(" SET ")
+	bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+	bb.Write(where)
+	cv = append(cv, values...)
+
+	return base.dialect.exec(bb.String(), cv...)
+
+}
+
+func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
+	if w == nil {
+		return 0, errors.New("ByWhere is nil")
+	}
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+	c := ctx.columns
+	cv := ctx.columnValues[0]
+	tableName := ctx.tableName
+
 	wheres := w.context.wheres
 	args := w.context.args
 
-	tableName := base.ctx.tableName
-	c := base.ctx.columns
-	cv := base.ctx.columnValues[0]
-
-	var sb strings.Builder
-	sb.WriteString(" UPDATE ")
-	sb.WriteString(tableName)
-	sb.WriteString(" SET ")
-	sb.WriteString(base.ctx.tableUpdateArgs2SqlStr(c))
-	sb.WriteString(" WHERE ")
+	var bb bytes.Buffer
+	bb.WriteString("WHERE ")
 	for i, where := range wheres {
 		if i == 0 {
-			sb.WriteString(where)
+			bb.WriteString(" WHERE " + where)
 			continue
 		}
-		sb.WriteString(" AND " + where)
+		bb.WriteString(" AND " + where)
 	}
+	whereSql := bb.String()
 
-	cv = append(cv, args...)
+	bb.WriteString("UPDATE ")
+	bb.WriteString(tableName)
+	bb.WriteString(" SET ")
+	bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
+	bb.WriteString(whereSql)
+	cv = append(cv, args)
 
-	return base.dialect.exec(sb.String(), cv...)
+	return base.dialect.exec(bb.String(), cv...)
+
 }
 
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
 	e.setTargetDestOnlyTableName(v)
-	if e.ctx.err != nil {
-		return OrmTableSelect{base: e}
-	}
-
 	return OrmTableSelect{base: e}
 }
 
-//func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
-//	if err := orm.base.ctx.err; err != nil {
-//		return 0, err
-//	}
-//
-//	err := checkStructValidFieldNuller(reflect.ValueOf(v))
-//	if err != nil {
-//		return 0, err
-//	}
-//	err = orm.base.initColumns()
-//	if err != nil {
-//		return 0, err
-//	}
-//	orm.base.initPrimaryKeyName()
-//	tableName := orm.base.ctx.tableName
-//	c := orm.base.ctx.columns
-//
-//	var sb strings.Builder
-//	sb.WriteString(" SELECT ")
-//	for i, column := range c {
-//		if i == 0 {
-//			sb.WriteString(column)
-//		} else {
-//			sb.WriteString(" , ")
-//			sb.WriteString(column)
-//		}
-//	}
-//	sb.WriteString(" FROM ")
-//	sb.WriteString(tableName)
-//	sb.WriteString(" WHERE ")
-//	//sb.WriteString(orm.base.primaryKeyNames)
-//	sb.WriteString(" = ? ")
-//
-//	return orm.base.queryLn(sb.String(), v)
-//}
+func (orm OrmTableSelect) ByPrimaryKey(v interface{}) (int64, error) {
+	if v == nil {
+		return 0, errors.New("ByPrimaryKey is nil")
+	}
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
+		return 0, err
+	}
+
+	keyNum := len(ctx.primaryKeyNames)
+
+	cs := ctx.columns
+	tableName := ctx.tableName
+
+	idValues := make([]interface{}, 0)
+
+	columns, values, err := getCompCV(v)
+	if err != nil {
+		return 0, err
+	}
+	//只要主键字段
+	for _, key := range ctx.primaryKeyNames {
+		for i, c := range columns {
+			if c == key {
+				idValues = append(idValues, values[i])
+				continue
+			}
+		}
+	}
+
+	idLen := len(idValues)
+	if idLen == 0 {
+		return 0, errors.New("no pk")
+	}
+	if keyNum != idLen {
+		return 0, errors.New("comp pk num err")
+	}
+
+	whereStr := ctx.genWhereByPrimaryKey()
+
+	var bb bytes.Buffer
+	bb.WriteString(" SELECT ")
+	for i, column := range cs {
+		if i == 0 {
+			bb.WriteString(column)
+		} else {
+			bb.WriteString(" , ")
+			bb.WriteString(column)
+		}
+	}
+	bb.WriteString(" FROM ")
+	bb.WriteString(tableName)
+	bb.Write(whereStr)
+
+	return orm.base.queryLn(bb.String(), idValues)
+}
 
 func (orm OrmTableSelectWhere) getOne() (int64, error) {
 	if err := orm.base.ctx.err; err != nil {
@@ -701,6 +749,7 @@ func (orm OrmTableSelectWhere) getList() (int64, error) {
 	return orm.base.queryLn(sb.String(), orm.base.ctx.dest)
 }
 
+// ByModel
 //v0.6
 //ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {

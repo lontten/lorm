@@ -9,6 +9,9 @@ import (
 type OrmContext struct {
 	//主键名-列表
 	primaryKeyNames []string
+	//主键值-列表
+	primaryKeyValues [][]interface{}
+
 
 	//当前表名
 	tableName string
@@ -207,7 +210,7 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 		return
 	}
 
-	err = checkStructValidFieldNuller(base)
+	err = checkStructFieldNuller(base)
 	if err != nil {
 		ctx.err = err
 		return
