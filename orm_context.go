@@ -190,8 +190,6 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 	singlePk := len(ids) == 1
 
 	value := reflect.ValueOf(v[0])
-	fmt.Println(value.String())
-	fmt.Println(value.Kind())
 	is, base, err := basePtrValue(value)
 	if err != nil { //数值无效，直接返回false，不再进行合法性检查
 		ctx.err = err

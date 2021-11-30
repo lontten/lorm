@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"database/sql/driver"
 	"github.com/pkg/errors"
 	"reflect"
 )
@@ -13,14 +12,13 @@ func checkDestSingle(value reflect.Value) (bool,reflect.Value, error) {
 	if err != nil {
 		return false, reflect.Value{}, err
 	}
-	is := isValuerValue(base)
+	is := isValuerType(base.Type())
 	if is { //single or struct
-		_, ok := base.Interface().(driver.Valuer)
-		return ok, base,nil
+		return true, base,nil
 	}
 
 	//必定 single
-	is = _isBaseValue(base)
+	is = _isBaseType(base.Type())
 	if is {
 		return true,base, nil
 	}

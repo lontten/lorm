@@ -1,8 +1,6 @@
 package lorm
 
 import (
-	"database/sql/driver"
-	"github.com/lontten/lorm/types"
 	"reflect"
 )
 
@@ -19,25 +17,12 @@ func _isBaseType(t reflect.Type) bool {
 	}
 	return false
 }
-func _isBaseValue(v reflect.Value) bool {
-	kind := v.Kind()
-	if reflect.Invalid < kind && kind < reflect.Array {
-		return true
-	}
-	if reflect.String == kind {
-		return true
-	}
-	return false
-}
 
 //------------------struct------------------
 //	v0.7
 //是否基本类型
 func _isStructType(t reflect.Type) bool {
 	return t.Kind() == reflect.Struct
-}
-func _isStructValue(v reflect.Value) bool {
-	return v.Kind() == reflect.Struct
 }
 
 //-----------------map-------
@@ -70,11 +55,6 @@ func baseMapType(t reflect.Type) (is, has bool) {
 //-----------------------nuller---------------------------------
 // v0.7
 //检查是否nuller
-func isNullerValue(v reflect.Value) bool {
-	_, ok := v.Interface().(types.NullEr)
-	return ok
-}
-
 func isNullerType(t reflect.Type) bool {
 	return t.Implements(ImpNuller)
 }
@@ -88,19 +68,12 @@ func isValuerType(t reflect.Type) bool {
 	}
 	return t.Implements(ImpValuer)
 }
-func isValuerValue(v reflect.Value) bool {
-	if _isBaseValue(v) {
-		return true
-	}
-	_, ok := v.Interface().(driver.Valuer)
-	return ok
-}
 
 //----------------------struct-comp------------------------
 //	v0.7
 //是否struct类型comp struct-comp
 func isStructCompValue(v reflect.Value) bool {
-	is := _isStructValue(v)
+	is := _isStructType(v.Type())
 	if !is {
 		return false
 	}
@@ -232,7 +205,10 @@ func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 			flag = false
 		}
 
-		is, v := _baseSliceDeepValue(v)
+		is, v,err := _baseSliceDeepValue(v)
+		if err != nil {
+			return false, v, err
+		}
 		if is {
 			flag = false
 		}
@@ -258,15 +234,21 @@ base:
 }
 
 //slice 用到value的一定是非空
-func _baseSliceDeepValue(v reflect.Value) (bool, reflect.Value) {
+func _baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	isSlice := false
 base:
+	kind := v.Kind()
+	if kind ==reflect.Ptr || kind ==reflect.Slice || kind ==reflect.Map {
+		if v.IsNil() {
+			return false, v, ErrNil
+		}
+	}
 	is, v := baseSliceValue(v, false)
 	if is {
 		isSlice = true
 		goto base
 	}
-	return isSlice, v
+	return isSlice, v, nil
 }
 
 //--------------------
@@ -275,9 +257,9 @@ base:
 type packType int
 
 const (
-	None  packType = iota
-	Ptr   packType = iota
-	Slice packType = iota
+	None packType = iota
+	Ptr
+	Slice
 )
 
 // v0.7
@@ -332,11 +314,11 @@ const (
 )
 
 func checkCompValue(v reflect.Value, canEmpty bool) compType {
-	is := isValuerValue(v)
+	is := isValuerType(v.Type())
 	if is {
 		return Single
 	}
-	is = _isStructValue(v)
+	is = _isStructType(v.Type())
 	if is {
 		return Composite
 	}
@@ -418,7 +400,7 @@ func checkMapField(v reflect.Value) bool {
 		}
 
 		//nuller
-		is := isNullerValue(base)
+		is := isNullerType(base.Type())
 		if !is {
 			return false
 		}

@@ -644,9 +644,8 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
-	fmt.Println("select")
-	fmt.Println(e.ctx.primaryKeyNames)
-	e.setTargetDestOnlyTableName(v)
+	e.setTargetDestSlice(v)
+	e.initColumns()
 	return OrmTableSelect{base: e}
 }
 
@@ -664,7 +663,6 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 		return 0, errors.New("ByPrimaryKey arg len num 0")
 	}
 	ctx.checkValidPrimaryKey(v)
-
 
 	idNames := ctx.primaryKeyNames
 	pkLen := len(idNames)
@@ -704,7 +702,7 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	}
 
 	selSql := ctx.genSelectByPrimaryKey()
-	return base.dialect.exec(string(selSql), v...)
+	return orm.base.queryLn(string(selSql), v...)
 }
 
 // ByModel
