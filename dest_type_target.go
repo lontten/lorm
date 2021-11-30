@@ -13,11 +13,14 @@ func (c *OrmContext) initTargetDestSlice(dest interface{}) {
 		return
 	}
 	v := reflect.ValueOf(dest)
-	_, v = basePtrDeepValue(v)
 
 	arr := make([]reflect.Value, 0)
 
-	typ, base := checkPackValue(v)
+	typ, base,err := checkPackValue(v)
+	if err != nil {
+		c.err = err
+		return
+	}
 	ctyp := checkCompValue(base, false)
 
 	if ctyp == SliceEmpty {
@@ -56,23 +59,26 @@ func (c *OrmContext) initTargetDest(dest interface{}) {
 		return
 	}
 	v := reflect.ValueOf(dest)
-	_, v = basePtrDeepValue(v)
-
-	arr := make([]reflect.Value, 0)
-
-	is, base := basePtrDeepValue(v)
-	if !is {
+	isPtr, base, err := basePtrDeepValue(v)
+	if err != nil {
+		c.err = err
+		return
+	}
+	if !isPtr {
 		c.err = errors.New("need a ptr")
 		return
 	}
-	is = checkCompStructValue(base)
-	if !is {
+
+	err = checkCompField(base)
+	if err != nil {
 		c.err = errors.New("need a struct")
 		return
 	}
 
+	arr := make([]reflect.Value, 0)
+
 	c.dest = dest
-	c.destValue = v
+	c.destValue = base
 	c.destBaseValue = base
 
 	arr = append(arr, base)
@@ -90,9 +96,13 @@ func (c *OrmContext) initTargetDestOnlyBaseValue(dest interface{}) {
 		return
 	}
 	value := reflect.ValueOf(dest)
-	_, base := basePtrDeepValue(value)
-	is := checkCompStructValue(base)
-	if !is {
+	_, base, err := basePtrDeepValue(value)
+	if err != nil {
+		c.err = err
+		return
+	}
+	err = checkCompField(base)
+	if err != nil {
 		c.err = errors.New("need a struct")
 		return
 	}
@@ -105,6 +115,6 @@ func (c *OrmContext) checkTargetDestField() {
 		return
 	}
 	v := c.destBaseValue
-	err := checkStructFieldNuller(v)
+	err := checkCompField(v)
 	c.err = err
 }

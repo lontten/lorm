@@ -6,25 +6,22 @@ import (
 	"reflect"
 )
 
-// v0.6
+// v0.7
 //校验struct 的 field 是否合法
 //1. check single
-//2. valuer
-// v0.6
-func checkField(v reflect.Value) error {
-	_, base := checkPackValue(v)
+func checkField(t reflect.Type) error {
+	_, base := checkPackType(t)
 
-	typ := checkCompType(base.Type())
+	typ := checkCompType(base)
 	if typ != Single {
-		return errors.New("field没有实现valuer " + v.String())
+		return errors.New("field没有实现valuer " + t.String())
 	}
 	return nil
 }
 
-// v0.6
+// v0.7
 //校验struct 的 field 是否合法
 //1. check single
-//2. valuer
 //3. nuller
 func checkFieldNuller(t reflect.Type) error {
 	isNuller := false
@@ -43,16 +40,19 @@ func checkFieldNuller(t reflect.Type) error {
 	if isNuller {
 		return nil
 	}
-	return errors.New("field  no imp valuer:: " + t.String())
+	return errors.New("field  no imp nuller:: " + t.String())
 }
 
-// v0.6
+// v0.7
 //获取field的值 interface类型
 func getFieldInter(v reflect.Value) interface{} {
-	typ, base := checkPackValue(v)
+	typ, base,err := checkPackValue(v)
+	if err != nil {
+		return nil
+	}
 	switch typ {
 	case None:
-		return nil
+		return v.Interface()
 	case Ptr:
 		return base.Interface()
 	case Slice:

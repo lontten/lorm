@@ -144,7 +144,7 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	if e.ctx.isSlice {
 		return e.dialect.execBatch(sqlStr, e.ctx.columnValues)
 	}
-	return e.dialect.exec(sqlStr, e.ctx.columnValues[0])
+	return e.dialect.exec(sqlStr, e.ctx.columnValues[0]...)
 }
 
 // CreateOrUpdate
@@ -378,7 +378,10 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	if pkLen == 1 { //单主键
 		for _, i := range v {
 			value := reflect.ValueOf(i)
-			_, value = basePtrDeepValue(value)
+			_, value, err := basePtrDeepValue(value)
+			if err != nil {
+				return 0, err
+			}
 			ctyp := checkCompValue(value, false)
 			if ctyp != Single {
 				return 0, errors.New("ByPrimaryKey typ err")
@@ -387,7 +390,10 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	} else {
 		for _, i := range v {
 			value := reflect.ValueOf(i)
-			_, value = basePtrDeepValue(value)
+			_, value, err := basePtrDeepValue(value)
+			if err != nil {
+				return 0, err
+			}
 			ctyp := checkCompValue(value, false)
 			if ctyp != Composite {
 				return 0, errors.New("ByPrimaryKey typ err")
@@ -438,12 +444,16 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 //排除 nil 字段
 func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	value := reflect.ValueOf(v)
-	_, value = basePtrDeepValue(value)
+	_, value, err := basePtrDeepValue(value)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	ctyp := checkCompValue(value, false)
 	if ctyp != Composite {
 		return nil, nil, errors.New("ByModel typ err")
 	}
-	err := checkCompValidFieldNuller(value)
+	err = checkCompField(value)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -465,7 +475,7 @@ func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 	if ctyp != Composite {
 		return nil, nil, errors.New("ByModel typ err")
 	}
-	err := checkCompValidFieldNuller(v)
+	err := checkCompField(v)
 	if err != nil {
 		return nil, nil, err
 	}

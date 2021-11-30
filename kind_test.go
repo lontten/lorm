@@ -27,20 +27,20 @@ func Test_struct(t *testing.T) {
 // ptr struct ptr
 func doStruct_p(v interface{}) {
 	va := reflect.ValueOf(v)
-	va = va.Elem()    //1. struct 必须为 ptr
+	va = va.Elem() //1. struct 必须为 ptr
 
 	fieldByName := va.FieldByName("Name")
 	if fieldByName.Kind() == reflect.Ptr { // 2. 判断 filed 是否为 ptr ，是则
 		newString := "wosadfaf"
-		fieldByName.Set(reflect.ValueOf(&newString))  // 使用 &
+		fieldByName.Set(reflect.ValueOf(&newString)) // 使用 &
 	}
 	fmt.Println(fieldByName.Kind().String())
 	//base
-	if fieldByName.Kind() == reflect.Struct {   //3. struct int 根据不同类型创建不同数据
+	if fieldByName.Kind() == reflect.Struct { //3. struct int 根据不同类型创建不同数据
 		newString := types.NewV4()
 		fieldByName.Set(reflect.ValueOf(newString))
 	}
-if fieldByName.Kind() == reflect.Int {
+	if fieldByName.Kind() == reflect.Int {
 		newString := 23
 		fieldByName.Set(reflect.ValueOf(newString))
 	}
@@ -48,7 +48,7 @@ if fieldByName.Kind() == reflect.Int {
 }
 
 func Test_struct_p(t *testing.T) {
-	ha := HaaPtr{ 2}
+	ha := HaaPtr{2}
 
 	fmt.Println(ha)
 	doStruct_p(&ha)
@@ -66,7 +66,7 @@ func Test_slice(t *testing.T) {
 	do_slice(haas)
 	fmt.Println(haas[0])
 	fmt.Println(haas[0].Name)
-context.Background()
+	context.Background()
 }
 
 type Haa struct {
@@ -97,8 +97,8 @@ type HaaPtr struct {
 
 func do_slice_ptr(v interface{}) {
 	va := reflect.ValueOf(v)
-	va=reflect.Indirect(va)  // 若 slice ptr 取base
-	va = va.Index(0)  //取 第n个， 按照 单个执行
+	va = reflect.Indirect(va) // 若 slice ptr 取base
+	va = va.Index(0)          //取 第n个， 按照 单个执行
 	newString := types.NewV4()
 	va.FieldByName("Name").Set(reflect.ValueOf(newString))
 	//va.FieldByName("Name").SetString("waaaaaao")
@@ -116,9 +116,9 @@ func TestBasePtrDeepType(t *testing.T) {
 		want1 reflect.Type
 	}{
 		{
-			name: "deep",
-			args: args{t: reflect.TypeOf(&v4)},
-			want: true,
+			name:  "deep",
+			args:  args{t: reflect.TypeOf(&v4)},
+			want:  true,
 			want1: reflect.TypeOf(v4),
 		},
 	}
@@ -133,4 +133,13 @@ func TestBasePtrDeepType(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_checkPackValue(t *testing.T) {
+	v4 := types.NewV4()
+	typ, base := checkPackValue(reflect.ValueOf(&v4))
+	fmt.Println(typ)
+	fmt.Println(base.String())
+	fmt.Println(base.Kind())
+
 }

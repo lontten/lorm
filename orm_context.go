@@ -12,7 +12,6 @@ type OrmContext struct {
 	//主键值-列表
 	primaryKeyValues [][]interface{}
 
-
 	//当前表名
 	tableName string
 
@@ -190,13 +189,13 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 	singlePk := len(ids) == 1
 
 	value := reflect.ValueOf(v[0])
-	is, base := basePtrValue(value)
-	if is && value.IsNil() { //数值无效，直接返回false，不再进行合法性检查
-		ctx.err = errors.New("PrimaryKey  : is nil")
+	is, base, err := basePtrValue(value)
+	if err != nil { //数值无效，直接返回false，不再进行合法性检查
+		ctx.err = err
 		return
 	}
 
-	is, base, err := checkDestSingle(base)
+	is, base, err = checkDestSingle(base)
 	if err != nil {
 		ctx.err = err
 		return
@@ -210,7 +209,7 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 		return
 	}
 
-	err = checkStructFieldNuller(base)
+	err = checkCompField(base)
 	if err != nil {
 		ctx.err = err
 		return
@@ -218,7 +217,11 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 
 	for _, e := range v {
 		value = reflect.ValueOf(e)
-		_, base = basePtrValue(value)
+		_, base,err = basePtrValue(value)
+		if err != nil {
+			ctx.err = err
+			return
+		}
 		for _, id := range ids {
 			field := base.FieldByName(id)
 			ctx.args = append(ctx.args, field.Interface())

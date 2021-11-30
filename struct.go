@@ -2,7 +2,6 @@ package lorm
 
 import (
 	"errors"
-	"fmt"
 	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
@@ -67,7 +66,7 @@ type StructValidFieldValueMap map[string]interface{}
 // v0.6
 func newStruct(structTyp reflect.Type) reflect.Value {
 	tPtr := reflect.New(structTyp)
-	if isBaseType(structTyp) {
+	if _isBaseType(structTyp) {
 		return tPtr
 	}
 	numField := structTyp.NumField()
@@ -81,102 +80,14 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 	return tPtr
 }
 
-//--------------------struct-field-nuller---------
-// v0.6 检查一个 struct 是否合法
-var structValidCache = make(map[reflect.Type]reflect.Value)
-var mutexStructValidCache sync.Mutex
 
-//valuer
-func checkStructValidField(va reflect.Value) error {
-	mutexStructValidCache.Lock()
-	defer mutexStructValidCache.Unlock()
 
-	typ := va.Type()
-	_, ok := structValidCache[typ]
-	if ok {
-		return nil
-	}
-
-	is := isValuerValue(va)
-	if !is {
-		return errors.New("need a struct")
-	}
-
-	err := _checkStructValidField(va)
-	if err != nil {
-		return err
-	}
-
-	structValidCache[typ] = va
-	return nil
-}
-
-//v0.6
-// 检查一个非 single struct 是否合法
-func _checkStructValidField(v reflect.Value) error {
-	numField := v.NumField()
-	for i := 0; i < numField; i++ {
-		err := checkField(v.Field(i))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-//--------------------struct-field-valuer-nuller---------
-// v0.6 检查一个 struct 是否合法
-var structValidNullerCache = make(map[reflect.Type]reflect.Value)
-var mutexStructValidNullerCache sync.Mutex
-
-//valuer
-//nuller
-func checkStructFieldNuller(va reflect.Value) error {
-	mutexStructValidNullerCache.Lock()
-	defer mutexStructValidNullerCache.Unlock()
-
-	typ := va.Type()
-	_, ok := structValidNullerCache[typ]
-	if ok {
-		return nil
-	}
-
-	is := isValuerType(typ)
-	if !is {
-		return errors.New("need a struct")
-	}
-
-	err := _checkStructValidFieldNuller(va)
-	if err != nil {
-		return err
-	}
-
-	structValidNullerCache[typ] = va
-	return nil
-}
-
-//v0.6
-// 检查一个非 single struct 是否合法
-func _checkStructValidFieldNuller(v reflect.Value) error {
-	numField := v.NumField()
-	for i := 0; i < numField; i++ {
-		t := v.Field(i).Type()
-		fmt.Println(t.Kind())
-		fmt.Println(t.String())
-		err := checkFieldNuller(t)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-//--------------------comp-field-nuller---------
+//--------------------comp-field-valuer---------
 // v0.6 检查一个 struct 是否合法
 var compValidCache = make(map[reflect.Type]reflect.Value)
 var mutexCompValidCache sync.Mutex
 
-func checkCompValidField(va reflect.Value) error {
+func checkCompFieldScan(va reflect.Value) error {
 	mutexCompValidCache.Lock()
 	defer mutexCompValidCache.Unlock()
 
@@ -188,16 +99,17 @@ func checkCompValidField(va reflect.Value) error {
 
 	kind := typ.Kind()
 
-	if isValuerType(typ) {
-		err := _checkStructValidField(va)
-		if err != nil {
-			return err
+	//struct
+	if kind == reflect.Struct {
+		is := checkStructFieldScan(va)
+		if is {
+			compValidCache[typ] = va
+			return nil
 		}
-		compValidCache[typ] = va
-		return nil
 	}
+	//map
 	if kind == reflect.Map {
-		is := checkValidMap(va)
+		is := checkMapFieldScan(va)
 		if is {
 			compValidCache[typ] = va
 			return nil
@@ -206,25 +118,12 @@ func checkCompValidField(va reflect.Value) error {
 	return errors.New("need a struct or map")
 }
 
-//v0.6
-// 检查一个 comp 是否合法
-func _checkCompValidField(v reflect.Value) error {
-	numField := v.NumField()
-	for i := 0; i < numField; i++ {
-		err := checkField(v.Field(i))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 //--------------------comp-field-valuer-nuller---------
-// v0.6 检查一个 comp 是否合法
+// v0.7 检查一个 comp 是否合法
 var compValidNullerCache = make(map[reflect.Type]reflect.Value)
 var mutexCompValidNullerCache sync.Mutex
 
-func checkCompValidFieldNuller(va reflect.Value) error {
+func checkCompField(va reflect.Value) error {
 	mutexCompValidNullerCache.Lock()
 	defer mutexCompValidNullerCache.Unlock()
 
@@ -236,33 +135,21 @@ func checkCompValidFieldNuller(va reflect.Value) error {
 
 	kind := typ.Kind()
 
-	if isValuerType(typ) {
-		err := _checkCompValidFieldNuller(va)
-		if err != nil {
-			return err
+	//struct
+	if kind == reflect.Struct {
+		is := checkStructField(va)
+		if is {
+			compValidNullerCache[typ] = va
+			return nil
 		}
-		compValidNullerCache[typ] = va
-		return nil
 	}
+	//map
 	if kind == reflect.Map {
-		is := checkValidMapValuer(va)
+		is := checkMapField(va)
 		if is {
 			compValidNullerCache[typ] = va
 			return nil
 		}
 	}
 	return errors.New("need a struct or map")
-}
-
-//v0.6
-// 检查一个 comp 是否合法
-func _checkCompValidFieldNuller(v reflect.Value) error {
-	numField := v.NumField()
-	for i := 0; i < numField; i++ {
-		err := checkFieldNuller(v.Field(i).Type())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

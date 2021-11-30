@@ -9,7 +9,10 @@ import (
 // v0.5
 // 判断是否 single or struct
 func checkDestSingle(value reflect.Value) (bool,reflect.Value, error) {
-	_, base := basePtrValue(value)
+	_, base,err := basePtrValue(value)
+	if err != nil {
+		return false, reflect.Value{}, err
+	}
 	is := isValuerValue(base)
 	if is { //single or struct
 		_, ok := base.Interface().(driver.Valuer)
@@ -17,12 +20,15 @@ func checkDestSingle(value reflect.Value) (bool,reflect.Value, error) {
 	}
 
 	//必定 single
-	is = isBaseValue(base)
+	is = _isBaseValue(base)
 	if is {
 		return true,base, nil
 	}
 
-	is, _ = baseSliceDeepValue(base)
+	is, _,err = baseSliceDeepValue(base)
+	if err != nil {
+		return false, reflect.Value{}, err
+	}
 	if is {
 		return true, base,nil
 	}
