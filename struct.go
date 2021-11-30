@@ -113,7 +113,7 @@ func checkCompFieldScan(va reflect.Value) error {
 			return nil
 		}
 	}
-	return errors.New("need a struct or map")
+	return errors.New("need a struct or map-scan")
 }
 
 //--------------------comp-field-valuer-nuller---------

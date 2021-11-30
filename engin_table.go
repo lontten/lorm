@@ -153,10 +153,11 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	}
 	sqlStr := e.ctx.tableCreateGen()
 
+	sqlStr += " RETURNING id"
 	if e.ctx.isSlice {
 		return e.dialect.execBatch(sqlStr, e.ctx.columnValues)
 	}
-	return e.dialect.exec(sqlStr, e.ctx.columnValues[0]...)
+	return e.queryLn(sqlStr, e.ctx.columnValues[0]...)
 }
 
 // CreateOrUpdate
