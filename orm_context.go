@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -189,6 +190,8 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 	singlePk := len(ids) == 1
 
 	value := reflect.ValueOf(v[0])
+	fmt.Println(value.String())
+	fmt.Println(value.Kind())
 	is, base, err := basePtrValue(value)
 	if err != nil { //数值无效，直接返回false，不再进行合法性检查
 		ctx.err = err
@@ -217,7 +220,7 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 
 	for _, e := range v {
 		value = reflect.ValueOf(e)
-		_, base,err = basePtrValue(value)
+		_, base, err = basePtrValue(value)
 		if err != nil {
 			ctx.err = err
 			return
@@ -228,6 +231,16 @@ func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
 		}
 	}
 
+}
+
+//v0.7
+//生成select sql
+func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
+	tableName := ctx.tableName
+	columns := ctx.columns
+	selSql := ormConfig.genSelectSqlCommon(tableName, columns)
+	where := ctx.genWhereByPrimaryKey()
+	return append(selSql, where...)
 }
 
 //v0.6

@@ -8,8 +8,8 @@ import (
 
 // ptr slice
 // 检查数据类型 comp-struct
-func (c *OrmContext) initTargetDestSlice(dest interface{}) {
-	if c.err != nil {
+func (ctx *OrmContext) initTargetDestSlice(dest interface{}) {
+	if ctx.err != nil {
 		return
 	}
 	v := reflect.ValueOf(dest)
@@ -18,34 +18,34 @@ func (c *OrmContext) initTargetDestSlice(dest interface{}) {
 
 	typ, base,err := checkPackValue(v)
 	if err != nil {
-		c.err = err
+		ctx.err = err
 		return
 	}
 	ctyp := checkCompValue(base, false)
 
 	if ctyp == SliceEmpty {
-		c.err = errors.New("slice no's empty")
+		ctx.err = errors.New("slice no's empty")
 		return
 	}
 	if ctyp != Composite {
-		c.err = errors.New("need a struct")
+		ctx.err = errors.New("need a struct")
 		return
 	}
 
-	c.dest = dest
-	c.destValue = v
-	c.destBaseValue = base
+	ctx.dest = dest
+	ctx.destValue = v
+	ctx.destBaseValue = base
 
 	if typ == Ptr {
 		arr = append(arr, base)
-		c.isSlice = false
-		c.destValueArr = arr
+		ctx.isSlice = false
+		ctx.destValueArr = arr
 		return
 	}
 
 	if typ == Slice {
-		c.isSlice = true
-		c.destValueArr = utils.ToSliceValue(v)
+		ctx.isSlice = true
+		ctx.destValueArr = utils.ToSliceValue(v)
 		return
 	}
 
@@ -54,36 +54,36 @@ func (c *OrmContext) initTargetDestSlice(dest interface{}) {
 // ptr
 //不能是slice
 // 检查数据类型 comp-struct
-func (c *OrmContext) initTargetDest(dest interface{}) {
-	if c.err != nil {
+func (ctx *OrmContext) initTargetDest(dest interface{}) {
+	if ctx.err != nil {
 		return
 	}
 	v := reflect.ValueOf(dest)
 	isPtr, base, err := basePtrDeepValue(v)
 	if err != nil {
-		c.err = err
+		ctx.err = err
 		return
 	}
 	if !isPtr {
-		c.err = errors.New("need a ptr")
+		ctx.err = errors.New("need a ptr")
 		return
 	}
 
 	err = checkCompField(base)
 	if err != nil {
-		c.err = errors.New("need a struct")
+		ctx.err = errors.New("need a struct")
 		return
 	}
 
 	arr := make([]reflect.Value, 0)
 
-	c.dest = dest
-	c.destValue = base
-	c.destBaseValue = base
+	ctx.dest = dest
+	ctx.destValue = base
+	ctx.destBaseValue = base
 
 	arr = append(arr, base)
-	c.isSlice = false
-	c.destValueArr = arr
+	ctx.isSlice = false
+	ctx.destValueArr = arr
 	return
 
 }
@@ -91,30 +91,30 @@ func (c *OrmContext) initTargetDest(dest interface{}) {
 // * struct
 //  struct
 // comp-struct 获取 destBaseValue
-func (c *OrmContext) initTargetDestOnlyBaseValue(dest interface{}) {
-	if c.err != nil {
+func (ctx *OrmContext) initTargetDestOnlyBaseValue(dest interface{}) {
+	if ctx.err != nil {
 		return
 	}
 	value := reflect.ValueOf(dest)
 	_, base, err := basePtrDeepValue(value)
 	if err != nil {
-		c.err = err
+		ctx.err = err
 		return
 	}
 	err = checkCompField(base)
 	if err != nil {
-		c.err = errors.New("need a struct")
+		ctx.err = errors.New("need a struct")
 		return
 	}
-	c.destBaseValue = base
+	ctx.destBaseValue = base
 }
 
 //检查sturct的filed是否合法，valuer，nuller
-func (c *OrmContext) checkTargetDestField() {
-	if c.err != nil {
+func (ctx *OrmContext) checkTargetDestField() {
+	if ctx.err != nil {
 		return
 	}
-	v := c.destBaseValue
+	v := ctx.destBaseValue
 	err := checkCompField(v)
-	c.err = err
+	ctx.err = err
 }

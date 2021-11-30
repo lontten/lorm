@@ -127,10 +127,10 @@ func basePtrType(t reflect.Type) (bool, reflect.Type) {
 	return false, t
 }
 func basePtrValue(v reflect.Value) (bool, reflect.Value, error) {
-	if v.IsNil() {
-		return false, v, ErrNil
-	}
 	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return false, v, ErrNil
+		}
 		return true, v.Elem(), nil
 	}
 	return false, v, nil

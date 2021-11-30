@@ -3,6 +3,7 @@ package lorm
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
@@ -410,7 +411,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 		}
 	}
 
-	base.initPrimaryKeyName()
+	orm.base.initPrimaryKeyName()
 	ctx.checkValidPrimaryKey(v)
 
 	delSql := ctx.genDelByPrimaryKey()
@@ -451,7 +452,7 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 
 	ctyp := checkCompValue(value, false)
 	if ctyp != Composite {
-		return nil, nil, errors.New("ByModel typ err")
+		return nil, nil, errors.New("getcv not comp")
 	}
 	err = checkCompField(value)
 	if err != nil {
@@ -473,7 +474,7 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 	ctyp := checkCompValue(v, false)
 	if ctyp != Composite {
-		return nil, nil, errors.New("ByModel typ err")
+		return nil, nil, errors.New("getvcv not comp")
 	}
 	err := checkCompField(v)
 	if err != nil {
@@ -643,120 +644,67 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
+	fmt.Println("select")
+	fmt.Println(e.ctx.primaryKeyNames)
 	e.setTargetDestOnlyTableName(v)
 	return OrmTableSelect{base: e}
 }
 
-func (orm OrmTableSelect) ByPrimaryKey(v interface{}) (int64, error) {
-	if v == nil {
-		return 0, errors.New("ByPrimaryKey is nil")
-	}
+func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
+	orm.base.initPrimaryKeyName()
+
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	keyNum := len(ctx.primaryKeyNames)
-
-	cs := ctx.columns
-	tableName := ctx.tableName
-
-	idValues := make([]interface{}, 0)
-
-	columns, values, err := getCompCV(v)
-	if err != nil {
-		return 0, err
+	idLen := len(v)
+	if idLen == 0 {
+		return 0, errors.New("ByPrimaryKey arg len num 0")
 	}
-	//只要主键字段
-	for _, key := range ctx.primaryKeyNames {
-		for i, c := range columns {
-			if c == key {
-				idValues = append(idValues, values[i])
-				continue
+	ctx.checkValidPrimaryKey(v)
+
+
+	idNames := ctx.primaryKeyNames
+	pkLen := len(idNames)
+	if pkLen == 1 { //单主键
+		for _, i := range v {
+			value := reflect.ValueOf(i)
+			_, value, err := basePtrDeepValue(value)
+			if err != nil {
+				return 0, err
+			}
+			ctyp := checkCompValue(value, false)
+			if ctyp != Single {
+				return 0, errors.New("ByPrimaryKey typ err, is not single")
 			}
 		}
-	}
+	} else {
+		for _, i := range v {
+			value := reflect.ValueOf(i)
+			_, value, err := basePtrDeepValue(value)
+			if err != nil {
+				return 0, err
+			}
+			ctyp := checkCompValue(value, false)
+			if ctyp != Composite {
+				return 0, errors.New("ByPrimaryKey typ err, is  not composite")
+			}
 
-	idLen := len(idValues)
-	if idLen == 0 {
-		return 0, errors.New("no pk")
-	}
-	if keyNum != idLen {
-		return 0, errors.New("comp pk num err")
-	}
+			cv, _, err := getCompValueCV(value)
+			if err != nil {
+				return 0, err
+			}
+			if len(cv) != pkLen {
+				return 0, errors.New("复合主键，filed数量 len err")
+			}
 
-	whereStr := ctx.genWhereByPrimaryKey()
-
-	var bb bytes.Buffer
-	bb.WriteString(" SELECT ")
-	for i, column := range cs {
-		if i == 0 {
-			bb.WriteString(column)
-		} else {
-			bb.WriteString(" , ")
-			bb.WriteString(column)
 		}
 	}
-	bb.WriteString(" FROM ")
-	bb.WriteString(tableName)
-	bb.Write(whereStr)
 
-	return orm.base.queryLn(bb.String(), idValues)
-}
-
-func (orm OrmTableSelectWhere) getOne() (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-
-	tableName := orm.base.ctx.tableName
-	c := orm.base.ctx.columns
-
-	var sb strings.Builder
-	sb.WriteString(" SELECT ")
-	for i, column := range c {
-		if i == 0 {
-			sb.WriteString(column)
-		} else {
-			sb.WriteString(" , ")
-			sb.WriteString(column)
-		}
-	}
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString(" WHERE ")
-	//sb.WriteString(orm.base.primaryKeyNames)
-	sb.WriteString(" = ? ")
-
-	return orm.base.queryLn(sb.String(), orm.base.ctx.dest)
-}
-
-func (orm OrmTableSelectWhere) getList() (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-
-	tableName := orm.base.ctx.tableName
-	c := orm.base.ctx.columns
-
-	var sb strings.Builder
-	sb.WriteString("SELECT ")
-	for i, column := range c {
-		if i == 0 {
-			sb.WriteString(column)
-		} else {
-			sb.WriteString(" , ")
-			sb.WriteString(column)
-		}
-	}
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString("WHERE ")
-	//sb.WriteString(orm.base.primaryKeyNames)
-	sb.WriteString(" = ? ")
-
-	return orm.base.queryLn(sb.String(), orm.base.ctx.dest)
+	selSql := ctx.genSelectByPrimaryKey()
+	return base.dialect.exec(string(selSql), v...)
 }
 
 // ByModel

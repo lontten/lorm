@@ -61,7 +61,7 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	}(rows)
 
 	value := reflect.ValueOf(v)
-	typ, base,err := checkPackValue(value)
+	typ, base, err := checkPackValue(value)
 	if err != nil {
 		return 0, err
 	}
@@ -129,11 +129,11 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	}(rows)
 
 	value := reflect.ValueOf(v)
-	_, arr,err := basePtrDeepValue(value)
+	_, arr, err := basePtrDeepValue(value)
 	if err != nil {
 		return 0, err
 	}
-	is, base,err := baseSliceDeepValue(arr)
+	is, base, err := baseSliceDeepValue(arr)
 	if err != nil {
 		return 0, err
 	}
@@ -544,13 +544,35 @@ func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 		return []byte("")
 	}
 
-	var buf bytes.Buffer
-	buf.WriteString(" WHERE ")
-	buf.WriteString(keys[0])
+	var bb bytes.Buffer
+	bb.WriteString(" WHERE ")
+	bb.WriteString(keys[0])
+	bb.WriteString(" = ? ")
 	for i := 1; i < len(keys); i++ {
-		buf.WriteString(" AND ")
-		buf.WriteString(keys[i])
+		bb.WriteString(" AND ")
+		bb.WriteString(keys[i])
+		bb.WriteString(" = ? ")
+
 	}
 
-	return buf.Bytes()
+	return bb.Bytes()
+}
+
+//tableName表名
+//columns
+func (c OrmConf) genSelectSqlCommon(tableName string, columns []string) []byte {
+
+	var bb bytes.Buffer
+	bb.WriteString(" SELECT ")
+	for i, column := range columns {
+		if i == 0 {
+			bb.WriteString(column)
+		} else {
+			bb.WriteString(" , ")
+			bb.WriteString(column)
+		}
+	}
+	bb.WriteString(" FROM ")
+	bb.WriteString(tableName)
+	return bb.Bytes()
 }

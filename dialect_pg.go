@@ -22,6 +22,7 @@ func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
 
 func (m PgDialect) queryBatch(query string) (*sql.Stmt, error){
 	query = toPgSql(query)
+
 	return m.db.Prepare(query)
 }
 
