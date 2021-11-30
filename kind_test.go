@@ -134,12 +134,3 @@ func TestBasePtrDeepType(t *testing.T) {
 		})
 	}
 }
-
-func Test_checkPackValue(t *testing.T) {
-	v4 := types.NewV4()
-	typ, base := checkPackValue(reflect.ValueOf(&v4))
-	fmt.Println(typ)
-	fmt.Println(base.String())
-	fmt.Println(base.Kind())
-
-}

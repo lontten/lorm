@@ -118,3 +118,13 @@ func (ctx *OrmContext) checkTargetDestField() {
 	err := checkCompField(v)
 	ctx.err = err
 }
+
+//检查sturct的filed是否合法，valuer，nuller
+func (ctx *OrmContext) checkScanDestField() {
+	if ctx.err != nil {
+		return
+	}
+	v := ctx.destBaseValue
+	err := checkCompFieldScan(v)
+	ctx.err = err
+}

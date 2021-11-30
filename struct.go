@@ -64,14 +64,14 @@ type StructValidFieldValueMap map[string]interface{}
 
 //---------------struct-new-----------------
 // v0.6
-func newStruct(structTyp reflect.Type) reflect.Value {
-	tPtr := reflect.New(structTyp)
-	if _isBaseType(structTyp) {
+func newStruct(t reflect.Type) reflect.Value {
+	tPtr := reflect.New(t)
+	if isSingleType(t) {
 		return tPtr
 	}
-	numField := structTyp.NumField()
+	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		field := structTyp.Field(i)
+		field := t.Field(i)
 		if field.Type.Kind() == reflect.Ptr {
 			f := reflect.New(field.Type.Elem())
 			tPtr.Elem().Field(i).Set(f)
@@ -79,8 +79,6 @@ func newStruct(structTyp reflect.Type) reflect.Value {
 	}
 	return tPtr
 }
-
-
 
 //--------------------comp-field-valuer---------
 // v0.6 检查一个 struct 是否合法

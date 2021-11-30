@@ -3,7 +3,6 @@ package lorm
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
@@ -81,6 +80,18 @@ func (e *EngineTable) setTargetDestSlice(v interface{}) {
 	}
 	e.ctx.initTargetDestSlice(v)
 	e.ctx.checkTargetDestField()
+	e.initTableName()
+}
+
+//v0.7
+// *.comp / slice.comp
+//scan dest 一个comp-struct，或者一个slice-comp-struct
+func (e *EngineTable) setScanDestSlice(v interface{}) {
+	if e.ctx.err != nil {
+		return
+	}
+	e.ctx.initTargetDestSlice(v)
+	e.ctx.checkScanDestField()
 	e.initTableName()
 }
 
@@ -644,7 +655,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
-	e.setTargetDestSlice(v)
+	e.setScanDestSlice(v)
 	e.initColumns()
 	return OrmTableSelect{base: e}
 }

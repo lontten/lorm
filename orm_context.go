@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"

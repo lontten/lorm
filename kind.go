@@ -39,6 +39,18 @@ func baseMapValue(v reflect.Value) (is, has bool, key reflect.Value) {
 	return true, true, key
 }
 
+//-----------------single-------
+// v0.7
+func isSingleType(t reflect.Type) bool {
+	return checkCompType(t) == Single
+}
+
+//-----------------composite-------
+// v0.7
+func isCompType(t reflect.Type) bool {
+	return checkCompType(t) == Composite
+}
+
 // v0.7
 // is 是否 slice has 是否有内容
 func baseMapType(t reflect.Type) (is, has bool) {
@@ -205,7 +217,7 @@ func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 			flag = false
 		}
 
-		is, v,err := _baseSliceDeepValue(v)
+		is, v, err := _baseSliceDeepValue(v)
 		if err != nil {
 			return false, v, err
 		}
@@ -238,7 +250,7 @@ func _baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	isSlice := false
 base:
 	kind := v.Kind()
-	if kind ==reflect.Ptr || kind ==reflect.Slice || kind ==reflect.Map {
+	if kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map {
 		if v.IsNil() {
 			return false, v, ErrNil
 		}

@@ -11,7 +11,7 @@ func (m MysqlDialect) DriverName() string {
 }
 
 func (m MysqlDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
-	Log.Println("sql",query,args)
+	Log.Println(query,args)
 	return m.db.Query(query, args...)
 }
 

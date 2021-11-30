@@ -476,15 +476,14 @@ func (c OrmConf) getCompAllColumnsValueList(v []reflect.Value) ([]string, [][]in
 	return columns, values, nil
 }
 
-func (c OrmConf) getColFieldIndexLinkMap(columns []string, typ reflect.Type) (ColFieldIndexLinkMap, error) {
-	is := _isBaseType(typ)
-	if is {
+func (c OrmConf) getColFieldIndexLinkMap(columns []string, t reflect.Type) (ColFieldIndexLinkMap, error) {
+	if isSingleType(t) {
 		return ColFieldIndexLinkMap{}, nil
 	}
 
 	colNum := len(columns)
 	cfm := make([]int, colNum)
-	fm, err := getFieldMap(typ, c.FieldNamePrefix)
+	fm, err := getFieldMap(t, c.FieldNamePrefix)
 	if err != nil {
 		return nil, err
 	}

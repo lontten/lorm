@@ -16,7 +16,7 @@ func (m PgDialect) DriverName() string {
 
 func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = toPgSql(query)
-	Log.Println("sql", query, args)
+	Log.Println( query, args)
 	return m.db.Query(query, args...)
 }
 
