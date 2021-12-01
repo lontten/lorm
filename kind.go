@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -216,7 +215,6 @@ func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	tmp := v
 	for true {
 		flag := false //base
-		fmt.Println(tmp.String())
 		isPtr, base, err := basePtrDeepValue(tmp)
 		if err != nil {
 			return false, v, err

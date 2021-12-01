@@ -156,8 +156,6 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 		return 0, err
 	}
 	cfm, err := c.getColFieldIndexLinkMap(columns, baset)
-	fmt.Println(len(cfm))
-	fmt.Println("------")
 	if err != nil {
 		return 0, err
 	}
@@ -507,14 +505,12 @@ func (c OrmConf) genDelSqlCommon(tableName string, keys []string, hasTen bool) [
 	if logicDeleteSetSql == lgSql {
 		bb.WriteString("DELETE FROM ")
 		bb.WriteString(tableName)
-		bb.WriteString("WHERE ")
 		bb.WriteString(string(whereSql))
 	} else {
 		bb.WriteString("UPDATE ")
 		bb.WriteString(tableName)
 		bb.WriteString(" SET ")
 		bb.WriteString(lgSql)
-		bb.WriteString("WHERE ")
 		bb.WriteString(string(whereSql))
 		bb.WriteString(" and ")
 		bb.WriteString(logicDeleteYesSql)

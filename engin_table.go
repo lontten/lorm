@@ -358,19 +358,20 @@ func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 //single -> 单主键
 //comp -> 复合主键
 func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
+	orm.base.initPrimaryKeyName()
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
+	ctx.checkValidPrimaryKey(v)
 
 	idLen := len(v)
 	if idLen == 0 {
 		return 0, errors.New("ByPrimaryKey arg len num 0")
 	}
 
-	idNames := ctx.primaryKeyNames
-	pkLen := len(idNames)
+	pkLen := len(ctx.primaryKeyNames)
 	if pkLen == 1 { //单主键
 		for _, i := range v {
 			value := reflect.ValueOf(i)
@@ -378,9 +379,9 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value)
-			if ctyp != Single {
-				return 0, errors.New("ByPrimaryKey typ err")
+
+			if !isSingleType(value.Type()) {
+				return 0, errors.New("ByPrimaryKey typ err,not single")
 			}
 		}
 	} else {
@@ -390,9 +391,8 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value)
-			if ctyp != Composite {
-				return 0, errors.New("ByPrimaryKey typ err")
+			if !isCompType(value.Type()) {
+				return 0, errors.New("ByPrimaryKey typ err,not comp")
 			}
 
 			cv, _, err := getCompValueCV(value)
@@ -402,12 +402,8 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if len(cv) != pkLen {
 				return 0, errors.New("复合主键，filed数量 len err")
 			}
-
 		}
 	}
-
-	orm.base.initPrimaryKeyName()
-	ctx.checkValidPrimaryKey(v)
 
 	delSql := ctx.genDelByPrimaryKey()
 	return base.dialect.exec(string(delSql), v...)
@@ -646,21 +642,19 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 
 func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	orm.base.initPrimaryKeyName()
-
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
+	ctx.checkValidPrimaryKey(v)
 
 	idLen := len(v)
 	if idLen == 0 {
 		return 0, errors.New("ByPrimaryKey arg len num 0")
 	}
-	ctx.checkValidPrimaryKey(v)
 
-	idNames := ctx.primaryKeyNames
-	pkLen := len(idNames)
+	pkLen := len(ctx.primaryKeyNames)
 	if pkLen == 1 { //单主键
 		for _, i := range v {
 			value := reflect.ValueOf(i)
@@ -668,9 +662,9 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value)
-			if ctyp != Single {
-				return 0, errors.New("ByPrimaryKey typ err, is not single")
+
+			if !isSingleType(value.Type()) {
+				return 0, errors.New("ByPrimaryKey typ err,not single")
 			}
 		}
 	} else {
@@ -680,9 +674,8 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value)
-			if ctyp != Composite {
-				return 0, errors.New("ByPrimaryKey typ err, is  not composite")
+			if !isCompType(value.Type()) {
+				return 0, errors.New("ByPrimaryKey typ err,not comp")
 			}
 
 			cv, _, err := getCompValueCV(value)
@@ -692,7 +685,6 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if len(cv) != pkLen {
 				return 0, errors.New("复合主键，filed数量 len err")
 			}
-
 		}
 	}
 
