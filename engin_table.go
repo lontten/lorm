@@ -233,6 +233,7 @@ func (orm OrmTableCreate) ByPrimaryKey(v interface{}) (int64, error) {
 	return base.dialect.exec(bb.String(), cvs...)
 }
 
+// ByModel
 //v0.6
 //ptr-comp
 func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
@@ -347,12 +348,14 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 	return base.dialect.exec(bb.String(), cv...)
 }
 
+// Delete
 //delete
 func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 	e.setTargetDestOnlyTableName(v)
 	return OrmTableDelete{base: e}
 }
 
+// ByPrimaryKey
 //v0.6
 //[]
 //single -> 单主键
@@ -509,44 +512,30 @@ func (e EngineTable) Update(v interface{}) OrmTableUpdate {
 	return OrmTableUpdate{base: e}
 }
 
-func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) (int64, error) {
-	if v == nil {
-		return 0, errors.New("ByPrimaryKey is nil")
-	}
+func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
+	orm.base.initPrimaryKeyName()
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	keyNum := len(ctx.primaryKeyNames)
-
+	tableName := ctx.tableName
 	cs := ctx.columns
 	cvs := ctx.columnValues
-	tableName := ctx.tableName
-
 	idValues := make([]interface{}, 0)
 
-	columns, values, err := getCompCV(v)
-	if err != nil {
-		return 0, err
-	}
-	//只要主键字段
 	for _, key := range ctx.primaryKeyNames {
-		for i, c := range columns {
-			if c == key {
-				idValues = append(idValues, values[i])
+		for i, s := range cs {
+			if s == key {
+				idValues = append(idValues, cvs[i])
 				continue
 			}
 		}
 	}
 
-	idLen := len(idValues)
-	if idLen == 0 {
-		return 0, errors.New("no pk")
-	}
-	if keyNum != idLen {
-		return 0, errors.New("comp pk num err")
+	if len(idValues) != len(ctx.primaryKeyNames) {
+		return 0, errors.New("pk len err")
 	}
 
 	whereStr := ctx.genWhereByPrimaryKey()
@@ -558,7 +547,7 @@ func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) (int64, error) {
 	bb.WriteString(" SET ")
 	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
 	bb.Write(whereStr)
-	cvs = append(cvs, idValues)
+	cvs = append(cvs, idValues...)
 
 	return base.dialect.exec(bb.String(), cvs...)
 }
@@ -633,6 +622,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 }
 
+// Select
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
 	e.setScanDestSlice(v)
