@@ -435,56 +435,6 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	return base.dialect.exec(string(delSql), values...)
 }
 
-//v0.6
-//排除 nil 字段
-func getCompCV(v interface{}) ([]string, []interface{}, error) {
-	value := reflect.ValueOf(v)
-	_, value, err := basePtrDeepValue(value)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ctyp := checkCompValue(value)
-	if ctyp != Composite {
-		return nil, nil, errors.New("getcv not comp")
-	}
-	err = checkCompField(value)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	columns, values, err := ormConfig.getCompColumnsValueNoNil(value)
-	if err != nil {
-		return nil, nil, err
-	}
-	if len(columns) < 1 {
-		return nil, nil, errors.New("where model valid field need ")
-	}
-	return columns, values, nil
-}
-
-//v0.6
-//排除 nil 字段
-func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
-	ctyp := checkCompValue(v)
-	if ctyp != Composite {
-		return nil, nil, errors.New("getvcv not comp")
-	}
-	err := checkCompField(v)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	columns, values, err := ormConfig.getCompColumnsValueNoNil(v)
-	if err != nil {
-		return nil, nil, err
-	}
-	if len(columns) < 1 {
-		return nil, nil, errors.New("where model valid field need ")
-	}
-	return columns, values, nil
-}
-
 // ByWhere
 //v0.6
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
@@ -815,4 +765,54 @@ func (e *EngineTable) initColumns() {
 		return
 	}
 	e.ctx.columns = columns
+}
+
+//v0.6
+//排除 nil 字段
+func getCompCV(v interface{}) ([]string, []interface{}, error) {
+	value := reflect.ValueOf(v)
+	_, value, err := basePtrDeepValue(value)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ctyp := checkCompValue(value)
+	if ctyp != Composite {
+		return nil, nil, errors.New("getcv not comp")
+	}
+	err = checkCompField(value)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(value)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(columns) < 1 {
+		return nil, nil, errors.New("where model valid field need ")
+	}
+	return columns, values, nil
+}
+
+//v0.6
+//排除 nil 字段
+func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
+	ctyp := checkCompValue(v)
+	if ctyp != Composite {
+		return nil, nil, errors.New("getvcv not comp")
+	}
+	err := checkCompField(v)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	columns, values, err := ormConfig.getCompColumnsValueNoNil(v)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(columns) < 1 {
+		return nil, nil, errors.New("where model valid field need ")
+	}
+	return columns, values, nil
 }
