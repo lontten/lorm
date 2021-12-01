@@ -61,10 +61,13 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	}(rows)
 
 	value := reflect.ValueOf(v)
-	typ, base, err := checkPackValue(value)
+	pack, err := checkPackValue(value)
 	if err != nil {
 		return 0, err
 	}
+	typ := pack.Typ
+	base := pack.Base
+
 	if typ == None {
 		return 0, errors.New("scanln: invalid type")
 	}
@@ -469,6 +472,9 @@ func (c OrmConf) getCompAllColumnsValueList(v []reflect.Value) ([]string, [][]in
 		for _, column := range columns {
 			j := mappingColumns[column]
 			inter := getFieldInter(value.Field(j))
+			if inter == nil {
+				inter = "default"
+			}
 			vas = append(vas, inter)
 		}
 		values = append(values, vas)

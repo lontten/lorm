@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -185,21 +186,26 @@ func baseSliceValue(v reflect.Value, canEmpty bool) (is bool, structType reflect
 //是数组类型，返回数组的最基类型
 func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
 	isSlice := false
+	tmp := t
 	flag := true //base
 	for flag {
-		is, t := basePtrDeepType(t)
+		is, base := basePtrDeepType(tmp)
 		if is {
 			flag = false
 		}
 
-		is, t = _baseSliceDeepType(t)
+		is, base = _baseSliceDeepType(base)
 		if is {
 			flag = false
 		}
 		if flag {
-			return isSlice, t
+			if isSlice {
+				return true, base
+			}
+			return false, t
 		}
 		isSlice = true
+		tmp = base
 	}
 	return false, t
 }
@@ -207,27 +213,33 @@ func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
 // v0.6
 func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	isSlice := false
-	flag := true //base
-	for flag {
-		isPtr, v, err := basePtrDeepValue(v)
+	tmp := v
+	for true {
+		flag := false //base
+		fmt.Println(tmp.String())
+		isPtr, base, err := basePtrDeepValue(tmp)
 		if err != nil {
 			return false, v, err
 		}
 		if isPtr {
-			flag = false
+			flag = true
 		}
 
-		is, v, err := _baseSliceDeepValue(v)
+		is, base, err := _baseSliceDeepValue(base)
 		if err != nil {
 			return false, v, err
 		}
 		if is {
-			flag = false
+			flag = true
 		}
-		if flag {
-			return isSlice, v, nil
+		if !flag {
+			if isSlice {
+				return true, base, nil
+			}
+			return false, v, nil
 		}
 		isSlice = true
+		tmp = base
 	}
 	return false, v, nil
 }
@@ -277,35 +289,59 @@ const (
 // v0.7
 //检查是否是ptr，slice类型
 func checkPackType(t reflect.Type) (packType, reflect.Type) {
-	is, base := basePtrDeepType(t)
-	if is {
-		return Ptr, base
-	}
-	is, base = baseSliceDeepType(base)
+	isPtr, base := basePtrDeepType(t)
+	is, base := baseSliceDeepType(base)
 	if is {
 		return Slice, base
 	}
+
+	//不是slice，才判断是否ptr
+	if isPtr {
+		return Ptr, base
+	}
+
 	return None, t
 }
 
-func checkPackValue(v reflect.Value) (packType, reflect.Value, error) {
-	isPtr, base, err := basePtrDeepValue(v)
-	if err != nil {
-		return None, v, err
-	}
-	if isPtr {
-		return Ptr, base, nil
+type PackTyp struct {
+	Typ       packType
+	Base      reflect.Value
+	SliceBase reflect.Value
+}
+
+// ptr base
+// slice base
+func checkPackValue(v reflect.Value) (PackTyp, error) {
+	isPtr, v, err := basePtrDeepValue(v)
+
+	packTyp := PackTyp{
+		Typ:       None,
+		Base:      v,
+		SliceBase: v,
 	}
 
-	is, base, err := baseSliceDeepValue(base)
 	if err != nil {
-		return None, v, err
+		return packTyp, err
+	}
+
+	is, base, err := baseSliceDeepValue(v)
+
+	if err != nil {
+		return packTyp, err
 	}
 	if is {
-		return Slice, base, nil
+		packTyp.Typ = Slice
+		packTyp.SliceBase = base
+		return packTyp, nil
 	}
 
-	return None, v, nil
+	//不是slice，才判断是否ptr
+	if isPtr {
+		packTyp.Typ = Ptr
+		return packTyp, nil
+	}
+
+	return packTyp, nil
 }
 
 //--------------------------------------------------
@@ -378,11 +414,11 @@ func checkMapFieldScan(v reflect.Value) bool {
 
 		//valuer
 		value := v.MapIndex(key)
-		_, base, err := checkPackValue(value)
+		packTyp, err := checkPackValue(value)
 		if err != nil {
 			continue
 		}
-		typ := checkCompValue(base, true)
+		typ := checkCompValue(packTyp.SliceBase, true)
 		if typ != Single {
 			return false
 		}
@@ -402,10 +438,11 @@ func checkMapField(v reflect.Value) bool {
 
 		//valuer
 		value := v.MapIndex(key)
-		_, base, err := checkPackValue(value)
+		packTyp, err := checkPackValue(value)
 		if err != nil {
 			continue
 		}
+		base := packTyp.Base
 		typ := checkCompValue(base, true)
 		if typ != Single {
 			return false

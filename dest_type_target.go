@@ -16,11 +16,15 @@ func (ctx *OrmContext) initTargetDestSlice(dest interface{}) {
 
 	arr := make([]reflect.Value, 0)
 
-	typ, base,err := checkPackValue(v)
+	packTyp, err := checkPackValue(v)
 	if err != nil {
 		ctx.err = err
 		return
 	}
+	typ:=packTyp.Typ
+	v=packTyp.Base
+	base:=packTyp.SliceBase
+
 	ctyp := checkCompValue(base, false)
 
 	if ctyp == SliceEmpty {

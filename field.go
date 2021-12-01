@@ -46,24 +46,22 @@ func checkFieldNuller(t reflect.Type) error {
 // v0.7
 //获取field的值 interface类型
 func getFieldInter(v reflect.Value) interface{} {
-	typ, base,err := checkPackValue(v)
+	_, v, err := basePtrDeepValue(v)
 	if err != nil {
 		return nil
 	}
-	switch typ {
-	case None:
-		return v.Interface()
-	case Ptr:
-		return base.Interface()
-	case Slice:
-		if base.Len() == 0 {
-			return nil
-		}
+
+	is, _, err := baseSliceDeepValue(v)
+	if err != nil {
+		return nil
+	}
+
+	if is {
 		value, err := types.ArrayOf(v.Interface()).Value()
 		if err != nil {
 			return nil
 		}
 		return value
 	}
-	return nil
+	return v.Interface()
 }
