@@ -1,62 +1,11 @@
 package lorm
 
 import (
-	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
 )
 
-// ptr slice
-// 检查数据类型 comp-struct
-func (ctx *OrmContext) initTargetDestSlice(dest interface{}) {
-	if ctx.err != nil {
-		return
-	}
-	v := reflect.ValueOf(dest)
-
-	arr := make([]reflect.Value, 0)
-
-	packTyp, err := checkPackValue(v)
-	if err != nil {
-		ctx.err = err
-		return
-	}
-	typ:=packTyp.Typ
-	v=packTyp.Base
-	base:=packTyp.SliceBase
-
-	ctyp := checkCompValue(base, false)
-
-	if ctyp == SliceEmpty {
-		ctx.err = errors.New("slice no's empty")
-		return
-	}
-	if ctyp != Composite {
-		ctx.err = errors.New("need a struct")
-		return
-	}
-
-	ctx.dest = dest
-	ctx.destValue = v
-	ctx.destBaseValue = base
-
-	if typ == Ptr {
-		arr = append(arr, base)
-		ctx.isSlice = false
-		ctx.destValueArr = arr
-		return
-	}
-
-	if typ == Slice {
-		ctx.isSlice = true
-		ctx.destValueArr = utils.ToSliceValue(v)
-		return
-	}
-
-}
-
 // ptr
-//不能是slice
 // 检查数据类型 comp-struct
 func (ctx *OrmContext) initTargetDest(dest interface{}) {
 	if ctx.err != nil {
@@ -79,17 +28,9 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 		return
 	}
 
-	arr := make([]reflect.Value, 0)
-
 	ctx.dest = dest
 	ctx.destValue = base
 	ctx.destBaseValue = base
-
-	arr = append(arr, base)
-	ctx.isSlice = false
-	ctx.destValueArr = arr
-	return
-
 }
 
 // * struct

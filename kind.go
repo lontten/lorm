@@ -29,15 +29,15 @@ func _isStructType(t reflect.Type) bool {
 //-----------------map-------
 // v0.7
 // is 是否 slice has 是否有内容
-func baseMapValue(v reflect.Value) (is, has bool, key reflect.Value) {
+func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 	if v.Kind() != reflect.Map {
-		return false, false, v
+		return false, v
 	}
 	if v.Len() == 0 {
-		return true, false, v
+		return false, v
 	}
 	key = v.MapKeys()[0]
-	return true, true, key
+	return true, key
 }
 
 //-----------------single-------
@@ -90,7 +90,7 @@ func isStructCompValue(v reflect.Value) bool {
 	if !is {
 		return false
 	}
-	typ := checkCompValue(v, false)
+	typ := checkCompValue(v)
 	return typ == Composite
 }
 
@@ -167,7 +167,7 @@ func baseSliceType(t reflect.Type) (bool, reflect.Type) {
 // v0.7
 // is 是否 slice
 func baseSliceValue(v reflect.Value, canEmpty bool) (is bool, structType reflect.Value) {
-	typ := checkCompValue(v, canEmpty)
+	typ := checkCompValue(v)
 	if typ != Invade {
 		return false, v
 	}
@@ -356,12 +356,11 @@ type compType int
 
 const (
 	Invade compType = iota
-	SliceEmpty
 	Single
 	Composite
 )
 
-func checkCompValue(v reflect.Value, canEmpty bool) compType {
+func checkCompValue(v reflect.Value) compType {
 	is := isValuerType(v.Type())
 	if is {
 		return Single
@@ -371,12 +370,9 @@ func checkCompValue(v reflect.Value, canEmpty bool) compType {
 		return Composite
 	}
 
-	is, has, _ := baseMapValue(v)
+	is, _ = baseMapValue(v)
 	if is {
-		if canEmpty || has {
-			return Composite
-		}
-		return SliceEmpty
+		return Composite
 	}
 
 	return Invade
@@ -418,7 +414,7 @@ func checkMapFieldScan(v reflect.Value) bool {
 		if err != nil {
 			continue
 		}
-		typ := checkCompValue(packTyp.SliceBase, true)
+		typ := checkCompValue(packTyp.SliceBase)
 		if typ != Single {
 			return false
 		}
@@ -443,7 +439,7 @@ func checkMapField(v reflect.Value) bool {
 			continue
 		}
 		base := packTyp.Base
-		typ := checkCompValue(base, true)
+		typ := checkCompValue(base)
 		if typ != Single {
 			return false
 		}

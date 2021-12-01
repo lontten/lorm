@@ -21,14 +21,17 @@ type OrmContext struct {
 	destValue reflect.Value
 	//用作 参数合法行校验
 	destBaseValue reflect.Value
-	isSlice       bool
-	// dest 的value 列表，用作参数
-	destValueArr []reflect.Value
+
+
+	//scan 接收返回
+	isSlice bool
+	//scan 接收返回
+	scanValueArr []reflect.Value
 
 	//字段列表
 	columns []string
 	//值列表-多个
-	columnValues [][]interface{}
+	columnValues []interface{}
 
 	//要执行的sql语句
 	query *strings.Builder

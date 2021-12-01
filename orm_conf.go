@@ -71,7 +71,7 @@ func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
 	if typ == None {
 		return 0, errors.New("scanln: invalid type")
 	}
-	ctyp := checkCompValue(base, true)
+	ctyp := checkCompValue(base)
 	if ctyp == Invade {
 		return 0, errors.New("scanln: invalid type")
 	}
@@ -143,7 +143,7 @@ func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
 	if !is {
 		return 0, errors.New("scan: need a slice")
 	}
-	ctyp := checkCompValue(base, true)
+	ctyp := checkCompValue(base)
 	if ctyp == Invade {
 		return 0, errors.New("scanln: invalid type")
 	}
@@ -322,24 +322,6 @@ func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
 	return arr, nil
 }
 
-//v0.6
-//1.一个comp-struct
-//2.slice-comp-struct,slice时，全部column
-func (c OrmConf) initColumnsValue(arr []reflect.Value) ([]string, [][]interface{}, error) {
-	columns := make([]string, 0)
-	valuess := make([][]interface{}, 0)
-
-	if len(arr) == 1 {
-		cs, vs, err := ormConfig.getCompColumnsValueNoNil(arr[0])
-		if err != nil {
-			return nil, nil, err
-		}
-		columns = cs
-		valuess = append(valuess, vs)
-		return columns, valuess, nil
-	}
-	return ormConfig.getCompAllColumnsValueList(arr)
-}
 
 //v0.6
 //获取struct对应的字段名 有效部分

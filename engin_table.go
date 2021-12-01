@@ -71,18 +71,6 @@ func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, erro
 	return ormConfig.ScanBatch(rowss, utils.ToSlice(e.ctx.destValue))
 }
 
-//v0.6
-// *.comp / slice.comp
-//target dest 一个comp-struct，或者一个slice-comp-struct
-func (e *EngineTable) setTargetDestSlice(v interface{}) {
-	if e.ctx.err != nil {
-		return
-	}
-	e.ctx.initTargetDestSlice(v)
-	e.ctx.checkTargetDestField()
-	e.initTableName()
-}
-
 //v0.7
 // *.comp / slice.comp
 //scan dest 一个comp-struct，或者一个slice-comp-struct
@@ -90,7 +78,7 @@ func (e *EngineTable) setScanDestSlice(v interface{}) {
 	if e.ctx.err != nil {
 		return
 	}
-	e.ctx.initTargetDestSlice(v)
+	e.ctx.initScanDestSlice(v)
 	e.ctx.checkScanDestField()
 	e.initTableName()
 }
@@ -144,9 +132,8 @@ type OrmTableDelete struct {
 //v0.6
 //1.ptr
 //2.comp-struct
-//3.slice-comp-struct
 func (e EngineTable) Create(v interface{}) (num int64, err error) {
-	e.setTargetDestSlice(v)
+	e.setTargetDest(v)
 	e.initColumnsValue()
 	if e.ctx.err != nil {
 		return 0, e.ctx.err
@@ -154,15 +141,11 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	sqlStr := e.ctx.tableCreateGen()
 
 	sqlStr += " RETURNING id"
-	if e.ctx.isSlice {
-		return e.dialect.execBatch(sqlStr, e.ctx.columnValues)
-	}
-	return e.queryLn(sqlStr, e.ctx.columnValues[0]...)
+	return e.queryLn(sqlStr, e.ctx.columnValues...)
 }
 
 // CreateOrUpdate
 //v0.6
-//只能一个
 //1.ptr
 //2.comp-struct
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
@@ -188,7 +171,7 @@ func (orm OrmTableCreate) ByPrimaryKey(v interface{}) (int64, error) {
 	keyNum := len(ctx.primaryKeyNames)
 
 	cs := ctx.columns
-	cvs := ctx.columnValues[0]
+	cvs := ctx.columnValues
 	tableName := ctx.tableName
 
 	idValues := make([]interface{}, 0)
@@ -263,7 +246,7 @@ func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
 	}
 
 	c := ctx.columns
-	cv := ctx.columnValues[0]
+	cv := ctx.columnValues
 	tableName := ctx.tableName
 
 	columns, values, err := getCompCV(v)
@@ -314,7 +297,7 @@ func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
 		return 0, err
 	}
 	c := ctx.columns
-	cv := ctx.columnValues[0]
+	cv := ctx.columnValues
 	tableName := ctx.tableName
 
 	wheres := w.context.wheres
@@ -395,7 +378,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value, false)
+			ctyp := checkCompValue(value)
 			if ctyp != Single {
 				return 0, errors.New("ByPrimaryKey typ err")
 			}
@@ -407,7 +390,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value, false)
+			ctyp := checkCompValue(value)
 			if ctyp != Composite {
 				return 0, errors.New("ByPrimaryKey typ err")
 			}
@@ -462,7 +445,7 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 		return nil, nil, err
 	}
 
-	ctyp := checkCompValue(value, false)
+	ctyp := checkCompValue(value)
 	if ctyp != Composite {
 		return nil, nil, errors.New("getcv not comp")
 	}
@@ -484,7 +467,7 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 //v0.6
 //排除 nil 字段
 func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
-	ctyp := checkCompValue(v, false)
+	ctyp := checkCompValue(v)
 	if ctyp != Composite {
 		return nil, nil, errors.New("getvcv not comp")
 	}
@@ -543,7 +526,7 @@ func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) (int64, error) {
 	keyNum := len(ctx.primaryKeyNames)
 
 	cs := ctx.columns
-	cvs := ctx.columnValues[0]
+	cvs := ctx.columnValues
 	tableName := ctx.tableName
 
 	idValues := make([]interface{}, 0)
@@ -595,7 +578,7 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 	}
 
 	c := ctx.columns
-	cv := ctx.columnValues[0]
+	cv := ctx.columnValues
 	tableName := ctx.tableName
 
 	columns, values, err := getCompCV(v)
@@ -626,7 +609,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 		return 0, err
 	}
 	c := ctx.columns
-	cv := ctx.columnValues[0]
+	cv := ctx.columnValues
 	tableName := ctx.tableName
 
 	wheres := w.context.wheres
@@ -685,7 +668,7 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value, false)
+			ctyp := checkCompValue(value)
 			if ctyp != Single {
 				return 0, errors.New("ByPrimaryKey typ err, is not single")
 			}
@@ -697,7 +680,7 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 			if err != nil {
 				return 0, err
 			}
-			ctyp := checkCompValue(value, false)
+			ctyp := checkCompValue(value)
 			if ctyp != Composite {
 				return 0, errors.New("ByPrimaryKey typ err, is  not composite")
 			}
@@ -823,7 +806,7 @@ func (e *EngineTable) initColumnsValue() {
 	if e.ctx.err != nil {
 		return
 	}
-	columns, valuess, err := ormConfig.initColumnsValue(e.ctx.destValueArr)
+	columns, valuess, err := ormConfig.getCompColumnsValueNoNil(e.ctx.destValue)
 	if err != nil {
 		e.ctx.err = err
 		return
