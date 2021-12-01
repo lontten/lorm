@@ -129,7 +129,7 @@ type OrmTableDelete struct {
 }
 
 // Create
-//v0.6
+//v0.8
 //1.ptr
 //2.comp-struct
 func (e EngineTable) Create(v interface{}) (num int64, err error) {
@@ -356,7 +356,7 @@ func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 }
 
 // ByPrimaryKey
-//v0.6
+//v0.8
 //[]
 //single -> 单主键
 //comp -> 复合主键
@@ -512,6 +512,8 @@ func (e EngineTable) Update(v interface{}) OrmTableUpdate {
 	return OrmTableUpdate{base: e}
 }
 
+// ByPrimaryKey
+//v0.8
 func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
 	orm.base.initPrimaryKeyName()
 	base := orm.base
@@ -630,6 +632,8 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 	return OrmTableSelect{base: e}
 }
 
+// ByPrimaryKey
+//v0.8
 func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	orm.base.initPrimaryKeyName()
 	base := orm.base
