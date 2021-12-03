@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"github.com/pkg/errors"
 	"reflect"
-	"strings"
 )
 
 type EngineTable struct {
@@ -14,44 +13,19 @@ type EngineTable struct {
 	ctx OrmContext
 }
 
-//v0.7
-func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
-	rows, err := e.dialect.query(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	return e.ctx.ScanLn(rows)
-}
-
-//v0.7
+//v0.8
 func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return e.ctx.Scan(rows)
+	if e.ctx.isSlice {
+		return e.ctx.Scan(rows)
+	}
+	return e.ctx.ScanLn(rows)
 }
 
-//v0.7
-func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
-	stmt, err := e.dialect.queryBatch(query)
-	if err != nil {
-		return 0, err
-	}
-
-	rowss := make([]*sql.Rows, 0)
-	for _, arg := range args {
-		rows, err := stmt.Query(arg...)
-		if err != nil {
-			return 0, err
-		}
-		rowss = append(rowss, rows)
-	}
-
-	return e.ctx.ScanLnBatch(rowss)
-}
-
-//v0.6
+//v0.8
 func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
 	stmt, err := e.dialect.queryBatch(query)
 	if err != nil {
@@ -66,7 +40,6 @@ func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, erro
 		}
 		rowss = append(rowss, rows)
 	}
-
 	return e.ctx.ScanBatch(rowss)
 }
 
@@ -140,7 +113,7 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	sqlStr := e.ctx.tableCreateGen()
 
 	sqlStr += " RETURNING id"
-	return e.queryLn(sqlStr, e.ctx.columnValues...)
+	return e.query(sqlStr, e.ctx.columnValues...)
 }
 
 // CreateOrUpdate
@@ -345,6 +318,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 
 	delSql := ctx.genDelByPrimaryKey()
 	idValues := orm.base.ctx.primaryKeyValues
+
 	if len(v) == 1 {
 		return base.dialect.exec(string(delSql), idValues[0]...)
 	}
@@ -356,13 +330,14 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 //ptr
 //comp,只能一个comp-struct
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
-	if v == nil {
-		return 0, errors.New("ByModel is nil")
-	}
 	base := orm.base
-	ctx := base.ctx
+	ctx := orm.base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
+	}
+
+	if v == nil {
+		return 0, errors.New("ByModel is nil")
 	}
 
 	columns, values, err := getCompCV(v)
@@ -378,10 +353,10 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 //v0.6
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 	if w == nil {
-		return 0, nil
+		return 0, errors.New("ByWhere is nil")
 	}
 	base := orm.base
-	ctx := base.ctx
+	ctx := orm.base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
@@ -524,15 +499,18 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	selSql := ctx.genSelectByPrimaryKey()
 	idValues := ctx.primaryKeyValues
 	if len(v) == 1 {
-		return orm.base.queryLn(string(selSql), idValues[0]...)
+		return orm.base.query(string(selSql), idValues[0]...)
 	}
-	return orm.base.queryLnBatch(string(selSql), idValues)
+	return orm.base.queryBatch(string(selSql), idValues)
 }
 
 // ByModel
 //v0.6
 //ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
+	if v == nil {
+		return 0, errors.New("ByModel is nil")
+	}
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
@@ -547,62 +525,63 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	tableName := ctx.tableName
 	c := ctx.columns
 
-	var sb strings.Builder
-	sb.WriteString("SELECT ")
+	var bb bytes.Buffer
+	bb.WriteString("SELECT ")
 	for i, column := range c {
 		if i == 0 {
-			sb.WriteString(column)
+			bb.WriteString(column)
 		} else {
-			sb.WriteString(" , ")
-			sb.WriteString(column)
+			bb.WriteString(" , ")
+			bb.WriteString(column)
 		}
 	}
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString(ctx.tableWhereArgs2SqlStr(columns))
+	bb.WriteString(" FROM ")
+	bb.WriteString(tableName)
+	bb.WriteString(ctx.tableWhereArgs2SqlStr(columns))
 
-	return base.queryLn(sb.String(), values...)
+	return base.query(bb.String(), values...)
 }
 
 func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
+	base := orm.base
+	ctx := base.ctx
+	if err := ctx.err; err != nil {
 		return 0, err
-	}
-
-	if w == nil {
-		return 0, errors.New("table select where can't nil")
 	}
 	orm.base.initColumns()
 	orm.base.initPrimaryKeyName()
 
+	if w == nil {
+		return 0, errors.New("ByWhere is nil")
+	}
 	wheres := w.context.wheres
 	args := w.context.args
 
-	tableName := orm.base.ctx.tableName
-	c := orm.base.ctx.columns
+	tableName := ctx.tableName
+	columns := ctx.columns
 
-	var sb strings.Builder
-	sb.WriteString("SELECT ")
-	for i, column := range c {
+	var bb bytes.Buffer
+	bb.WriteString("SELECT ")
+	for i, column := range columns {
 		if i == 0 {
-			sb.WriteString(column)
+			bb.WriteString(column)
 		} else {
-			sb.WriteString(" , ")
-			sb.WriteString(column)
+			bb.WriteString(" , ")
+			bb.WriteString(column)
 		}
 	}
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString(" WHERE ")
+	bb.WriteString(" FROM ")
+	bb.WriteString(tableName)
+	bb.WriteString(" WHERE ")
 	for i, where := range wheres {
 		if i == 0 {
-			sb.WriteString(where)
+			bb.WriteString(where)
 			continue
 		}
-		sb.WriteString(" AND " + where)
+		bb.WriteString(" AND " + where)
 	}
 
-	return orm.base.queryLn(sb.String(), args...)
+	return base.query(bb.String(), args...)
 }
 
 //0.6
@@ -670,30 +649,13 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 		return nil, nil, err
 	}
 
-	ctyp := checkCompValue(value)
-	if ctyp != Composite {
-		return nil, nil, errors.New("getcv not comp")
-	}
-	err = checkCompField(value)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	columns, values, err := ormConfig.getCompColumnsValueNoNil(value)
-	if err != nil {
-		return nil, nil, err
-	}
-	if len(columns) < 1 {
-		return nil, nil, errors.New("where model valid field need ")
-	}
-	return columns, values, nil
+	return getCompValueCV(value)
 }
 
 //v0.6
 //排除 nil 字段
 func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
-	ctyp := checkCompValue(v)
-	if ctyp != Composite {
+	if !isCompType(v.Type()) {
 		return nil, nil, errors.New("getvcv not comp")
 	}
 	err := checkCompField(v)

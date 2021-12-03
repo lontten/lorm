@@ -46,12 +46,12 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 	return
 }
 
-// ScanLnBatch
-//接收一行结果-批量
+// ScanBatch
+//批量
 // v0.7
 // 1.ptr single/comp
 // 2.slice- single
-func (ctx OrmContext) ScanLnBatch(rowss []*sql.Rows) (int64, error) {
+func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 	var nums int64 = 0
 	arr := ctx.destValue
 	t := ctx.destBaseType
@@ -129,14 +129,6 @@ func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
 		num++
 	}
 	return num, nil
-}
-
-//ScanBatch
-// v0.7
-//接收多行结果-批量
-//1.[]- *
-func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
-	return ctx.ScanLnBatch(rowss)
 }
 
 //检查sturct的filed是否合法，valuer，nuller
