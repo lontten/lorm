@@ -53,15 +53,43 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 // 1.ptr single/comp
 // 2.slice- single
 func (ctx OrmContext) ScanLnBatch(rowss []*sql.Rows) (int64, error) {
-	var num int64 = 0
+	arr := ctx.destValue
+	t := ctx.destBaseType
+	isPtr := ctx.sliceItemIsPtr
+
+	var nums int64 = 0
 	for _, rows := range rowss {
-		n, err := ctx.ScanLn(rows)
+
+		defer func(rows *sql.Rows) {
+			utils.PanicErr(rows.Close())
+		}(rows)
+
+		columns, err := rows.Columns()
 		if err != nil {
-			return num, err
+			return 0, err
 		}
-		num += n
+		cfm, err := ormConfig.getColFieldIndexLinkMap(columns, t)
+		if err != nil {
+			return 0, err
+		}
+		var num int64 = 0
+		for rows.Next() {
+			box, vp, v := createColBox(t, cfm)
+			err = rows.Scan(box...)
+			if err != nil {
+				return 0, err
+			}
+			if isPtr {
+				arr.Set(reflect.Append(arr, vp))
+			} else {
+				arr.Set(reflect.Append(arr, v))
+			}
+			num++
+		}
+
+		nums += num
 	}
-	return num, nil
+	return nums, nil
 }
 
 //Scan
