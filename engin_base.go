@@ -44,25 +44,48 @@ func (orm *OrmFrom) Where(v *WhereBuilder) *OrmWhere {
 	return &OrmWhere{base}
 }
 
+//v0.7
 func (orm *OrmWhere) GetOne(dest interface{}) (int64, error) {
+	if err:=orm.base.context.err;err!= nil {
+		return 0, err
+	}
+	orm.base.context.initScanDestSlice(dest)
+	orm.base.context.checkScanDestField()
+	if err:=orm.base.context.err;err!= nil {
+		return 0, err
+	}
+
 	base := orm.base
-	s := base.context.query.String()
-	rows, err := base.dialect.query(s, base.context.args...)
+	ctx := orm.base.context
+	s := ctx.query.String()
+	rows, err := base.dialect.query(s, ctx.args...)
 	if err != nil {
 		return 0, err
 	}
-	return ormConfig.ScanLn(rows, dest)
+	return ctx.ScanLn(rows)
 }
 
 func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
+	if err:=orm.base.context.err;err!= nil {
+		return 0, err
+	}
+	orm.base.context.initScanDestSlice(dest)
+	orm.base.context.checkScanDestField()
+	if err:=orm.base.context.err;err!= nil {
+		return 0, err
+	}
+
 	base := orm.base
-	query := base.context.query.String()
+	ctx := orm.base.context
+
+
+	query := ctx.query.String()
 	log.Println(query)
-	args := base.context.args
+	args := ctx.args
 	log.Printf("args :: %s", args)
 	rows, err := base.dialect.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return ormConfig.Scan(rows, dest)
+	return ctx.Scan(rows)
 }

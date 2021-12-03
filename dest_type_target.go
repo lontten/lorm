@@ -31,6 +31,8 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 	ctx.dest = dest
 	ctx.destValue = base
 	ctx.destBaseValue = base
+
+	ctx.destBaseType = base.Type()
 }
 
 // * struct
@@ -52,6 +54,7 @@ func (ctx *OrmContext) initTargetDestOnlyBaseValue(dest interface{}) {
 		return
 	}
 	ctx.destBaseValue = base
+	ctx.destBaseType = base.Type()
 }
 
 //检查sturct的filed是否合法，valuer，nuller
@@ -61,15 +64,5 @@ func (ctx *OrmContext) checkTargetDestField() {
 	}
 	v := ctx.destBaseValue
 	err := checkCompField(v)
-	ctx.err = err
-}
-
-//检查sturct的filed是否合法，valuer，nuller
-func (ctx *OrmContext) checkScanDestField() {
-	if ctx.err != nil {
-		return
-	}
-	v := ctx.destBaseValue
-	err := checkCompFieldScan(v)
 	ctx.err = err
 }

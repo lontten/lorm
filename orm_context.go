@@ -21,11 +21,18 @@ type OrmContext struct {
 	destValue reflect.Value
 	//用作 参数合法行校验
 	destBaseValue reflect.Value
+	destBaseType  reflect.Type
+
+
+
+	//scan 是comp，false是single
+	destTypeIsComp bool
 
 	//scan 接收返回
 	isSlice bool
-	//scan 接收返回
-	scanValueArr []reflect.Value
+	//scan 为slice时，里面item是否是ptr
+	sliceItemIsPtr bool
+
 
 	//字段列表
 	columns []string
@@ -218,6 +225,7 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 			idValues[0] = value.Interface()
 			idValuess = append(idValuess, idValues)
 		}
+
 	} else {
 		for _, i := range v {
 			value := reflect.ValueOf(i)
@@ -282,7 +290,7 @@ func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 		return
 	}
 
-	ctx.primaryKeyValues[0] = idValues
+	ctx.primaryKeyValues = append(ctx.primaryKeyValues, idValues)
 }
 
 //v0.7

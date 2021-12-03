@@ -2,8 +2,6 @@ package lorm
 
 import (
 	"bytes"
-	"database/sql"
-	"fmt"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
@@ -50,155 +48,11 @@ type OrmConf struct {
 	TenantIgnoreTableFun func(tableName string, base reflect.Value) bool
 }
 
-// ScanLn
-//接收一行结果
-// v0.6
-// 1.ptr single/comp
-// 2.slice- single
-func (c OrmConf) ScanLn(rows *sql.Rows, v interface{}) (num int64, err error) {
-	defer func(rows *sql.Rows) {
-		utils.PanicErr(rows.Close())
-	}(rows)
-
-	value := reflect.ValueOf(v)
-	pack, err := checkPackValue(value)
-	if err != nil {
-		return 0, err
-	}
-	typ := pack.Typ
-	base := pack.Base
-
-	if typ == None {
-		return 0, errors.New("scanln: invalid type")
-	}
-	ctyp := checkCompValue(base)
-	if ctyp == Invade {
-		return 0, errors.New("scanln: invalid type")
-	}
-	if typ == Slice && ctyp != Single {
-		return 0, errors.New("scanln: invalid type")
-	}
-
-	num = 1
-	t := base.Type()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return
-	}
-	cfm, err := c.getColFieldIndexLinkMap(columns, t)
-	if err != nil {
-		return
-	}
-	if rows.Next() {
-		box, _, v := createColBox(t, cfm)
-		err = rows.Scan(box...)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		base.Set(v)
-	}
-
-	if rows.Next() {
-		return 0, errors.New("result to many for one")
-	}
-	return
-}
-
-// ScanLnBatch
-//接收一行结果-批量
-// v0.6
-// 1.ptr single/comp
-// 2.slice- single
-func (c OrmConf) ScanLnBatch(rowss []*sql.Rows, v []interface{}) (num int64, err error) {
-	for i, rows := range rowss {
-		n, err := c.ScanLn(rows, v[i])
-		if err != nil {
-			return num, err
-		}
-		num += n
-	}
-	return
-}
-
-//Scan
-// v0.6
-//接收多行结果
-//1.[]- *
-func (c OrmConf) Scan(rows *sql.Rows, v interface{}) (int64, error) {
-	defer func(rows *sql.Rows) {
-		utils.PanicErr(rows.Close())
-	}(rows)
-
-	value := reflect.ValueOf(v)
-	_, arr, err := basePtrDeepValue(value)
-	if err != nil {
-		return 0, err
-	}
-	is, base, err := baseSliceDeepValue(arr)
-	if err != nil {
-		return 0, err
-	}
-	if !is {
-		return 0, errors.New("scan: need a slice")
-	}
-	ctyp := checkCompValue(base)
-	if ctyp == Invade {
-		return 0, errors.New("scanln: invalid type")
-	}
-	isPtr := base.Kind() == reflect.Ptr
-
-	baset := base.Type()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return 0, err
-	}
-	cfm, err := c.getColFieldIndexLinkMap(columns, baset)
-	if err != nil {
-		return 0, err
-	}
-	var num int64 = 0
-	for rows.Next() {
-		box, vp, v := createColBox(baset, cfm)
-
-		err = rows.Scan(box...)
-		if err != nil {
-			fmt.Println(err)
-			return 0, err
-		}
-		if isPtr {
-			arr.Set(reflect.Append(arr, vp))
-		} else {
-			arr.Set(reflect.Append(arr, v))
-		}
-		num++
-	}
-	return num, nil
-}
-
-//ScanBatch
-// v0.6
-//接收多行结果-批量
-//1.[]- *
-func (c OrmConf) ScanBatch(rowss []*sql.Rows, v []interface{}) (num int64, err error) {
-	for i, rows := range rowss {
-		n, err := c.Scan(rows, v[i])
-		if err != nil {
-			return num, err
-		}
-		num += n
-	}
-	return
-}
-
-// v0.6
-func (c OrmConf) tableName(v reflect.Value) (string, error) {
-	base := v.Type()
+// v0.7
+func (c OrmConf) tableName(t reflect.Type) (string, error) {
 
 	// fun
-	name := base.String()
+	name := t.String()
 	index := strings.LastIndex(name, ".")
 	if index > 0 {
 		name = name[index+1:]
@@ -207,15 +61,15 @@ func (c OrmConf) tableName(v reflect.Value) (string, error) {
 
 	tableNameFun := c.TableNameFun
 	if tableNameFun != nil {
-		return tableNameFun(name, base), nil
+		return tableNameFun(name, t), nil
 	}
 
 	// tag
 
-	numField := base.NumField()
+	numField := t.NumField()
 	tagTableName := ""
 	for i := 0; i < numField; i++ {
-		if tag := base.Field(i).Tag.Get("tableName"); tag != "" {
+		if tag := t.Field(i).Tag.Get("tableName"); tag != "" {
 			if tagTableName == "" {
 				tagTableName = tag
 			} else {
@@ -254,16 +108,15 @@ func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
 	return []string{"id"}
 }
 
-//v0.6
-func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
-	base := v.Type()
+//v0.7
+func (c OrmConf) initColumns(t reflect.Type) (columns []string, err error) {
 
 	cMap := make(map[string]int)
 
-	numField := base.NumField()
+	numField := t.NumField()
 	var num = 0
 	for i := 0; i < numField; i++ {
-		field := base.Field(i)
+		field := t.Field(i)
 		name := field.Name
 		if name == "ID" {
 			cMap["id"] = i
@@ -319,7 +172,6 @@ func (c OrmConf) initColumns(v reflect.Value) (columns []string, err error) {
 	}
 	return arr, nil
 }
-
 
 //v0.6
 //获取struct对应的字段名 有效部分

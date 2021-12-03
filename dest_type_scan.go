@@ -1,58 +1,45 @@
 package lorm
 
 import (
-	"github.com/lontten/lorm/utils"
+	"fmt"
 	"github.com/pkg/errors"
 	"reflect"
 )
 
 // ptr slice
-// 检查数据类型 comp-struct
+// 检查数据类型 valuer
 func (ctx *OrmContext) initScanDestSlice(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
 	v := reflect.ValueOf(dest)
+	_, v, err := basePtrDeepValue(v)
 
-	arr := make([]reflect.Value, 0)
-
-	packTyp, err := checkPackValue(v)
 	if err != nil {
 		ctx.err = err
 		return
 	}
-	typ:=packTyp.Typ
-	v=packTyp.Base
-	base:=packTyp.SliceBase
 
-	ctyp := checkCompValue(base)
+	typ, base := checkPackType(v.Type())
+	fmt.Println(base.String())
 
-	if ctyp != Composite {
-		ctx.err = errors.New("need a struct")
-		return
-	}
-
-	ctx.dest = dest
-	ctx.destValue = v
-	ctx.destBaseValue = base
-
-	if typ == Ptr {
-		arr = append(arr, base)
-		ctx.isSlice = false
-		ctx.scanValueArr = arr
+	ctyp := checkCompType(base)
+	if ctyp == Invade {
+		ctx.err = errors.New("need a struct or base type -scan dest slice")
 		return
 	}
 
 	if typ == Slice {
 		ctx.isSlice = true
-		ctx.scanValueArr = utils.ToSliceValue(v)
-		return
+		ctx.sliceItemIsPtr = base.Kind() == reflect.Ptr
 	}
 
+	ctx.destTypeIsComp = ctyp == Composite
+	ctx.dest = dest
+	ctx.destValue = v
+	ctx.destBaseType = base
+
 }
-
-
-
 
 //
 ////struct 只检查 struct是否合格，不检查 filed

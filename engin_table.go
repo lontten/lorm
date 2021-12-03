@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"bytes"
+	"database/sql"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -13,60 +14,61 @@ type EngineTable struct {
 	ctx OrmContext
 }
 
-//v0.6
+//v0.7
 func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return ormConfig.ScanLn(rows, e.ctx.dest)
+	return e.ctx.ScanLn(rows)
 }
 
-//v0.6
+//v0.7
 func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return ormConfig.Scan(rows, e.ctx.dest)
+	return e.ctx.Scan(rows)
 }
 
 //v0.6
-//func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
-//	stmt, err := e.dialect.queryBatch(query)
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	rowss := make([]*sql.Rows, 0)
-//	for _, arg := range args {
-//		rows, err := stmt.Query(arg...)
-//		if err != nil {
-//			return 0, err
-//		}
-//		rowss = append(rowss, rows)
-//	}
-//
-//	return ormConfig.ScanLnBatch(rowss, utils.ToSlice(e.ctx.destValue))
-//}
+func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
+	stmt, err := e.dialect.queryBatch(query)
+	if err != nil {
+		return 0, err
+	}
+
+	rowss := make([]*sql.Rows, 0)
+	for _, arg := range args {
+		rows, err := stmt.Query(arg...)
+		if err != nil {
+			return 0, err
+		}
+		rowss = append(rowss, rows)
+	}
+
+	return e.ctx.ScanLnBatch(rowss)
+}
+
 //v0.6
-//func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
-//	stmt, err := e.dialect.queryBatch(query)
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	rowss := make([]*sql.Rows, 0)
-//	for _, arg := range args {
-//		rows, err := stmt.Query(arg...)
-//		if err != nil {
-//			return 0, err
-//		}
-//		rowss = append(rowss, rows)
-//	}
-//
-//	return ormConfig.ScanBatch(rowss, utils.ToSlice(e.ctx.destValue))
-//}
+func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
+	stmt, err := e.dialect.queryBatch(query)
+	if err != nil {
+		return 0, err
+	}
+
+	rowss := make([]*sql.Rows, 0)
+	for _, arg := range args {
+		rows, err := stmt.Query(arg...)
+		if err != nil {
+			return 0, err
+		}
+		rowss = append(rowss, rows)
+	}
+
+	return e.ctx.ScanBatch(rowss)
+}
 
 //v0.7
 // *.comp / slice.comp
@@ -342,7 +344,11 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	}
 
 	delSql := ctx.genDelByPrimaryKey()
-	return base.dialect.exec(string(delSql), v...)
+	idValues := orm.base.ctx.primaryKeyValues
+	if len(v) == 1 {
+		return base.dialect.exec(string(delSql), idValues[0]...)
+	}
+	return base.dialect.execBatch(string(delSql), idValues)
 }
 
 // ByModel
@@ -516,7 +522,11 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	}
 
 	selSql := ctx.genSelectByPrimaryKey()
-	return orm.base.queryLn(string(selSql), v...)
+	idValues := ctx.primaryKeyValues
+	if len(v) == 1 {
+		return orm.base.queryLn(string(selSql), idValues[0]...)
+	}
+	return orm.base.queryLnBatch(string(selSql), idValues)
 }
 
 // ByModel
@@ -610,7 +620,7 @@ func (e *EngineTable) initTableName() {
 	if e.ctx.err != nil {
 		return
 	}
-	tableName, err := ormConfig.tableName(e.ctx.destBaseValue)
+	tableName, err := ormConfig.tableName(e.ctx.destBaseType)
 	if err != nil {
 		e.ctx.err = err
 		return
@@ -642,7 +652,7 @@ func (e *EngineTable) initColumns() {
 		return
 	}
 
-	columns, err := ormConfig.initColumns(e.ctx.destBaseValue)
+	columns, err := ormConfig.initColumns(e.ctx.destBaseType)
 	if err != nil {
 		e.ctx.err = err
 		return

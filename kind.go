@@ -186,24 +186,26 @@ func baseSliceValue(v reflect.Value, canEmpty bool) (is bool, structType reflect
 func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
 	isSlice := false
 	tmp := t
-	flag := true //base
-	for flag {
+
+	for true {
+		isBaseFlag := true //base
+
 		is, base := basePtrDeepType(tmp)
 		if is {
-			flag = false
+			isBaseFlag = false
 		}
 
 		is, base = _baseSliceDeepType(base)
 		if is {
-			flag = false
+			isBaseFlag = false
+			isSlice = true
 		}
-		if flag {
+		if isBaseFlag {
 			if isSlice {
 				return true, base
 			}
 			return false, t
 		}
-		isSlice = true
 		tmp = base
 	}
 	return false, t
@@ -260,11 +262,17 @@ func _baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	isSlice := false
 base:
 	kind := v.Kind()
-	if kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map {
+	if kind == reflect.Ptr || kind == reflect.Map {
 		if v.IsNil() {
 			return false, v, ErrNil
 		}
 	}
+	if kind == reflect.Slice {
+		if v.IsNil() {
+			return true, v, ErrNil
+		}
+	}
+
 	is, v := baseSliceValue(v, false)
 	if is {
 		isSlice = true
@@ -288,7 +296,9 @@ const (
 //检查是否是ptr，slice类型
 func checkPackType(t reflect.Type) (packType, reflect.Type) {
 	isPtr, base := basePtrDeepType(t)
+
 	is, base := baseSliceDeepType(base)
+
 	if is {
 		return Slice, base
 	}
@@ -398,55 +408,36 @@ func checkCompType(t reflect.Type) compType {
 // v0.7
 //scan不需要必须nuller
 //检查map key是否string，value是否valuer
-func checkMapFieldScan(v reflect.Value) bool {
-	keys := v.MapKeys()
-	for _, key := range keys {
-		//key string
-		if key.Kind() != reflect.String {
-			return false
-		}
+func checkMapFieldType(t reflect.Type) bool {
+	if t.Key().Kind() != reflect.String {
+		return false
+	}
 
-		//valuer
-		value := v.MapIndex(key)
-		packTyp, err := checkPackValue(value)
-		if err != nil {
-			continue
-		}
-		typ := checkCompValue(packTyp.SliceBase)
-		if typ != Single {
-			return false
-		}
+	if !isSingleType(t.Elem()) {
+		return false
 	}
 	return true
 }
 
 // v0.7
 //检查map key是否string，value是否valuer/nuller
-func checkMapField(v reflect.Value) bool {
-	keys := v.MapKeys()
-	for _, key := range keys {
-		//key string
-		if key.Kind() != reflect.String {
-			return false
-		}
+func checkMapFieldValue(v reflect.Value) bool {
+	key := v.MapKeys()[0]
+	if key.Kind() != reflect.String {
+		return false
+	}
 
-		//valuer
-		value := v.MapIndex(key)
-		packTyp, err := checkPackValue(value)
-		if err != nil {
-			continue
-		}
-		base := packTyp.Base
-		typ := checkCompValue(base)
-		if typ != Single {
-			return false
-		}
+	//valuer
+	t := v.MapIndex(key).Type()
 
-		//nuller
-		is := isNullerType(base.Type())
-		if !is {
-			return false
-		}
+	if !isSingleType(t) {
+		return false
+	}
+
+	//nuller
+	is := isNullerType(t)
+	if !is {
+		return false
 	}
 	return true
 }
@@ -455,10 +446,10 @@ func checkMapField(v reflect.Value) bool {
 // v0.7
 //scan不需要必须nuller
 //检查 struct field，value是否valuer
-func checkStructFieldScan(v reflect.Value) bool {
-	numField := v.NumField()
+func checkStructFieldType(t reflect.Type) bool {
+	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkField(v.Field(i).Type())
+		err := checkField(t.Field(i).Type)
 		if err != nil {
 			return false
 		}
@@ -468,7 +459,7 @@ func checkStructFieldScan(v reflect.Value) bool {
 
 // v0.7
 //检查 struct field，value是否valuer/nuller
-func checkStructField(v reflect.Value) bool {
+func checkStructFieldValue(v reflect.Value) bool {
 	numField := v.NumField()
 	for i := 0; i < numField; i++ {
 		err := checkFieldNuller(v.Field(i).Type())

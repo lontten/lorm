@@ -82,14 +82,13 @@ func newStruct(t reflect.Type) reflect.Value {
 
 //--------------------comp-field-valuer---------
 // v0.6 检查一个 struct 是否合法
-var compValidCache = make(map[reflect.Type]reflect.Value)
+var compValidCache = make(map[reflect.Type]struct{})
 var mutexCompValidCache sync.Mutex
 
-func checkCompFieldScan(va reflect.Value) error {
+func checkCompFieldScan(typ reflect.Type) error {
 	mutexCompValidCache.Lock()
 	defer mutexCompValidCache.Unlock()
 
-	typ := va.Type()
 	_, ok := compValidCache[typ]
 	if ok {
 		return nil
@@ -99,17 +98,17 @@ func checkCompFieldScan(va reflect.Value) error {
 
 	//struct
 	if kind == reflect.Struct {
-		is := checkStructFieldScan(va)
+		is := checkStructFieldType(typ)
 		if is {
-			compValidCache[typ] = va
+			compValidCache[typ] = struct{}{}
 			return nil
 		}
 	}
 	//map
 	if kind == reflect.Map {
-		is := checkMapFieldScan(va)
+		is := checkMapFieldType(typ)
 		if is {
-			compValidCache[typ] = va
+			compValidCache[typ] = struct{}{}
 			return nil
 		}
 	}
@@ -135,7 +134,7 @@ func checkCompField(va reflect.Value) error {
 
 	//struct
 	if kind == reflect.Struct {
-		is := checkStructField(va)
+		is := checkStructFieldValue(va)
 		if is {
 			compValidNullerCache[typ] = va
 			return nil
@@ -143,7 +142,7 @@ func checkCompField(va reflect.Value) error {
 	}
 	//map
 	if kind == reflect.Map {
-		is := checkMapField(va)
+		is := checkMapFieldValue(va)
 		if is {
 			compValidNullerCache[typ] = va
 			return nil

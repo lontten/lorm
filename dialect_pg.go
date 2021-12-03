@@ -16,11 +16,11 @@ func (m PgDialect) DriverName() string {
 
 func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = toPgSql(query)
-	Log.Println( query, args)
+	Log.Println(query, args)
 	return m.db.Query(query, args...)
 }
 
-func (m PgDialect) queryBatch(query string) (*sql.Stmt, error){
+func (m PgDialect) queryBatch(query string) (*sql.Stmt, error) {
 	query = toPgSql(query)
 
 	return m.db.Prepare(query)
@@ -39,14 +39,14 @@ func (m PgDialect) exec(query string, args ...interface{}) (int64, error) {
 
 func (m PgDialect) execBatch(query string, args [][]interface{}) (int64, error) {
 	query = toPgSql(query)
-	var num int64=0
+	var num int64 = 0
 	stmt, err := m.db.Prepare(query)
 	if err != nil {
 		return 0, err
 	}
 	for _, arg := range args {
 		exec, err := stmt.Exec(arg...)
-		Log.Println(query, args)
+		Log.Println(query, arg)
 		if err != nil {
 			return num, err
 		}
@@ -54,9 +54,9 @@ func (m PgDialect) execBatch(query string, args [][]interface{}) (int64, error) 
 		if err != nil {
 			return num, err
 		}
-		num+=rowsAffected
+		num += rowsAffected
 	}
-	return num,nil
+	return num, nil
 }
 
 func toPgSql(sql string) string {
