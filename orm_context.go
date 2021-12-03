@@ -185,7 +185,8 @@ func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) initSetPrimaryKey(v []interface{}) {
+//v0.7
+func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -195,8 +196,10 @@ func (ctx *OrmContext) initSetPrimaryKey(v []interface{}) {
 		ctx.err = errors.New("ByPrimaryKey arg len num 0")
 		return
 	}
-
 	pkLen := len(ctx.primaryKeyNames)
+
+	idValuess := make([][]interface{}, 0)
+
 	if pkLen == 1 { //单主键
 		for _, i := range v {
 			value := reflect.ValueOf(i)
@@ -211,7 +214,9 @@ func (ctx *OrmContext) initSetPrimaryKey(v []interface{}) {
 				return
 			}
 
-			ctx.args = append(ctx.args, value.Interface())
+			idValues := make([]interface{}, 1)
+			idValues[0] = value.Interface()
+			idValuess = append(idValuess, idValues)
 		}
 	} else {
 		for _, i := range v {
@@ -235,9 +240,49 @@ func (ctx *OrmContext) initSetPrimaryKey(v []interface{}) {
 				ctx.err = errors.New("复合主键，filed数量 len err")
 				return
 			}
-			ctx.args = append(ctx.args, values...)
+
+			idValues := make([]interface{}, 0)
+			idValues = append(idValues, values...)
+			idValuess = append(idValuess, idValues)
 		}
 	}
+
+	ctx.primaryKeyValues = idValuess
+}
+
+//v0.7
+func (ctx *OrmContext) initSelfPrimaryKeyValues() {
+	if ctx.err != nil {
+		return
+	}
+
+	keyNum := len(ctx.primaryKeyNames)
+	idValues := make([]interface{}, 0)
+	columns, values, err := getCompCV(ctx.dest)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	//只要主键字段
+	for _, key := range ctx.primaryKeyNames {
+		for i, c := range columns {
+			if c == key {
+				idValues = append(idValues, values[i])
+				continue
+			}
+		}
+	}
+	idLen := len(idValues)
+	if idLen == 0 {
+		ctx.err = errors.New("no pk")
+		return
+	}
+	if keyNum != idLen {
+		ctx.err = errors.New("comp pk num err")
+		return
+	}
+
+	ctx.primaryKeyValues[0] = idValues
 }
 
 //v0.7

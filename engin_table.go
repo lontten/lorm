@@ -157,38 +157,17 @@ func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 //single / comp复合主键
 func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 	orm.base.initPrimaryKeyName()
+	orm.base.ctx.initSelfPrimaryKeyValues()
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	keyNum := len(ctx.primaryKeyNames)
-	idValues := make([]interface{}, 0)
-	columns, values, err := getCompCV(ctx.dest)
-	if err != nil {
-		return 0, err
-	}
-	//只要主键字段
-	for _, key := range ctx.primaryKeyNames {
-		for i, c := range columns {
-			if c == key {
-				idValues = append(idValues, values[i])
-				continue
-			}
-		}
-	}
-	idLen := len(idValues)
-	if idLen == 0 {
-		return 0, errors.New("no pk")
-	}
-	if keyNum != idLen {
-		return 0, errors.New("comp pk num err")
-	}
-
 	cs := ctx.columns
 	cvs := ctx.columnValues
 	tableName := ctx.tableName
+	idValues := ctx.primaryKeyValues[0]
 
 	whereStr := ctx.genWhereByPrimaryKey()
 
@@ -198,7 +177,7 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 	bb.WriteString(tableName)
 	bb.Write(whereStr)
 	bb.WriteString("limit 1")
-	rows, err := base.dialect.query(bb.String(), idValues)
+	rows, err := base.dialect.query(bb.String(), idValues...)
 	if err != nil {
 		return 0, err
 	}
@@ -210,7 +189,7 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 		bb.WriteString(" SET ")
 		bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
 		bb.Write(whereStr)
-		cvs = append(cvs, idValues)
+		cvs = append(cvs, idValues...)
 
 		return base.dialect.exec(bb.String(), cvs...)
 	}
@@ -354,7 +333,7 @@ func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 //comp -> 复合主键
 func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	orm.base.initPrimaryKeyName()
-	orm.base.ctx.initSetPrimaryKey(v)
+	orm.base.ctx.initPrimaryKeyValues(v)
 
 	base := orm.base
 	ctx := orm.base.ctx
@@ -420,38 +399,18 @@ func (e EngineTable) Update(v interface{}) OrmTableUpdate {
 //v0.8
 func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
 	orm.base.initPrimaryKeyName()
+	orm.base.ctx.initSelfPrimaryKeyValues()
+
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	keyNum := len(ctx.primaryKeyNames)
-	idValues := make([]interface{}, 0)
-	columns, values, err := getCompCV(ctx.dest)
-	if err != nil {
-		return 0, err
-	}
-	//只要主键字段
-	for _, key := range ctx.primaryKeyNames {
-		for i, c := range columns {
-			if c == key {
-				idValues = append(idValues, values[i])
-				continue
-			}
-		}
-	}
-	idLen := len(idValues)
-	if idLen == 0 {
-		return 0, errors.New("no pk")
-	}
-	if keyNum != idLen {
-		return 0, errors.New("comp pk num err")
-	}
-
 	tableName := ctx.tableName
 	cs := ctx.columns
 	cvs := ctx.columnValues
+	idValues := ctx.primaryKeyValues[0]
 
 	whereStr := ctx.genWhereByPrimaryKey()
 
@@ -549,7 +508,7 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 //v0.8
 func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	orm.base.initPrimaryKeyName()
-	orm.base.ctx.initSetPrimaryKey(v)
+	orm.base.ctx.initPrimaryKeyValues(v)
 
 	ctx := orm.base.ctx
 	if err := ctx.err; err != nil {
