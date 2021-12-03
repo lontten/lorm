@@ -32,7 +32,7 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	return e.ctx.Scan(rows)
 }
 
-//v0.6
+//v0.7
 func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
 	stmt, err := e.dialect.queryBatch(query)
 	if err != nil {

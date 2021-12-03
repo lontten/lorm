@@ -22,7 +22,6 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 	base := ctx.destValue
 	t := ctx.destBaseType
 
-
 	columns, err := rows.Columns()
 	if err != nil {
 		return
@@ -53,11 +52,11 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 // 1.ptr single/comp
 // 2.slice- single
 func (ctx OrmContext) ScanLnBatch(rowss []*sql.Rows) (int64, error) {
+	var nums int64 = 0
 	arr := ctx.destValue
 	t := ctx.destBaseType
 	isPtr := ctx.sliceItemIsPtr
 
-	var nums int64 = 0
 	for _, rows := range rowss {
 
 		defer func(rows *sql.Rows) {
@@ -133,21 +132,12 @@ func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
 }
 
 //ScanBatch
-// v0.6
+// v0.7
 //接收多行结果-批量
 //1.[]- *
-func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (num int64, err error) {
-	for _, rows := range rowss {
-		n, err := ctx.Scan(rows)
-		if err != nil {
-			return num, err
-		}
-		num += n
-	}
-	return
+func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
+	return ctx.ScanLnBatch(rowss)
 }
-
-
 
 //检查sturct的filed是否合法，valuer，nuller
 func (ctx *OrmContext) checkScanDestField() {
