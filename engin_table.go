@@ -2,8 +2,6 @@ package lorm
 
 import (
 	"bytes"
-	"database/sql"
-	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -25,25 +23,6 @@ func (e EngineTable) queryLn(query string, args ...interface{}) (int64, error) {
 }
 
 //v0.6
-func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
-	stmt, err := e.dialect.queryBatch(query)
-	if err != nil {
-		return 0, err
-	}
-
-	rowss := make([]*sql.Rows, 0)
-	for _, arg := range args {
-		rows, err := stmt.Query(arg...)
-		if err != nil {
-			return 0, err
-		}
-		rowss = append(rowss, rows)
-	}
-
-	return ormConfig.ScanLnBatch(rowss, utils.ToSlice(e.ctx.destValue))
-}
-
-//v0.6
 func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
@@ -53,23 +32,41 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 }
 
 //v0.6
-func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
-	stmt, err := e.dialect.queryBatch(query)
-	if err != nil {
-		return 0, err
-	}
-
-	rowss := make([]*sql.Rows, 0)
-	for _, arg := range args {
-		rows, err := stmt.Query(arg...)
-		if err != nil {
-			return 0, err
-		}
-		rowss = append(rowss, rows)
-	}
-
-	return ormConfig.ScanBatch(rowss, utils.ToSlice(e.ctx.destValue))
-}
+//func (e EngineTable) queryLnBatch(query string, args [][]interface{}) (int64, error) {
+//	stmt, err := e.dialect.queryBatch(query)
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	rowss := make([]*sql.Rows, 0)
+//	for _, arg := range args {
+//		rows, err := stmt.Query(arg...)
+//		if err != nil {
+//			return 0, err
+//		}
+//		rowss = append(rowss, rows)
+//	}
+//
+//	return ormConfig.ScanLnBatch(rowss, utils.ToSlice(e.ctx.destValue))
+//}
+//v0.6
+//func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
+//	stmt, err := e.dialect.queryBatch(query)
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	rowss := make([]*sql.Rows, 0)
+//	for _, arg := range args {
+//		rows, err := stmt.Query(arg...)
+//		if err != nil {
+//			return 0, err
+//		}
+//		rowss = append(rowss, rows)
+//	}
+//
+//	return ormConfig.ScanBatch(rowss, utils.ToSlice(e.ctx.destValue))
+//}
 
 //v0.7
 // *.comp / slice.comp
@@ -158,10 +155,8 @@ func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 //v0.6
 //ptr
 //single / comp复合主键
-func (orm OrmTableCreate) ByPrimaryKey(v interface{}) (int64, error) {
-	if v == nil {
-		return 0, errors.New("ByPrimaryKey is nil")
-	}
+func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
+	orm.base.initPrimaryKeyName()
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
@@ -169,14 +164,8 @@ func (orm OrmTableCreate) ByPrimaryKey(v interface{}) (int64, error) {
 	}
 
 	keyNum := len(ctx.primaryKeyNames)
-
-	cs := ctx.columns
-	cvs := ctx.columnValues
-	tableName := ctx.tableName
-
 	idValues := make([]interface{}, 0)
-
-	columns, values, err := getCompCV(v)
+	columns, values, err := getCompCV(ctx.dest)
 	if err != nil {
 		return 0, err
 	}
@@ -189,7 +178,6 @@ func (orm OrmTableCreate) ByPrimaryKey(v interface{}) (int64, error) {
 			}
 		}
 	}
-
 	idLen := len(idValues)
 	if idLen == 0 {
 		return 0, errors.New("no pk")
@@ -197,6 +185,10 @@ func (orm OrmTableCreate) ByPrimaryKey(v interface{}) (int64, error) {
 	if keyNum != idLen {
 		return 0, errors.New("comp pk num err")
 	}
+
+	cs := ctx.columns
+	cvs := ctx.columnValues
+	tableName := ctx.tableName
 
 	whereStr := ctx.genWhereByPrimaryKey()
 
@@ -472,23 +464,32 @@ func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
 		return 0, err
 	}
 
-	tableName := ctx.tableName
-	cs := ctx.columns
-	cvs := ctx.columnValues
+	keyNum := len(ctx.primaryKeyNames)
 	idValues := make([]interface{}, 0)
-
+	columns, values, err := getCompCV(ctx.dest)
+	if err != nil {
+		return 0, err
+	}
+	//只要主键字段
 	for _, key := range ctx.primaryKeyNames {
-		for i, s := range cs {
-			if s == key {
-				idValues = append(idValues, cvs[i])
+		for i, c := range columns {
+			if c == key {
+				idValues = append(idValues, values[i])
 				continue
 			}
 		}
 	}
-
-	if len(idValues) != len(ctx.primaryKeyNames) {
-		return 0, errors.New("pk len err")
+	idLen := len(idValues)
+	if idLen == 0 {
+		return 0, errors.New("no pk")
 	}
+	if keyNum != idLen {
+		return 0, errors.New("comp pk num err")
+	}
+
+	tableName := ctx.tableName
+	cs := ctx.columns
+	cvs := ctx.columnValues
 
 	whereStr := ctx.genWhereByPrimaryKey()
 
@@ -768,6 +769,7 @@ func (e *EngineTable) initColumns() {
 }
 
 //v0.6
+//获取comp 的 cv
 //排除 nil 字段
 func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	value := reflect.ValueOf(v)
