@@ -12,7 +12,11 @@ func (ctx *OrmContext) initScanDestSlice(dest interface{}) {
 		return
 	}
 	v := reflect.ValueOf(dest)
-	_, v, err := basePtrDeepValue(v)
+	is, v, err := basePtrDeepValue(v)
+	if !is {
+		ctx.err = errors.New("dest must be a ptr ")
+		return
+	}
 
 	if err != nil {
 		ctx.err = err

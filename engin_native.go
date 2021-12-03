@@ -1,5 +1,7 @@
 package lorm
 
+import "github.com/pkg/errors"
+
 //对 query exec 的简单封装
 type EngineNative struct {
 	dialect Dialect
@@ -25,6 +27,9 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 		return 0, err
 	}
 	q.base.context.initScanDestSlice(dest)
+	if q.base.context.isSlice {
+		return 0, errors.New("not support GetOne for slice")
+	}
 	q.base.context.checkScanDestField()
 	if err = q.base.context.err; err != nil {
 		return 0, err
