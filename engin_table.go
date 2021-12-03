@@ -354,50 +354,12 @@ func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 //comp -> 复合主键
 func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	orm.base.initPrimaryKeyName()
+	orm.base.ctx.initSetPrimaryKey(v)
+
 	base := orm.base
-	ctx := base.ctx
+	ctx := orm.base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
-	}
-	ctx.checkValidPrimaryKey(v)
-
-	idLen := len(v)
-	if idLen == 0 {
-		return 0, errors.New("ByPrimaryKey arg len num 0")
-	}
-
-	pkLen := len(ctx.primaryKeyNames)
-	if pkLen == 1 { //单主键
-		for _, i := range v {
-			value := reflect.ValueOf(i)
-			_, value, err := basePtrDeepValue(value)
-			if err != nil {
-				return 0, err
-			}
-
-			if !isSingleType(value.Type()) {
-				return 0, errors.New("ByPrimaryKey typ err,not single")
-			}
-		}
-	} else {
-		for _, i := range v {
-			value := reflect.ValueOf(i)
-			_, value, err := basePtrDeepValue(value)
-			if err != nil {
-				return 0, err
-			}
-			if !isCompType(value.Type()) {
-				return 0, errors.New("ByPrimaryKey typ err,not comp")
-			}
-
-			cv, _, err := getCompValueCV(value)
-			if err != nil {
-				return 0, err
-			}
-			if len(cv) != pkLen {
-				return 0, errors.New("复合主键，filed数量 len err")
-			}
-		}
 	}
 
 	delSql := ctx.genDelByPrimaryKey()
@@ -587,50 +549,11 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 //v0.8
 func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	orm.base.initPrimaryKeyName()
-	base := orm.base
-	ctx := base.ctx
+	orm.base.ctx.initSetPrimaryKey(v)
+
+	ctx := orm.base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
-	}
-	ctx.checkValidPrimaryKey(v)
-
-	idLen := len(v)
-	if idLen == 0 {
-		return 0, errors.New("ByPrimaryKey arg len num 0")
-	}
-
-	pkLen := len(ctx.primaryKeyNames)
-	if pkLen == 1 { //单主键
-		for _, i := range v {
-			value := reflect.ValueOf(i)
-			_, value, err := basePtrDeepValue(value)
-			if err != nil {
-				return 0, err
-			}
-
-			if !isSingleType(value.Type()) {
-				return 0, errors.New("ByPrimaryKey typ err,not single")
-			}
-		}
-	} else {
-		for _, i := range v {
-			value := reflect.ValueOf(i)
-			_, value, err := basePtrDeepValue(value)
-			if err != nil {
-				return 0, err
-			}
-			if !isCompType(value.Type()) {
-				return 0, errors.New("ByPrimaryKey typ err,not comp")
-			}
-
-			cv, _, err := getCompValueCV(value)
-			if err != nil {
-				return 0, err
-			}
-			if len(cv) != pkLen {
-				return 0, errors.New("复合主键，filed数量 len err")
-			}
-		}
 	}
 
 	selSql := ctx.genSelectByPrimaryKey()

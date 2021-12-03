@@ -22,7 +22,6 @@ type OrmContext struct {
 	//用作 参数合法行校验
 	destBaseValue reflect.Value
 
-
 	//scan 接收返回
 	isSlice bool
 	//scan 接收返回
@@ -186,51 +185,59 @@ func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) checkValidPrimaryKey(v []interface{}) {
-	ids := ctx.primaryKeyNames
-	//主键名列表长度为1，单主键
-	singlePk := len(ids) == 1
-
-	value := reflect.ValueOf(v[0])
-	is, base, err := basePtrValue(value)
-	if err != nil { //数值无效，直接返回false，不再进行合法性检查
-		ctx.err = err
+func (ctx *OrmContext) initSetPrimaryKey(v []interface{}) {
+	if ctx.err != nil {
 		return
 	}
 
-	is, base, err = checkDestSingle(base)
-	if err != nil {
-		ctx.err = err
+	idLen := len(v)
+	if idLen == 0 {
+		ctx.err = errors.New("ByPrimaryKey arg len num 0")
 		return
 	}
-	if is {
-		if !singlePk {
-			ctx.err = errors.New("PrimaryKey arg is err")
-			return
+
+	pkLen := len(ctx.primaryKeyNames)
+	if pkLen == 1 { //单主键
+		for _, i := range v {
+			value := reflect.ValueOf(i)
+			_, value, err := basePtrDeepValue(value)
+			if err != nil {
+				ctx.err = err
+				return
+			}
+
+			if !isSingleType(value.Type()) {
+				ctx.err = errors.New("ByPrimaryKey typ err,not single")
+				return
+			}
+
+			ctx.args = append(ctx.args, value.Interface())
 		}
-		ctx.args = append(ctx.args, v...)
-		return
-	}
+	} else {
+		for _, i := range v {
+			value := reflect.ValueOf(i)
+			_, value, err := basePtrDeepValue(value)
+			if err != nil {
+				ctx.err = err
+				return
+			}
+			if !isCompType(value.Type()) {
+				ctx.err = errors.New("ByPrimaryKey typ err,not comp")
+				return
+			}
 
-	err = checkCompField(base)
-	if err != nil {
-		ctx.err = err
-		return
-	}
-
-	for _, e := range v {
-		value = reflect.ValueOf(e)
-		_, base, err = basePtrValue(value)
-		if err != nil {
-			ctx.err = err
-			return
+			columns, values, err := getCompValueCV(value)
+			if err != nil {
+				ctx.err = err
+				return
+			}
+			if len(columns) != pkLen {
+				ctx.err = errors.New("复合主键，filed数量 len err")
+				return
+			}
+			ctx.args = append(ctx.args, values...)
 		}
-		for _, id := range ids {
-			field := base.FieldByName(id)
-			ctx.args = append(ctx.args, field.Interface())
-		}
 	}
-
 }
 
 //v0.7
