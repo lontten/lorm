@@ -47,7 +47,7 @@ func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, 
 }
 
 func (m MysqlDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
-	return 0, errors.New("MySQL insertOrUpdateByUnique not implemented")
+	return 0, errors.New("MySQL insertOrUpdateByUnique not support, please use insertOrUpdateByPrimaryKey")
 }
 
 func (m MysqlDialect) queryBatch(query string) (*sql.Stmt, error) {
