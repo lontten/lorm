@@ -167,7 +167,7 @@ func (orm OrmTableCreate) ByFields(fs types.Fields) (int64, error) {
 	cs := ctx.columns
 	cvs := ctx.columnValues
 	tableName := ctx.tableName
-	return base.dialect.insertOrUpdateByFields(tableName, fs, cs, cvs...)
+	return base.dialect.insertOrUpdateByUnique(tableName, fs, cs, cvs...)
 }
 
 // Delete

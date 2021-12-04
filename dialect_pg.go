@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
@@ -28,10 +29,10 @@ func (m PgDialect) queryBatch(query string) (*sql.Stmt, error) {
 }
 
 func (m PgDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
-	return m.insertOrUpdateByFields(table, fields, columns, args...)
+	return m.insertOrUpdateByUnique(table, fields, columns, args...)
 }
 
-func (m PgDialect) insertOrUpdateByFields(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
 	cs := make([]string, 0)
 	vs := make([]interface{}, 0)
 
@@ -44,15 +45,18 @@ func (m PgDialect) insertOrUpdateByFields(table string, fields []string, columns
 	}
 
 	var query = "INSERT INTO " + table + "(" + strings.Join(columns, ",") +
-		") VALUES (" + strings.Repeat("?", len(args)) +
-		") ON CONFLICT (" + strings.Join(fields, ",") + ") DO UPDATE SET " +
-		strings.Join(cs, "=?, ") + "=?"
+		") VALUES (" + strings.Repeat(" ? ,", len(args)-1) +
+		" ? ) ON CONFLICT (" + strings.Join(fields, ",") + ") DO UPDATE SET " +
+		strings.Join(cs, "= ? , ") + "= ? "
 
-	args= append(args, vs...)
+	args = append(args, vs...)
+	query = toPgSql(query)
 	Log.Println(query, args)
-
 	exec, err := m.db.Exec(query, args...)
 	if err != nil {
+		if errors.As(err, &ErrNoPkOrUnique) {
+			return 0, errors.New("insertOrUpdateByUnique fields need to be unique or primary key")
+		}
 		return 0, err
 	}
 	return exec.RowsAffected()

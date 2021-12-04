@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/lontten/lorm/utils"
 	"strings"
 )
@@ -45,15 +46,8 @@ func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, 
 	return exec.RowsAffected()
 }
 
-func (m MysqlDialect) insertOrUpdateByFields(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
-	//todo
-	Log.Println(table, args)
-
-	exec, err := m.db.Exec(table, args...)
-	if err != nil {
-		return 0, err
-	}
-	return exec.RowsAffected()
+func (m MysqlDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+	return 0, errors.New("MySQL insertOrUpdateByUnique not implemented")
 }
 
 func (m MysqlDialect) queryBatch(query string) (*sql.Stmt, error) {
