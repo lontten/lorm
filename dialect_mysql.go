@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"database/sql"
+	"github.com/lontten/lorm/utils"
 	"strings"
 )
 
@@ -19,10 +20,22 @@ func (m MysqlDialect) query(query string, args ...interface{}) (*sql.Rows, error
 }
 
 func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+	cs := make([]string, 0)
+	vs := make([]interface{}, 0)
+
+	for i, column := range columns {
+		if utils.Contains(fields, column) {
+			continue
+		}
+		cs = append(cs, column)
+		vs = append(vs, args[i])
+	}
+
 	var query = "INSERT INTO " + table + "(" + strings.Join(columns, ",") +
 		") VALUES (" + strings.Repeat("?", len(args)) +
-		") ON duplicate key  UPDATE  "
+		") ON duplicate key UPDATE " + strings.Join(cs, "=?, ") + "=?"
 
+	args = append(args, vs...)
 	Log.Println(query, args)
 
 	exec, err := m.db.Exec(query, args...)
