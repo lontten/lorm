@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lontten/lorm/types"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
@@ -133,4 +134,21 @@ func TestBasePtrDeepType(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test__isBaseType(t *testing.T) {
+	as := assert.New(t)
+
+	is := _isBaseType(reflect.TypeOf(types.NewV4()))
+	as.False(is)
+
+	is = _isBaseType(reflect.TypeOf(12))
+	as.True(is)
+
+	is = _isBaseType(reflect.TypeOf("jfaskf"))
+	as.True(is)
+
+	is = _isBaseType(reflect.TypeOf(types.NewString("fjakls")))
+	as.True(is)
+
 }
