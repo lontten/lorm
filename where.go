@@ -1,8 +1,8 @@
 package lorm
 
 import (
+	"bytes"
 	"reflect"
-	"strings"
 )
 
 type WhereContext struct {
@@ -14,18 +14,18 @@ type WhereBuilder struct {
 	context WhereContext
 }
 
-func (w *WhereBuilder) toWhereSqlOneself() (string, []interface{}) {
+func (w *WhereBuilder) toWhereSqlOneself() ([]byte, []interface{}) {
 	wheres := w.context.wheres
-	var sb strings.Builder
-	sb.WriteString("WHERE ")
+	var bb bytes.Buffer
+	bb.WriteString("WHERE ")
 	for i, where := range wheres {
 		if i == 0 {
-			sb.WriteString(" WHERE " + where)
+			bb.WriteString(" WHERE " + where)
 			continue
 		}
-		sb.WriteString(" AND " + where)
+		bb.WriteString(" AND " + where)
 	}
-	return sb.String(), w.context.args
+	return bb.Bytes(), w.context.args
 }
 
 func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *WhereBuilder {

@@ -370,6 +370,33 @@ func (c OrmConf) genDelSqlCommon(tableName string, keys []string, hasTen bool) [
 	return bb.Bytes()
 }
 
+//tableName表名
+//keys
+//hasTen true开启多租户
+func (c OrmConf) genDelSqlByWhere(tableName string, where []byte, hasTen bool) []byte {
+	var bb bytes.Buffer
+	whereSql := c.whereExtra(where, hasTen)
+
+	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
+	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
+	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
+	if logicDeleteSetSql == lgSql {
+		bb.WriteString("DELETE FROM ")
+		bb.WriteString(tableName)
+		bb.Write(whereSql)
+	} else {
+		bb.WriteString("UPDATE ")
+		bb.WriteString(tableName)
+		bb.WriteString(" SET ")
+		bb.WriteString(lgSql)
+		bb.Write(whereSql)
+		bb.WriteString(" and ")
+		bb.WriteString(logicDeleteYesSql)
+	}
+	return bb.Bytes()
+}
+
 //有tenantid功能
 func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 	if hasTen {
@@ -388,6 +415,27 @@ func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 		bb.WriteString(keys[i])
 		bb.WriteString(" = ? ")
 
+	}
+
+	return bb.Bytes()
+}
+
+//有tenantid功能
+func (c OrmConf) whereExtra(where []byte, hasTen bool) []byte {
+	var bb bytes.Buffer
+	bb.Write(where)
+
+	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	lg := strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
+	if lg != logicDeleteYesSql {
+		bb.WriteString(" and ")
+		bb.WriteString(lg)
+	}
+
+	if hasTen {
+		bb.WriteString(" AND ")
+		bb.WriteString(ormConfig.TenantIdFieldName)
+		bb.WriteString(" = ? ")
 	}
 
 	return bb.Bytes()

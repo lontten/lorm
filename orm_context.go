@@ -316,13 +316,23 @@ func (ctx *OrmContext) genDelByPrimaryKey() []byte {
 
 //v0.6
 //生成del sql
-func (ctx *OrmContext) genDel(keys []string) []byte {
+func (ctx *OrmContext) genDelByKeys(keys []string) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
 	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
 	return ormConfig.genDelSqlCommon(tableName, keys, hasTen)
-
 }
+
+
+//v0.6
+//生成del sql
+func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
+	tableName := ctx.tableName
+	//开启多租户，并且该表不跳过
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	return ormConfig.genDelSqlByWhere(tableName, where, hasTen)
+}
+
 
 //v0.6
 //生成where sql
@@ -341,4 +351,13 @@ func (ctx *OrmContext) genWhere(keys []string) []byte {
 	//开启多租户，并且该表不跳过
 	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
 	return ormConfig.GenWhere(keys, hasTen)
+}
+
+//v0.6
+//为where语句附加上，租户，逻辑删除等。。。
+func (ctx *OrmContext) whereExtra(where []byte) []byte {
+	tableName := ctx.tableName
+	//开启多租户，并且该表不跳过
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	return ormConfig.whereExtra(where, hasTen)
 }

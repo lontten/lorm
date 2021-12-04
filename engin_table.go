@@ -10,95 +10,7 @@ import (
 
 type EngineTable struct {
 	dialect Dialect
-
-	ctx OrmContext
-}
-
-//v0.8
-func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
-	rows, err := e.dialect.query(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	if e.ctx.isSlice {
-		return e.ctx.Scan(rows)
-	}
-	return e.ctx.ScanLn(rows)
-}
-
-//v0.8
-func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
-	stmt, err := e.dialect.queryBatch(query)
-	if err != nil {
-		return 0, err
-	}
-
-	rowss := make([]*sql.Rows, 0)
-	for _, arg := range args {
-		rows, err := stmt.Query(arg...)
-		if err != nil {
-			return 0, err
-		}
-		rowss = append(rowss, rows)
-	}
-	return e.ctx.ScanBatch(rowss)
-}
-
-//v0.7
-// *.comp / slice.comp
-//scan dest 一个comp-struct，或者一个slice-comp-struct
-func (e *EngineTable) setScanDestSlice(v interface{}) {
-	if e.ctx.err != nil {
-		return
-	}
-	e.ctx.initScanDestSlice(v)
-	e.ctx.checkScanDestField()
-	e.initTableName()
-}
-
-//v0.6
-//*.comp
-//target dest 一个comp-struct
-func (e *EngineTable) setTargetDest(v interface{}) {
-	if e.ctx.err != nil {
-		return
-	}
-	e.ctx.initTargetDest(v)
-	e.ctx.checkTargetDestField()
-	e.initTableName()
-}
-
-//v0.6
-func (e *EngineTable) setTargetDestOnlyTableName(v interface{}) {
-	if e.ctx.err != nil {
-		return
-	}
-	e.ctx.initTargetDestOnlyBaseValue(v)
-	e.ctx.checkTargetDestField()
-	e.initTableName()
-}
-
-type OrmTableCreate struct {
-	base EngineTable
-}
-
-type OrmTableSelect struct {
-	base EngineTable
-
-	query string
-	args  []interface{}
-}
-
-type OrmTableSelectWhere struct {
-	base EngineTable
-}
-
-type OrmTableUpdate struct {
-	base EngineTable
-}
-
-type OrmTableDelete struct {
-	base EngineTable
+	ctx     OrmContext
 }
 
 // Create
@@ -147,15 +59,15 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 	return base.dialect.insertOrUpdateByPrimaryKey(tableName, idNames, cs, cvs...)
 }
 
-// ByModel
+// ByUnique
 //v0.6
 //ptr-comp
-func (orm OrmTableCreate) ByFields(fs types.Fields) (int64, error) {
+func (orm OrmTableCreate) ByUnique(fs types.Fields) (int64, error) {
 	if fs == nil {
-		return 0, errors.New("ByFields is nil")
+		return 0, errors.New("ByUnique is nil")
 	}
 	if len(fs) == 0 {
-		return 0, errors.New("ByFields is empty")
+		return 0, errors.New("ByUnique is empty")
 	}
 
 	base := orm.base
@@ -221,7 +133,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 		return 0, err
 	}
 
-	delSql := ctx.genDel(columns)
+	delSql := ctx.genDelByKeys(columns)
 	return base.dialect.exec(string(delSql), values...)
 }
 
@@ -237,10 +149,9 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 		return 0, err
 	}
 
-	wheres := w.context.wheres
-	args := w.context.args
+	whereSql, args := w.toWhereSqlOneself()
 
-	delSql := ctx.genDel(wheres)
+	delSql := ctx.genDelByWhere(whereSql)
 	return base.dialect.exec(string(delSql), args...)
 }
 
@@ -547,4 +458,91 @@ func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 		return nil, nil, errors.New("where model valid field need ")
 	}
 	return columns, values, nil
+}
+
+//v0.8
+func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
+	rows, err := e.dialect.query(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	if e.ctx.isSlice {
+		return e.ctx.Scan(rows)
+	}
+	return e.ctx.ScanLn(rows)
+}
+
+//v0.8
+func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
+	stmt, err := e.dialect.queryBatch(query)
+	if err != nil {
+		return 0, err
+	}
+
+	rowss := make([]*sql.Rows, 0)
+	for _, arg := range args {
+		rows, err := stmt.Query(arg...)
+		if err != nil {
+			return 0, err
+		}
+		rowss = append(rowss, rows)
+	}
+	return e.ctx.ScanBatch(rowss)
+}
+
+//v0.7
+// *.comp / slice.comp
+//scan dest 一个comp-struct，或者一个slice-comp-struct
+func (e *EngineTable) setScanDestSlice(v interface{}) {
+	if e.ctx.err != nil {
+		return
+	}
+	e.ctx.initScanDestSlice(v)
+	e.ctx.checkScanDestField()
+	e.initTableName()
+}
+
+//v0.6
+//*.comp
+//target dest 一个comp-struct
+func (e *EngineTable) setTargetDest(v interface{}) {
+	if e.ctx.err != nil {
+		return
+	}
+	e.ctx.initTargetDest(v)
+	e.ctx.checkTargetDestField()
+	e.initTableName()
+}
+
+//v0.6
+func (e *EngineTable) setTargetDestOnlyTableName(v interface{}) {
+	if e.ctx.err != nil {
+		return
+	}
+	e.ctx.initTargetDestOnlyBaseValue(v)
+	e.ctx.checkTargetDestField()
+	e.initTableName()
+}
+
+type OrmTableCreate struct {
+	base EngineTable
+}
+
+type OrmTableSelect struct {
+	base EngineTable
+
+	query string
+	args  []interface{}
+}
+
+type OrmTableSelectWhere struct {
+	base EngineTable
+}
+
+type OrmTableUpdate struct {
+	base EngineTable
+}
+
+type OrmTableDelete struct {
+	base EngineTable
 }

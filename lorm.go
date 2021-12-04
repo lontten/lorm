@@ -146,6 +146,13 @@ func MustConnect(c DbConfig, pc *PoolConf) EngineEr {
 	return db
 }
 
+func MustConnectMock(db *sql.DB) EngineEr {
+	return &DB{
+		db:       db,
+		dbConfig: &PgConf{},
+	}
+}
+
 func Connect(c DbConfig, pc *PoolConf) (EngineEr, error) {
 	pool, err := open(c, pc)
 	if err != nil {
