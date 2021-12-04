@@ -125,6 +125,7 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	if err != nil {
 		return nil, err
 	}
+	defer db.Close()
 
 	if pc != nil {
 		db.SetConnMaxLifetime(pc.MaxLifetime)
@@ -146,10 +147,10 @@ func MustConnect(c DbConfig, pc *PoolConf) EngineEr {
 	return db
 }
 
-func MustConnectMock(db *sql.DB) EngineEr {
+func MustConnectMock(db *sql.DB, c DbConfig) EngineEr {
 	return &DB{
 		db:       db,
-		dbConfig: &PgConf{},
+		dbConfig: c,
 	}
 }
 

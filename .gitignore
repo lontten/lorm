@@ -2,7 +2,6 @@ HELP.md
 .gradle
 build/
 /logs/
-/tt/
 /vendor/
 *.exe
 go.sum
