@@ -18,6 +18,9 @@ type Dialect interface {
 	execBatch(query string, args [][]interface{}) (int64, error)
 	query(query string, args ...interface{}) (*sql.Rows, error)
 	queryBatch(query string) (*sql.Stmt, error)
+
+	insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error)
+	insertOrUpdateByFields(table string, fields []string, columns []string, args ...interface{}) (int64, error)
 }
 
 type SqlUtil interface {

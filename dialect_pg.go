@@ -26,6 +26,24 @@ func (m PgDialect) queryBatch(query string) (*sql.Stmt, error) {
 	return m.db.Prepare(query)
 }
 
+func (m PgDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+	return m.insertOrUpdateByFields(table, fields, columns, args...)
+}
+
+func (m PgDialect) insertOrUpdateByFields(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+	var query = "INSERT INTO " + table + "(" + strings.Join(columns, ",") +
+		") VALUES (" + strings.Repeat("?", len(args)) +
+		") ON CONFLICT (" + strings.Join(fields, ",") + ") DO UPDATE SET "
+
+	Log.Println(query, args)
+
+	exec, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return exec.RowsAffected()
+}
+
 func (m PgDialect) exec(query string, args ...interface{}) (int64, error) {
 	query = toPgSql(query)
 	Log.Println(query, args)

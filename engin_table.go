@@ -3,6 +3,7 @@ package lorm
 import (
 	"bytes"
 	"database/sql"
+	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
 	"reflect"
 )
@@ -142,156 +143,31 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 	cs := ctx.columns
 	cvs := ctx.columnValues
 	tableName := ctx.tableName
-	idValues := ctx.primaryKeyValues[0]
-
-	whereStr := ctx.genWhereByPrimaryKey()
-
-	var bb bytes.Buffer
-	bb.WriteString("SELECT 1 ")
-	bb.WriteString(" FROM ")
-	bb.WriteString(tableName)
-	bb.Write(whereStr)
-	bb.WriteString("limit 1")
-	rows, err := base.dialect.query(bb.String(), idValues...)
-	if err != nil {
-		return 0, err
-	}
-	//update
-	if rows.Next() {
-		bb.Reset()
-		bb.WriteString("UPDATE ")
-		bb.WriteString(tableName)
-		bb.WriteString(" SET ")
-		bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
-		bb.Write(whereStr)
-		cvs = append(cvs, idValues...)
-
-		return base.dialect.exec(bb.String(), cvs...)
-	}
-
-	columnSqlStr := ctx.tableCreateArgs2SqlStr()
-
-	bb.Reset()
-	bb.WriteString("INSERT INTO ")
-	bb.WriteString(tableName)
-	bb.WriteString(columnSqlStr)
-
-	return base.dialect.exec(bb.String(), cvs...)
+	idNames := ctx.primaryKeyNames
+	return base.dialect.insertOrUpdateByPrimaryKey(tableName, idNames, cs, cvs...)
 }
 
 // ByModel
 //v0.6
 //ptr-comp
-func (orm OrmTableCreate) ByModel(v interface{}) (int64, error) {
-	if v == nil {
-		return 0, errors.New("ByModel is nil")
+func (orm OrmTableCreate) ByFields(fs types.Fields) (int64, error) {
+	if fs == nil {
+		return 0, errors.New("ByFields is nil")
 	}
+	if len(fs) == 0 {
+		return 0, errors.New("ByFields is empty")
+	}
+
 	base := orm.base
 	ctx := base.ctx
 	if err := ctx.err; err != nil {
 		return 0, err
 	}
 
-	c := ctx.columns
-	cv := ctx.columnValues
+	cs := ctx.columns
+	cvs := ctx.columnValues
 	tableName := ctx.tableName
-
-	columns, values, err := getCompCV(v)
-	if err != nil {
-		return 0, err
-	}
-	where := ctx.genWhere(columns)
-
-	var bb bytes.Buffer
-	bb.WriteString("SELECT 1 ")
-	bb.WriteString(" FROM ")
-	bb.WriteString(tableName)
-	bb.Write(where)
-	bb.WriteString("limit 1")
-	rows, err := base.dialect.query(bb.String(), values...)
-	if err != nil {
-		return 0, err
-	}
-	//update
-	if rows.Next() {
-		bb.Reset()
-		bb.WriteString("UPDATE ")
-		bb.WriteString(tableName)
-		bb.WriteString(" SET ")
-		bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
-		bb.Write(where)
-		cv = append(cv, values...)
-
-		return base.dialect.exec(bb.String(), cv...)
-	}
-	columnSqlStr := ctx.tableCreateArgs2SqlStr()
-
-	bb.Reset()
-	bb.WriteString("INSERT INTO ")
-	bb.WriteString(tableName)
-	bb.WriteString(columnSqlStr)
-
-	return base.dialect.exec(bb.String(), cv...)
-}
-
-func (orm OrmTableCreate) ByWhere(w *WhereBuilder) (int64, error) {
-	if w == nil {
-		return 0, errors.New("ByWhere is nil")
-	}
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-	c := ctx.columns
-	cv := ctx.columnValues
-	tableName := ctx.tableName
-
-	wheres := w.context.wheres
-	args := w.context.args
-
-	var bb bytes.Buffer
-	bb.WriteString("WHERE ")
-	for i, where := range wheres {
-		if i == 0 {
-			bb.WriteString(" WHERE " + where)
-			continue
-		}
-		bb.WriteString(" AND " + where)
-	}
-	whereSql := bb.String()
-
-	bb.Reset()
-	bb.WriteString("SELECT 1 ")
-	bb.WriteString(" FROM ")
-	bb.WriteString(tableName)
-	bb.WriteString(whereSql)
-	bb.WriteString("limit 1")
-
-	rows, err := base.dialect.query(bb.String(), args...)
-	if err != nil {
-		return 0, err
-	}
-	//update
-	if rows.Next() {
-		bb.Reset()
-		bb.WriteString("UPDATE ")
-		bb.WriteString(tableName)
-		bb.WriteString(" SET ")
-		bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
-		bb.WriteString(whereSql)
-		cv = append(cv, args)
-
-		return base.dialect.exec(bb.String(), cv...)
-	}
-	columnSqlStr := ctx.tableCreateArgs2SqlStr()
-
-	bb.Reset()
-	bb.WriteString("INSERT INTO ")
-	bb.WriteString(tableName)
-	bb.WriteString(columnSqlStr)
-
-	return base.dialect.exec(bb.String(), cv...)
+	return base.dialect.insertOrUpdateByFields(tableName, fs, cs, cvs...)
 }
 
 // Delete

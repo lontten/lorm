@@ -1,6 +1,9 @@
 package lorm
 
-import "database/sql"
+import (
+	"database/sql"
+	"strings"
+)
 
 type MysqlDialect struct {
 	db *sql.DB
@@ -11,15 +14,38 @@ func (m MysqlDialect) DriverName() string {
 }
 
 func (m MysqlDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
-	Log.Println(query,args)
+	Log.Println(query, args)
 	return m.db.Query(query, args...)
 }
 
+func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+	var query = "INSERT INTO " + table + "(" + strings.Join(columns, ",") +
+		") VALUES (" + strings.Repeat("?", len(args)) +
+		") ON duplicate key  UPDATE  "
 
-func (m MysqlDialect) queryBatch(query string) (*sql.Stmt, error){
-	return m.db.Prepare(query)
+	Log.Println(query, args)
+
+	exec, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return exec.RowsAffected()
 }
 
+func (m MysqlDialect) insertOrUpdateByFields(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+	//todo
+	Log.Println(table, args)
+
+	exec, err := m.db.Exec(table, args...)
+	if err != nil {
+		return 0, err
+	}
+	return exec.RowsAffected()
+}
+
+func (m MysqlDialect) queryBatch(query string) (*sql.Stmt, error) {
+	return m.db.Prepare(query)
+}
 
 func (m MysqlDialect) exec(query string, args ...interface{}) (int64, error) {
 	Log.Println(query, args)
@@ -34,8 +60,7 @@ func (m MysqlDialect) exec(query string, args ...interface{}) (int64, error) {
 func (m MysqlDialect) execBatch(query string, args [][]interface{}) (int64, error) {
 	Log.Println(query, args)
 
-
-	var num int64=0
+	var num int64 = 0
 	stmt, err := m.db.Prepare(query)
 	if err != nil {
 		return 0, err
@@ -50,7 +75,7 @@ func (m MysqlDialect) execBatch(query string, args [][]interface{}) (int64, erro
 		if err != nil {
 			return num, err
 		}
-		num+=rowsAffected
+		num += rowsAffected
 	}
-	return num,nil
+	return num, nil
 }
