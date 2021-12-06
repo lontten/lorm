@@ -97,6 +97,23 @@ func (e EngineTable) initByModel(v interface{}) {
 	e.args = append(e.args, values...)
 }
 
+//根据 byWhere 生成的where token
+func (e EngineTable) initByWhere(w *WhereBuilder) {
+	if err := e.ctx.err; err != nil {
+		return
+	}
+	if w == nil {
+		e.ctx.err = errors.New("ByWhere is nil")
+		return
+	}
+
+	args := w.context.args
+	wheres := w.context.wheres
+
+	e.whereTokens = append(e.whereTokens, wheres...)
+	e.args = append(e.args, args...)
+}
+
 //init 逻辑删除、租户
 func (e EngineTable) initExtra() {
 	if err := e.ctx.err; err != nil {
@@ -242,19 +259,15 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 // ByWhere
 //v0.6
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
-	if w == nil {
-		return 0, errors.New("ByWhere is nil")
-	}
-	base := orm.base
-	ctx := orm.base.ctx
-	if err := ctx.err; err != nil {
+	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
-
-	whereSql, args := w.toWhereSqlOneself()
-
-	delSql := ctx.genDelByWhere(whereSql)
-	return base.dialect.exec(string(delSql), args...)
+	orm.base.initByWhere(w)
+	if err := orm.base.ctx.err; err != nil {
+		return 0, err
+	}
+	orm.base.initExtra()
+	return orm.base.doDel()
 }
 
 // Update
@@ -309,41 +322,15 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
-	if w == nil {
-		return 0, errors.New("ByWhere is nil")
-	}
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
+	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
-	c := ctx.columns
-	cv := ctx.columnValues
-	tableName := ctx.tableName
-
-	wheres := w.context.wheres
-	args := w.context.args
-
-	var bb bytes.Buffer
-	bb.WriteString("WHERE ")
-	for i, where := range wheres {
-		if i == 0 {
-			bb.WriteString(" WHERE " + where)
-			continue
-		}
-		bb.WriteString(" AND " + where)
+	orm.base.initByWhere(w)
+	if err := orm.base.ctx.err; err != nil {
+		return 0, err
 	}
-	whereSql := bb.String()
-
-	bb.WriteString("UPDATE ")
-	bb.WriteString(tableName)
-	bb.WriteString(" SET ")
-	bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
-	bb.WriteString(whereSql)
-	cv = append(cv, args)
-
-	return base.dialect.exec(bb.String(), cv...)
-
+	orm.base.initExtra()
+	return orm.base.doUpdate()
 }
 
 // Select
