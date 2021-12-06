@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lontten/lorm/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -11,6 +12,37 @@ type User struct {
 	Name string
 }
 
+func TestDeleteByPrimaryKeys(t *testing.T) {
+	as := assert.New(t)
+	db, mock, err := sqlmock.New()
+	as.Nil(err, "new sqlmock error")
+
+	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+
+	mock.ExpectPrepare("DELETE FROM *")
+
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs(1).
+		WillReturnError(nil).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs(2).
+		WillReturnError(nil).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs(3).
+		WillReturnError(nil).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1, 2, 3)
+	as.Nil(err)
+	as.Equal(int64(3), num, "num error")
+
+	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
+}
+
 func TestDeleteByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
@@ -18,14 +50,56 @@ func TestDeleteByPrimaryKey(t *testing.T) {
 
 	engine := MustConnectMock(db, &PgConf{}).Db(nil)
 
-	mock.ExpectPrepare("DELETE FROM *").ExpectExec().
-		WithArgs(1, 2).
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs(1).
 		WillReturnError(nil).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1, 2)
+	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1)
 	as.Nil(err)
-	as.Equal(int64(2), num)
+	as.Equal(int64(1), num)
+
+	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
+}
+
+type Whe struct {
+	Name *string
+	Age  *int
+	Uid  *types.UUID
+}
+
+func TestDeleteByModel(t *testing.T) {
+	as := assert.New(t)
+	db, mock, err := sqlmock.New()
+	as.Nil(err, "new sqlmock error")
+
+	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs("kk").
+		WillReturnError(nil).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs("kk", 233).
+		WillReturnError(nil).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	num, err := engine.Table.Delete(User{}).ByModel(Whe{
+		Name: types.NewString("kk"),
+		Age:  nil,
+		Uid:  nil,
+	})
+	as.Nil(err)
+	as.Equal(int64(1), num)
+
+	num, err = engine.Table.Delete(User{}).ByModel(Whe{
+		Name: types.NewString("kk"),
+		Age:  types.NewInt(233),
+		Uid:  nil,
+	})
+	as.Nil(err)
+	as.Equal(int64(1), num)
 
 	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
 }

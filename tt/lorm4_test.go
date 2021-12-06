@@ -103,25 +103,6 @@ func selectByids(engine lorm.Engine) {
 	fmt.Println(tasks[1].String())
 }
 
-func delByid(engine lorm.Engine) {
-	task := Task{}
-	must := types.Str2UUIDMust("9833b0be-5e3d-46c7-9bb5-67846f00e77e")
-
-	num, err := engine.Table.Delete(task).ByPrimaryKey(must)
-	fmt.Println(num)
-	fmt.Println(err)
-	fmt.Println(task.String())
-}
-
-func delByModel(engine lorm.Engine) {
-	num, err := engine.Table.Delete(Task{}).ByModel(Task{
-		Name: types.NewString("asf"),
-		Num:  types.NewInt(0),
-	})
-	fmt.Println(num)
-	fmt.Println(err)
-}
-
 func delByWhere(engine lorm.Engine) {
 	num, err := engine.Table.Delete(Task{}).ByWhere(new(lorm.WhereBuilder).
 		Eq("name", "asf").
@@ -131,17 +112,6 @@ func delByWhere(engine lorm.Engine) {
 	)
 	fmt.Println(num)
 	fmt.Println(err)
-}
-
-func delByids(engine lorm.Engine) {
-	task := Task{}
-	must := types.Str2UUIDMust("9833b0be-5e3d-46c7-9bb5-67846f00e77e")
-	must2 := types.Str2UUIDMust("f5988200-0e47-4a54-b8dd-74c42d2a195d")
-
-	num, err := engine.Table.Delete(task).ByPrimaryKey(must, must2)
-	fmt.Println(num)
-	fmt.Println(err)
-	fmt.Println(task.String())
 }
 
 func count(engine lorm.Engine) {
@@ -209,7 +179,6 @@ func TestDB434(t *testing.T) {
 	delByWhere(engine)
 
 }
-
 
 type Task struct {
 	Id        *types.UUID `tableName:"common.t_task"`

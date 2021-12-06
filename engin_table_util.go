@@ -36,6 +36,7 @@ func (e EngineTable) doDel() (int64, error) {
 	}
 	var bb bytes.Buffer
 	tableName := e.ctx.tableName
+	primaryKeyValues := e.ctx.primaryKeyValues
 	where := e.genWhereSqlByToken()
 
 	if ormConfig.LogicDeleteSetSql == "" {
@@ -50,7 +51,13 @@ func (e EngineTable) doDel() (int64, error) {
 		bb.Write(where)
 	}
 
-	return e.dialect.execBatch(bb.String(), e.ctx.primaryKeyValues)
+	if len(primaryKeyValues) == 0 {
+		return e.dialect.exec(bb.String(), e.args...)
+	}
+	if len(primaryKeyValues) == 1 {
+		return e.dialect.exec(bb.String(), primaryKeyValues[0]...)
+	}
+	return e.dialect.execBatch(bb.String(), primaryKeyValues)
 }
 
 //update

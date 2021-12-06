@@ -77,6 +77,7 @@ func (m PgDialect) execBatch(query string, args [][]interface{}) (int64, error) 
 	query = toPgSql(query)
 	var num int64 = 0
 	stmt, err := m.db.Prepare(query)
+	defer stmt.Close()
 	if err != nil {
 		return 0, err
 	}
