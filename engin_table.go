@@ -360,66 +360,14 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 	return orm.base.queryBatch(string(selSql), idValues)
 }
 
-// ByModel
-//v0.6
-//ptr-comp
-func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
-	if v == nil {
-		return 0, errors.New("ByModel is nil")
-	}
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-
-	columns, values, err := getCompCV(v)
-	if err != nil {
-		return 0, err
-	}
-
-	orm.base.whereTokens = append(orm.base.whereTokens, utils.GenwhereToken(columns)...)
-	orm.base.args = append(orm.base.args, values...)
-
-	tableName := ctx.tableName
-	c := ctx.columns
-
+//update
+func (e EngineTable) doSelect() (int64, error) {
 	var bb bytes.Buffer
-	bb.WriteString("SELECT ")
-	for i, column := range c {
-		if i == 0 {
-			bb.WriteString(column)
-		} else {
-			bb.WriteString(" , ")
-			bb.WriteString(column)
-		}
-	}
-	bb.WriteString(" FROM ")
-	bb.WriteString(tableName)
-	bb.WriteString(ctx.tableWhereArgs2SqlStr(columns))
 
-	return base.query(bb.String(), values...)
-}
-
-func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-	orm.base.initColumns()
-	orm.base.initPrimaryKeyName()
-
-	if w == nil {
-		return 0, errors.New("ByWhere is nil")
-	}
-	wheres := w.context.wheres
-	args := w.context.args
-
+	ctx := e.ctx
 	tableName := ctx.tableName
 	columns := ctx.columns
 
-	var bb bytes.Buffer
 	bb.WriteString("SELECT ")
 	for i, column := range columns {
 		if i == 0 {
@@ -431,17 +379,49 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
 	}
 	bb.WriteString(" FROM ")
 	bb.WriteString(tableName)
-	bb.WriteString(" WHERE ")
-	for i, where := range wheres {
-		if i == 0 {
-			bb.WriteString(where)
-			continue
-		}
-		bb.WriteString(" AND " + where)
-	}
+	bb.Write(e.genWhereSqlByToken())
 
-	return base.query(bb.String(), args...)
+	return e.query(bb.String(), e.args...)
 }
+
+// ByModel
+//v0.6
+//ptr-comp
+func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
+	if err := orm.base.ctx.err; err != nil {
+		return 0, err
+	}
+	orm.base.initByModel(v)
+	if err := orm.base.ctx.err; err != nil {
+		return 0, err
+	}
+	orm.base.initExtra()
+	return orm.base.doSelect()
+}
+
+func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
+	if err := orm.base.ctx.err; err != nil {
+		return 0, err
+	}
+	orm.base.initByWhere(w)
+	if err := orm.base.ctx.err; err != nil {
+		return 0, err
+	}
+	orm.base.initExtra()
+	return orm.base.doSelect()
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 //0.6
 //初始化主键
