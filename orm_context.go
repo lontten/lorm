@@ -283,30 +283,19 @@ func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
 //v0.6
 //生成del sql
 func (ctx *OrmContext) genDelByPrimaryKey() []byte {
-	keys := ctx.primaryKeyNames
-	tableName := ctx.tableName
-	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
-	return ormConfig.genDelSqlCommon(tableName, keys, hasTen)
-
+	return ormConfig.genDelSqlCommon(ctx.tableName, ctx.primaryKeyNames)
 }
 
 //v0.6
 //生成del sql
 func (ctx *OrmContext) genDelByKeys(keys []string) []byte {
-	tableName := ctx.tableName
-	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
-	return ormConfig.genDelSqlCommon(tableName, keys, hasTen)
+	return ormConfig.genDelSqlCommon(ctx.tableName, keys)
 }
 
 //v0.6
 //生成del sql
 func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
-	tableName := ctx.tableName
-	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
-	return ormConfig.genDelSqlByWhere(tableName, where, hasTen)
+	return ormConfig.genDelSqlByWhere(ctx.tableName, where)
 }
 
 //v0.6
@@ -315,7 +304,7 @@ func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
 	keys := ctx.primaryKeyNames
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
 	return ormConfig.GenWhere(keys, hasTen)
 }
 
@@ -324,7 +313,7 @@ func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
 func (ctx *OrmContext) genWhere(keys []string) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
 	return ormConfig.GenWhere(keys, hasTen)
 }
 
@@ -333,6 +322,6 @@ func (ctx *OrmContext) genWhere(keys []string) []byte {
 func (ctx *OrmContext) whereExtra(where []byte) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
 	return ormConfig.whereExtra(where, hasTen)
 }

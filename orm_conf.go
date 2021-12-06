@@ -32,7 +32,7 @@ type OrmConf struct {
 
 	//主键 默认为id
 	PrimaryKeyNames   []string
-	PrimaryKeyNameFun func(tableName string, base reflect.Value) []string
+	PrimaryKeyNameFun func(tableName string) []string
 
 	//逻辑删除 logicDeleteFieldName不为零值，即开启
 	// LogicDeleteYesSql   lg.deleted_at is null
@@ -45,7 +45,7 @@ type OrmConf struct {
 	//多租户 tenantIdFieldName不为零值，即开启
 	TenantIdFieldName    string
 	TenantIdValueFun     func() interface{}
-	TenantIgnoreTableFun func(tableName string, base reflect.Value) bool
+	TenantIgnoreTableFun func(tableName string) bool
 }
 
 // v0.7
@@ -91,11 +91,11 @@ func (c OrmConf) tableName(t reflect.Type) (string, error) {
 }
 
 // v0.6
-func (c OrmConf) primaryKeys(tableName string, v reflect.Value) []string {
+func (c OrmConf) primaryKeys(tableName string) []string {
 	//fun
 	primaryKeyNameFun := c.PrimaryKeyNameFun
 	if primaryKeyNameFun != nil {
-		return primaryKeyNameFun(tableName, v)
+		return primaryKeyNameFun(tableName)
 	}
 
 	//conifg id name
@@ -346,15 +346,14 @@ func (c OrmConf) getColFieldIndexLinkMap(columns []string, t reflect.Type) (ColF
 //tableName表名
 //keys
 //hasTen true开启多租户
-func (c OrmConf) genDelSqlCommon(tableName string, keys []string, hasTen bool) []byte {
+func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
 	var bb bytes.Buffer
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
 	whereSql := c.GenWhere(keys, hasTen)
 
 	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
 	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
-	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
-	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-	if logicDeleteSetSql == lgSql {
+	if logicDeleteSetSql == "" {
 		bb.WriteString("DELETE FROM ")
 		bb.WriteString(tableName)
 		bb.WriteString(string(whereSql))
@@ -362,7 +361,7 @@ func (c OrmConf) genDelSqlCommon(tableName string, keys []string, hasTen bool) [
 		bb.WriteString("UPDATE ")
 		bb.WriteString(tableName)
 		bb.WriteString(" SET ")
-		bb.WriteString(lgSql)
+		bb.WriteString(logicDeleteSetSql)
 		bb.WriteString(string(whereSql))
 		bb.WriteString(" and ")
 		bb.WriteString(logicDeleteYesSql)
@@ -373,7 +372,9 @@ func (c OrmConf) genDelSqlCommon(tableName string, keys []string, hasTen bool) [
 //tableName表名
 //keys
 //hasTen true开启多租户
-func (c OrmConf) genDelSqlByWhere(tableName string, where []byte, hasTen bool) []byte {
+func (c OrmConf) genDelSqlByWhere(tableName string, where []byte) []byte {
+	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
+
 	var bb bytes.Buffer
 	whereSql := c.whereExtra(where, hasTen)
 

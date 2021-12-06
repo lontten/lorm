@@ -229,21 +229,15 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 
 // ByPrimaryKey
 //v0.8
-func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
+func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
+	if err := orm.base.ctx.err; err != nil {
+		return OrmTableSelectWhere{base: orm.base}
+	}
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initPrimaryKeyValues(v)
 
-	ctx := orm.base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-
-	selSql := ctx.genSelectByPrimaryKey()
-	idValues := ctx.primaryKeyValues
-	if len(v) == 1 {
-		return orm.base.query(string(selSql), idValues[0]...)
-	}
-	return orm.base.queryBatch(string(selSql), idValues)
+	orm.base.initByPrimaryKey()
+	return OrmTableSelectWhere{base: orm.base}
 }
 
 // ByModel

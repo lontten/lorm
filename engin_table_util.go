@@ -75,6 +75,20 @@ func (e EngineTable) doSelect(extra string) (int64, error) {
 //-------------------------------init------------------------
 
 //根据 byModel 生成的where token
+func (e EngineTable) initByPrimaryKey() {
+	ctx := e.ctx
+	if err := ctx.err; err != nil {
+		return
+	}
+
+	e.whereTokens = append(e.whereTokens, utils.GenwhereToken(ctx.primaryKeyNames)...)
+
+	for _, value := range ctx.primaryKeyValues {
+		e.args = append(e.args, value...)
+	}
+}
+
+//根据 byModel 生成的where token
 func (e EngineTable) initByModel(v interface{}) {
 	if err := e.ctx.err; err != nil {
 		return
