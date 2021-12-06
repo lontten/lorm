@@ -50,7 +50,7 @@ func (e EngineTable) doDel() (int64, error) {
 		bb.Write(where)
 	}
 
-	return e.dialect.exec(bb.String(), e.args...)
+	return e.dialect.execBatch(bb.String(), e.ctx.primaryKeyValues)
 }
 
 //update

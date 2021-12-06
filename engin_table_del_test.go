@@ -18,14 +18,14 @@ func TestDeleteByPrimaryKey(t *testing.T) {
 
 	engine := MustConnectMock(db, &PgConf{}).Db(nil)
 
-	mock.ExpectExec("DELETE FROM *").
-		WithArgs(1).
+	mock.ExpectPrepare("DELETE FROM *").ExpectExec().
+		WithArgs(1, 2).
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1)
+	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1, 2)
 	as.Nil(err)
-	as.Equal(int64(1), num)
+	as.Equal(int64(2), num)
 
 	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
 }
