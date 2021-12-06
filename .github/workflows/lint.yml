@@ -23,7 +23,6 @@ jobs:
       - name: Download
         run: |
           go mod tidy
-          go mod download
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
