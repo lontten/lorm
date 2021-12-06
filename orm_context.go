@@ -99,32 +99,6 @@ func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string) string {
 }
 
 // create 生成
-func (ctx *OrmContext) tableCreateArgs2SqlStr() string {
-	args := ctx.columns
-	var sb strings.Builder
-	sb.WriteString(" ( ")
-	for i, v := range args {
-		if i == 0 {
-			sb.WriteString(v)
-		} else {
-			sb.WriteString(" , " + v)
-		}
-	}
-	sb.WriteString(" ) ")
-	sb.WriteString(" VALUES ")
-	sb.WriteString("( ")
-	for i := range args {
-		if i == 0 {
-			sb.WriteString(" ? ")
-		} else {
-			sb.WriteString(", ? ")
-		}
-	}
-	sb.WriteString(" ) ")
-	return sb.String()
-}
-
-// create 生成
 func (ctx *OrmContext) tableCreateGen() string {
 	args := ctx.columns
 	var sb strings.Builder
