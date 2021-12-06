@@ -18,26 +18,28 @@ type OrmContext struct {
 	//当前表名
 	tableName string
 
-	//当前struct对象
-	dest interface{}
-	//去除 ptr
-	destValue reflect.Value
-	//用作 参数合法行校验
-	destBaseValue reflect.Value
-	destBaseType  reflect.Type
-
-	//scan 是comp，false是single
-	destTypeIsComp bool
-
-	//scan 接收返回
-	isSlice bool
-	//scan 为slice时，里面item是否是ptr
-	sliceItemIsPtr bool
-
 	//字段列表
 	columns []string
 	//值列表-多个
 	columnValues []interface{}
+
+	//-------------------target---------------------
+	//当前struct对象
+	scanDest interface{}
+	//去除 ptr
+	destValue reflect.Value
+	//用作 参数合法行校验
+	destBaseValue reflect.Value
+
+	//------------------scan----------------------
+	//scan base type
+	scanDestBaseType reflect.Type
+	//scan 是comp，false是single
+	scanDestBaseTypeIsComp bool
+	//scan 接收返回
+	scanIsSlice bool
+	//scan 为slice时，里面item是否是ptr
+	scanSliceItemIsPtr bool
 
 	//要执行的sql语句
 	query *strings.Builder
@@ -240,7 +242,7 @@ func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 
 	keyNum := len(ctx.primaryKeyNames)
 	idValues := make([]interface{}, 0)
-	columns, values, err := getCompCV(ctx.dest)
+	columns, values, err := getCompCV(ctx.scanDest)
 	if err != nil {
 		ctx.err = err
 		return

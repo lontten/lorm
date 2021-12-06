@@ -28,11 +28,11 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 		return
 	}
 
-	ctx.dest = dest
+	ctx.scanDest = dest
 	ctx.destValue = base
 	ctx.destBaseValue = base
 
-	ctx.destBaseType = base.Type()
+	ctx.scanDestBaseType = base.Type()
 }
 
 // * struct
@@ -54,7 +54,7 @@ func (ctx *OrmContext) initTargetDestOnlyBaseValue(dest interface{}) {
 		return
 	}
 	ctx.destBaseValue = base
-	ctx.destBaseType = base.Type()
+	ctx.scanDestBaseType = base.Type()
 }
 
 //检查sturct的filed是否合法，valuer，nuller

@@ -26,8 +26,8 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	if err = q.base.context.err; err != nil {
 		return 0, err
 	}
-	q.base.context.initScanDestSlice(dest)
-	if q.base.context.isSlice {
+	q.base.context.initScanDestOne(dest)
+	if q.base.context.scanIsSlice {
 		return 0, errors.New("not support GetOne for slice")
 	}
 	q.base.context.checkScanDestField()
@@ -48,7 +48,7 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	if err = q.base.context.err; err != nil {
 		return 0, err
 	}
-	q.base.context.initScanDestSlice(dest)
+	q.base.context.initScanDestList(dest)
 	q.base.context.checkScanDestField()
 
 	if err = q.base.context.err; err != nil {

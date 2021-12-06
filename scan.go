@@ -20,7 +20,7 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 
 	num = 1
 	base := ctx.destValue
-	t := ctx.destBaseType
+	t := ctx.scanDestBaseType
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -54,8 +54,8 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 	var nums int64 = 0
 	arr := ctx.destValue
-	t := ctx.destBaseType
-	isPtr := ctx.sliceItemIsPtr
+	t := ctx.scanDestBaseType
+	isPtr := ctx.scanSliceItemIsPtr
 
 	for _, rows := range rowss {
 
@@ -101,8 +101,8 @@ func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
 	}(rows)
 
 	arr := ctx.destValue
-	t := ctx.destBaseType
-	isPtr := ctx.sliceItemIsPtr
+	t := ctx.scanDestBaseType
+	isPtr := ctx.scanSliceItemIsPtr
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -136,10 +136,8 @@ func (ctx *OrmContext) checkScanDestField() {
 	if ctx.err != nil {
 		return
 	}
-	if !ctx.destTypeIsComp {
+	if !ctx.scanDestBaseTypeIsComp {
 		return
 	}
-	v := ctx.destBaseType
-	err := checkCompFieldScan(v)
-	ctx.err = err
+	ctx.err = checkCompFieldScan(ctx.scanDestBaseType)
 }

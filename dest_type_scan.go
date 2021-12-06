@@ -6,39 +6,97 @@ import (
 )
 
 // ptr slice
-// 检查数据类型 valuer
-func (ctx *OrmContext) initScanDestSlice(dest interface{}) {
+func (ctx *OrmContext) initScanDestList(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
-	v := reflect.ValueOf(dest)
-	is, v, err := basePtrDeepValue(v)
-	if !is {
-		ctx.err = errors.New("dest must be a ptr ")
+	if dest == nil {
+		ctx.err = errors.New("scanList is nil")
 		return
 	}
 
+	v := reflect.ValueOf(dest)
+	is, v, err := basePtrValue(v)
+	if !is {
+		ctx.err = errors.New("scanList must be a ptr ")
+		return
+	}
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	is, base := baseSliceType(v.Type())
+	if !is {
+		ctx.err = errors.New("scanList must be a slice ")
+		return
+	}
+
+	ctyp := checkCompType(base)
+	if ctyp == Invade {
+		ctx.err = errors.New("scan type is not supported")
+		return
+	}
+
+	ctx.scanDest = dest
+
+	ctx.scanIsSlice = true
+	ctx.scanSliceItemIsPtr = base.Kind() == reflect.Ptr
+
+	ctx.scanDestBaseType = base
+	ctx.scanDestBaseTypeIsComp = ctyp == Composite
+
+	ctx.destValue = v
+
+}
+
+// ptr slice
+func (ctx *OrmContext) initScanDestOne(dest interface{}) {
+	if ctx.err != nil {
+		return
+	}
+	if dest == nil {
+		ctx.err = errors.New("scan is nil")
+		return
+	}
+
+	v := reflect.ValueOf(dest)
+	is, v, err := basePtrValue(v)
+	if !is {
+		ctx.err = errors.New("scan must be a ptr ")
+		return
+	}
 	if err != nil {
 		ctx.err = err
 		return
 	}
 
-	typ, base := checkPackType(v.Type())
+	is, base := baseSliceType(v.Type())
+	if is {
+		if !isSingleType(base) {
+			ctx.err = errors.New("scan can't be a slice ")
+			return
+		}
 
-	ctyp := checkCompType(base)
-	if ctyp == Invade {
-		ctx.err = errors.New("need a struct or base type -scan dest slice")
-		return
 	}
 
-	if typ == Slice {
-		ctx.isSlice = true
-		ctx.sliceItemIsPtr = base.Kind() == reflect.Ptr
+	ctyp := Single
+
+	if !is {
+		ctyp = checkCompType(base)
+		if ctyp == Invade {
+			ctx.err = errors.New("scan type is not supported")
+			return
+		}
 	}
 
-	ctx.destTypeIsComp = ctyp == Composite
-	ctx.dest = dest
+	ctx.scanDest = dest
+
+	ctx.scanIsSlice = false
+	ctx.scanSliceItemIsPtr = false
+
+	ctx.scanDestBaseType = base
+	ctx.scanDestBaseTypeIsComp = ctyp == Composite
+
 	ctx.destValue = v
-	ctx.destBaseType = base
 
 }

@@ -46,12 +46,12 @@ func (orm *OrmFrom) Where(v *WhereBuilder) *OrmWhere {
 
 //v0.7
 func (orm *OrmWhere) GetOne(dest interface{}) (int64, error) {
-	if err:=orm.base.context.err;err!= nil {
+	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
-	orm.base.context.initScanDestSlice(dest)
+	orm.base.context.initScanDestOne(dest)
 	orm.base.context.checkScanDestField()
-	if err:=orm.base.context.err;err!= nil {
+	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
 
@@ -66,18 +66,17 @@ func (orm *OrmWhere) GetOne(dest interface{}) (int64, error) {
 }
 
 func (orm *OrmWhere) GetList(dest interface{}) (num int64, err error) {
-	if err:=orm.base.context.err;err!= nil {
+	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
-	orm.base.context.initScanDestSlice(dest)
+	orm.base.context.initScanDestList(dest)
 	orm.base.context.checkScanDestField()
-	if err:=orm.base.context.err;err!= nil {
+	if err := orm.base.context.err; err != nil {
 		return 0, err
 	}
 
 	base := orm.base
 	ctx := orm.base.context
-
 
 	query := ctx.query.String()
 	log.Println(query)
