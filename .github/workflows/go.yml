@@ -21,7 +21,6 @@ jobs:
       - name: Download
         run: |
           go mod tidy
-          go mod download
 
       - name: Build
         run: go build -v ./...
