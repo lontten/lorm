@@ -20,6 +20,6 @@ func Test__isBaseType(t *testing.T) {
 	as.True(is)
 
 	is = _isBaseType(reflect.TypeOf(types.NewString("fjakls")))
-	as.True(is)
+	as.False(is)
 
 }
