@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"github.com/lontten/lorm/types"
+	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
 )
@@ -11,6 +12,115 @@ import (
 type EngineTable struct {
 	dialect Dialect
 	ctx     OrmContext
+
+	//where tokens
+	whereTokens []string
+
+	extraWhereSql []byte
+
+	//where values
+	args []interface{}
+}
+
+//根据whereTokens生成的where sql
+func (e EngineTable) genWhereSqlByToken() []byte {
+	if len(e.whereTokens) == 0 && e.extraWhereSql == nil {
+		return nil
+	}
+	var buf bytes.Buffer
+	buf.WriteString(" WHERE ")
+	for i, token := range e.whereTokens {
+		if i > 0 {
+			buf.WriteString(" AND ")
+		}
+		buf.WriteString(token)
+	}
+	buf.Write(e.extraWhereSql)
+	return buf.Bytes()
+}
+
+//update
+func (e EngineTable) doUpdate() (int64, error) {
+	var bb bytes.Buffer
+
+	ctx := e.ctx
+	tableName := ctx.tableName
+	cs := ctx.columns
+
+	bb.WriteString("UPDATE ")
+	bb.WriteString(tableName)
+	bb.WriteString(" SET ")
+	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
+	bb.Write(e.genWhereSqlByToken())
+
+	return e.dialect.exec(bb.String(), append(ctx.columnValues, e.args...)...)
+
+}
+
+//del
+func (e EngineTable) doDel() (int64, error) {
+	var bb bytes.Buffer
+	tableName := e.ctx.tableName
+	where := e.genWhereSqlByToken()
+
+	if ormConfig.LogicDeleteSetSql == "" {
+		bb.WriteString("DELETE FROM ")
+		bb.WriteString(tableName)
+		bb.Write(where)
+	} else {
+		bb.WriteString("UPDATE ")
+		bb.WriteString(tableName)
+		bb.WriteString(" SET ")
+		bb.WriteString(ormConfig.LogicDeleteSetSql)
+		bb.Write(where)
+	}
+
+	return e.dialect.exec(bb.String(), e.args...)
+}
+
+//根据 byModel 生成的where token
+func (e EngineTable) initByModel(v interface{}) {
+	if err := e.ctx.err; err != nil {
+		return
+	}
+	if v == nil {
+		e.ctx.err = errors.New("model is nil")
+		return
+	}
+
+	columns, values, err := getCompCV(v)
+	if err != nil {
+		e.ctx.err = err
+		return
+	}
+	e.whereTokens = append(e.whereTokens, utils.GenwhereToken(columns)...)
+	e.args = append(e.args, values...)
+}
+
+//init 逻辑删除、租户
+func (e EngineTable) initExtra() {
+	if err := e.ctx.err; err != nil {
+		return
+	}
+
+	if ormConfig.LogicDeleteYesSql != "" {
+		e.extraWhereSql = []byte(ormConfig.LogicDeleteYesSql)
+	}
+
+	if ormConfig.TenantIdFieldName != "" {
+		e.whereTokens = append(e.whereTokens, ormConfig.TenantIdFieldName)
+		e.args = append(e.args, ormConfig.TenantIdValueFun())
+	}
+}
+
+//初始化逻辑删除
+func (e EngineTable) initLgDel() {
+	if err := e.ctx.err; err != nil {
+		return
+	}
+	if ormConfig.LogicDeleteYesSql != "" {
+		e.extraWhereSql = []byte(ormConfig.LogicDeleteYesSql)
+	}
 }
 
 // Create
@@ -118,23 +228,15 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 //ptr
 //comp,只能一个comp-struct
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
-	base := orm.base
-	ctx := orm.base.ctx
-	if err := ctx.err; err != nil {
+	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
-
-	if v == nil {
-		return 0, errors.New("ByModel is nil")
-	}
-
-	columns, values, err := getCompCV(v)
-	if err != nil {
+	orm.base.initByModel(v)
+	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
-
-	delSql := ctx.genDelByKeys(columns)
-	return base.dialect.exec(string(delSql), values...)
+	orm.base.initExtra()
+	return orm.base.doDel()
 }
 
 // ByWhere
@@ -195,35 +297,15 @@ func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
 }
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
-	if v == nil {
-		return 0, errors.New("ByModel is nil")
-	}
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
+	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
-
-	c := ctx.columns
-	cv := ctx.columnValues
-	tableName := ctx.tableName
-
-	columns, values, err := getCompCV(v)
-	if err != nil {
+	orm.base.initByModel(v)
+	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
-	where := ctx.genWhere(columns)
-
-	var bb bytes.Buffer
-	bb.WriteString("UPDATE ")
-	bb.WriteString(tableName)
-	bb.WriteString(" SET ")
-	bb.WriteString(ctx.tableUpdateArgs2SqlStr(c))
-	bb.Write(where)
-	cv = append(cv, values...)
-
-	return base.dialect.exec(bb.String(), cv...)
-
+	orm.base.initExtra()
+	return orm.base.doUpdate()
 }
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
@@ -308,6 +390,9 @@ func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	orm.base.whereTokens = append(orm.base.whereTokens, utils.GenwhereToken(columns)...)
+	orm.base.args = append(orm.base.args, values...)
 
 	tableName := ctx.tableName
 	c := ctx.columns

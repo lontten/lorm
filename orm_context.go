@@ -7,6 +7,9 @@ import (
 )
 
 type OrmContext struct {
+	isLgDel bool
+	isTen   bool
+
 	//主键名-列表
 	primaryKeyNames []string
 	//主键值-列表
@@ -23,8 +26,6 @@ type OrmContext struct {
 	destBaseValue reflect.Value
 	destBaseType  reflect.Type
 
-
-
 	//scan 是comp，false是single
 	destTypeIsComp bool
 
@@ -32,7 +33,6 @@ type OrmContext struct {
 	isSlice bool
 	//scan 为slice时，里面item是否是ptr
 	sliceItemIsPtr bool
-
 
 	//字段列表
 	columns []string
@@ -323,7 +323,6 @@ func (ctx *OrmContext) genDelByKeys(keys []string) []byte {
 	return ormConfig.genDelSqlCommon(tableName, keys, hasTen)
 }
 
-
 //v0.6
 //生成del sql
 func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
@@ -332,7 +331,6 @@ func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
 	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName, ctx.destBaseValue)
 	return ormConfig.genDelSqlByWhere(tableName, where, hasTen)
 }
-
 
 //v0.6
 //生成where sql
