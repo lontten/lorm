@@ -95,7 +95,7 @@ func (orm OrmTableCreate) ByUnique(fs types.Fields) (int64, error) {
 // Delete
 //delete
 func (e EngineTable) Delete(v interface{}) OrmTableDelete {
-	e.setTargetDestOnlyTableName(v)
+	e.setTargetDest2TableName(v)
 	return OrmTableDelete{base: e}
 }
 
@@ -223,7 +223,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 // Select
 //select
 func (e EngineTable) Select(v interface{}) OrmTableSelect {
-	e.setTargetDestOnlyTableName(v)
+	e.setTargetDest2TableName(v)
 	return OrmTableSelect{base: e}
 }
 
@@ -249,54 +249,59 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) (int64, error) {
 // ByModel
 //v0.6
 //ptr-comp
-func (orm OrmTableSelect) ByModel(v interface{}) (int64, error) {
+func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
 	if err := orm.base.ctx.err; err != nil {
-		return 0, err
+		return OrmTableSelectWhere{base: orm.base}
 	}
 	orm.base.initByModel(v)
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-	orm.base.initExtra()
-	return orm.base.doSelect()
+	return OrmTableSelectWhere{base: orm.base}
 }
 
-func (orm OrmTableSelect) ByWhere(w *WhereBuilder) (int64, error) {
+func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
 	if err := orm.base.ctx.err; err != nil {
-		return 0, err
+		return OrmTableSelectWhere{base: orm.base}
 	}
 	orm.base.initByWhere(w)
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-	orm.base.initExtra()
-	return orm.base.doSelect()
+	return OrmTableSelectWhere{base: orm.base}
 }
 
 func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
-	//在sql中添加limit 1
-	return orm.ScanOne(v)
+	if err := orm.base.ctx.err; err != nil {
+		return 0, err
+	}
+
+	orm.base.ctx.initScanDestOne(v)
+	orm.base.ctx.checkScanDestField()
+	orm.base.initColumns()
+
+	orm.base.initExtra()
+	return orm.base.doSelect("limit 1")
 }
 
 func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
 	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
-	e := orm.base
-	e.ctx.initScanDestList(v)
-	e.ctx.checkScanDestField()
 
-	e.initColumns()
+	orm.base.ctx.initScanDestOne(v)
+	orm.base.ctx.checkScanDestField()
+	orm.base.initColumns()
 
-	return orm.base.queryLn(sb.String(), orm.base.dest)
+	orm.base.initExtra()
+	return orm.base.doSelect("")
 }
 
-func (orm OrmTableSelectWhere) ScanList() (int64, error) {
+func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 	if err := orm.base.ctx.err; err != nil {
 		return 0, err
 	}
 
-	return orm.base.queryLn(sb.String(), orm.base.dest)
+	orm.base.ctx.initScanDestList(v)
+	orm.base.ctx.checkScanDestField()
+	orm.base.initColumns()
+
+	orm.base.initExtra()
+	return orm.base.doSelect("")
 }
 
 type OrmTableCreate struct {

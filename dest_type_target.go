@@ -29,32 +29,30 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 	}
 
 	ctx.scanDest = dest
+	ctx.scanDest = dest
+
 	ctx.destValue = base
 	ctx.destBaseValue = base
 
+	ctx.destBaseType = base.Type()
 	ctx.scanDestBaseType = base.Type()
 }
 
 // * struct
 //  struct
 // comp-struct 获取 destBaseValue
-func (ctx *OrmContext) initTargetDestOnlyBaseValue(dest interface{}) {
+func (ctx *OrmContext) initTargetDest2TableName(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
-	value := reflect.ValueOf(dest)
-	_, base, err := basePtrDeepValue(value)
-	if err != nil {
-		ctx.err = err
+	t := reflect.TypeOf(dest)
+	if t.Kind() == reflect.String {
+		ctx.tableName = dest.(string)
 		return
 	}
-	err = checkCompField(base)
-	if err != nil {
-		ctx.err = errors.New("need a struct")
-		return
-	}
-	ctx.destBaseValue = base
-	ctx.scanDestBaseType = base.Type()
+	_, base := basePtrType(t)
+	ctx.destBaseType = base
+
 }
 
 //检查sturct的filed是否合法，valuer，nuller
@@ -62,7 +60,5 @@ func (ctx *OrmContext) checkTargetDestField() {
 	if ctx.err != nil {
 		return
 	}
-	v := ctx.destBaseValue
-	err := checkCompField(v)
-	ctx.err = err
+	ctx.err = checkCompField(ctx.destBaseValue)
 }

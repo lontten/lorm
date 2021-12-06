@@ -30,6 +30,7 @@ type OrmContext struct {
 	destValue reflect.Value
 	//用作 参数合法行校验
 	destBaseValue reflect.Value
+	destBaseType  reflect.Type
 
 	//------------------scan----------------------
 	//scan base type

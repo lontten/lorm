@@ -48,7 +48,7 @@ func (e EngineTable) doDel() (int64, error) {
 }
 
 //update
-func (e EngineTable) doSelect() (int64, error) {
+func (e EngineTable) doSelect(extra string) (int64, error) {
 	var bb bytes.Buffer
 
 	ctx := e.ctx
@@ -67,6 +67,7 @@ func (e EngineTable) doSelect() (int64, error) {
 	bb.WriteString(" FROM ")
 	bb.WriteString(tableName)
 	bb.Write(e.genWhereSqlByToken())
+	bb.WriteString(extra)
 
 	return e.query(bb.String(), e.args...)
 }
@@ -150,11 +151,11 @@ func (e *EngineTable) setTargetDest(v interface{}) {
 }
 
 //v0.6
-func (e *EngineTable) setTargetDestOnlyTableName(v interface{}) {
+func (e *EngineTable) setTargetDest2TableName(v interface{}) {
 	if e.ctx.err != nil {
 		return
 	}
-	e.ctx.initTargetDestOnlyBaseValue(v)
+	e.ctx.initTargetDest2TableName(v)
 	e.initTableName()
 }
 
@@ -173,7 +174,10 @@ func (e *EngineTable) initTableName() {
 	if e.ctx.err != nil {
 		return
 	}
-	tableName, err := ormConfig.tableName(e.ctx.scanDestBaseType)
+	if e.ctx.tableName != "" {
+		return
+	}
+	tableName, err := ormConfig.tableName(e.ctx.destBaseType)
 	if err != nil {
 		e.ctx.err = err
 		return
