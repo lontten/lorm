@@ -9,14 +9,12 @@ type DB struct {
 	dbConfig DbConfig
 }
 
-
-
 func (db DB) Db(c *OrmConf) Engine {
 	if c != nil {
-		ormConfig=*c
+		ormConfig = *c
 	}
 	return Engine{
-		db:      db,
+		db: db,
 		Base: EngineBase{
 			context: OrmContext{},
 			dialect: db.dbConfig.Dialect(db.db),

@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"bytes"
 	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
 )
@@ -107,20 +106,9 @@ func (e EngineTable) Delete(v interface{}) OrmTableDelete {
 func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initPrimaryKeyValues(v)
-
-	base := orm.base
-	ctx := orm.base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-
-	delSql := ctx.genDelByPrimaryKey()
-	idValues := orm.base.ctx.primaryKeyValues
-
-	if len(v) == 1 {
-		return base.dialect.exec(string(delSql), idValues[0]...)
-	}
-	return base.dialect.execBatch(string(delSql), idValues)
+	orm.base.initByPrimaryKey()
+	orm.base.initExtra()
+	return orm.base.doDel()
 }
 
 // ByModel
@@ -128,13 +116,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 //ptr
 //comp,只能一个comp-struct
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initByModel(v)
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initExtra()
 	return orm.base.doDel()
 }
@@ -142,13 +124,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 // ByWhere
 //v0.6
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initByWhere(w)
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initExtra()
 	return orm.base.doDel()
 }
@@ -168,52 +144,19 @@ func (e EngineTable) Update(v interface{}) OrmTableUpdate {
 func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initSelfPrimaryKeyValues()
-
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-
-	tableName := ctx.tableName
-	cs := ctx.columns
-	cvs := ctx.columnValues
-	idValues := ctx.primaryKeyValues[0]
-
-	whereStr := ctx.genWhereByPrimaryKey()
-
-	var bb bytes.Buffer
-
-	bb.WriteString("UPDATE ")
-	bb.WriteString(tableName)
-	bb.WriteString(" SET ")
-	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
-	bb.Write(whereStr)
-	cvs = append(cvs, idValues...)
-
-	return base.dialect.exec(bb.String(), cvs...)
+	orm.base.initByPrimaryKey()
+	orm.base.initExtra()
+	return orm.base.doUpdate()
 }
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initByModel(v)
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initExtra()
 	return orm.base.doUpdate()
 }
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initByWhere(w)
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
 	orm.base.initExtra()
 	return orm.base.doUpdate()
 }
@@ -230,12 +173,8 @@ func (e EngineTable) Select(v interface{}) OrmTableSelect {
 // ByPrimaryKey
 //v0.8
 func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
-	if err := orm.base.ctx.err; err != nil {
-		return OrmTableSelectWhere{base: orm.base}
-	}
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initPrimaryKeyValues(v)
-
 	orm.base.initByPrimaryKey()
 	return OrmTableSelectWhere{base: orm.base}
 }
@@ -244,26 +183,16 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
 //v0.6
 //ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
-	if err := orm.base.ctx.err; err != nil {
-		return OrmTableSelectWhere{base: orm.base}
-	}
 	orm.base.initByModel(v)
 	return OrmTableSelectWhere{base: orm.base}
 }
 
 func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
-	if err := orm.base.ctx.err; err != nil {
-		return OrmTableSelectWhere{base: orm.base}
-	}
 	orm.base.initByWhere(w)
 	return OrmTableSelectWhere{base: orm.base}
 }
 
 func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-
 	orm.base.ctx.initScanDestOne(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
@@ -273,10 +202,6 @@ func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-
 	orm.base.ctx.initScanDestOne(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
@@ -286,10 +211,6 @@ func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
-	if err := orm.base.ctx.err; err != nil {
-		return 0, err
-	}
-
 	orm.base.ctx.initScanDestList(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()

@@ -10,6 +10,9 @@ import (
 
 //update
 func (e EngineTable) doUpdate() (int64, error) {
+	if err := e.ctx.err; err != nil {
+		return 0, err
+	}
 	var bb bytes.Buffer
 
 	ctx := e.ctx
@@ -28,6 +31,9 @@ func (e EngineTable) doUpdate() (int64, error) {
 
 //del
 func (e EngineTable) doDel() (int64, error) {
+	if err := e.ctx.err; err != nil {
+		return 0, err
+	}
 	var bb bytes.Buffer
 	tableName := e.ctx.tableName
 	where := e.genWhereSqlByToken()
@@ -49,6 +55,9 @@ func (e EngineTable) doDel() (int64, error) {
 
 //update
 func (e EngineTable) doSelect(extra string) (int64, error) {
+	if err := e.ctx.err; err != nil {
+		return 0, err
+	}
 	var bb bytes.Buffer
 
 	ctx := e.ctx
@@ -75,7 +84,7 @@ func (e EngineTable) doSelect(extra string) (int64, error) {
 //-------------------------------init------------------------
 
 //根据 byModel 生成的where token
-func (e EngineTable) initByPrimaryKey() {
+func (e *EngineTable) initByPrimaryKey() {
 	ctx := e.ctx
 	if err := ctx.err; err != nil {
 		return
@@ -89,7 +98,7 @@ func (e EngineTable) initByPrimaryKey() {
 }
 
 //根据 byModel 生成的where token
-func (e EngineTable) initByModel(v interface{}) {
+func (e *EngineTable) initByModel(v interface{}) {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -108,7 +117,7 @@ func (e EngineTable) initByModel(v interface{}) {
 }
 
 //根据 byWhere 生成的where token
-func (e EngineTable) initByWhere(w *WhereBuilder) {
+func (e *EngineTable) initByWhere(w *WhereBuilder) {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -125,7 +134,7 @@ func (e EngineTable) initByWhere(w *WhereBuilder) {
 }
 
 //init 逻辑删除、租户
-func (e EngineTable) initExtra() {
+func (e *EngineTable) initExtra() {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -141,7 +150,7 @@ func (e EngineTable) initExtra() {
 }
 
 //初始化逻辑删除
-func (e EngineTable) initLgDel() {
+func (e *EngineTable) initLgDel() {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -179,7 +188,7 @@ func (e *EngineTable) initPrimaryKeyName() {
 	if e.ctx.err != nil {
 		return
 	}
-	e.ctx.primaryKeyNames = ormConfig.primaryKeys(e.ctx.tableName, e.ctx.destBaseValue)
+	e.ctx.primaryKeyNames = ormConfig.primaryKeys(e.ctx.tableName)
 }
 
 //0.6
