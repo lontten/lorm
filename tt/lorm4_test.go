@@ -79,30 +79,6 @@ func updateByid(engine lorm.Engine) {
 	fmt.Println(task.String())
 }
 
-func selectByid(engine lorm.Engine) {
-	task := Task{}
-	must := types.Str2UUIDMust("f59882000e474a54b8dd74c42d2a195d")
-
-	num, err := engine.Table.Select(&task).ByPrimaryKey(must)
-	fmt.Println(num)
-	fmt.Println(err)
-	fmt.Println(task.String())
-}
-
-func selectByids(engine lorm.Engine) {
-	task := Task{}
-	tasks := make([]Task, 0)
-	must := types.Str2UUIDMust("a83787f1-655f-4d07-b9a9-be154646534b")
-	must2 := types.Str2UUIDMust("6db8b4a9-9b68-4f3c-953f-78ae69b5b780")
-
-	num, err := engine.Table.Select(&tasks).ByPrimaryKey(must, must2)
-	fmt.Println(num)
-	fmt.Println(err)
-	fmt.Println(task.String())
-	fmt.Println(tasks[0].String())
-	fmt.Println(tasks[1].String())
-}
-
 func delByWhere(engine lorm.Engine) {
 	num, err := engine.Table.Delete(Task{}).ByWhere(new(lorm.WhereBuilder).
 		Eq("name", "asf").

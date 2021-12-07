@@ -50,11 +50,7 @@ func (e EngineTable) doDel() (int64, error) {
 		bb.Write(where)
 	}
 
-	argss := e.batchArgs
-	if len(argss) == 0 {
-		return e.dialect.exec(bb.String(), e.args...)
-	}
-	return e.dialect.execBatch(bb.String(), argss)
+	return e.dialect.exec(bb.String(), e.args...)
 }
 
 //update
@@ -82,11 +78,7 @@ func (e EngineTable) doSelect(extra string) (int64, error) {
 	bb.Write(e.genWhereSqlByToken())
 	bb.WriteString(extra)
 
-	argss := e.batchArgs
-	if len(argss) == 0 {
-		return e.query(bb.String(), e.args...)
-	}
-	return e.queryBatch(bb.String(), argss)
+	return e.query(bb.String(), e.args...)
 }
 
 //-------------------------------init------------------------
@@ -97,10 +89,12 @@ func (e *EngineTable) initByPrimaryKey() {
 	if err := ctx.err; err != nil {
 		return
 	}
+	pkNum := len(ctx.primaryKeyValues)
+	e.whereTokens = append(e.whereTokens, utils.GenwhereTokenOfBatch(ctx.primaryKeyNames, pkNum))
 
-	e.whereTokens = append(e.whereTokens, utils.GenwhereToken(ctx.primaryKeyNames)...)
-
-	e.batchArgs = ctx.primaryKeyValues
+	for _, value := range ctx.primaryKeyValues {
+		e.args = append(e.args, value...)
+	}
 }
 
 //根据 byModel 生成的where token
