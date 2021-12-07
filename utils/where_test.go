@@ -13,6 +13,6 @@ func TestGenwhereToken(t *testing.T) {
 
 func Test_genBatch(t *testing.T) {
 	as := assert.New(t)
-	as.Equal("a = ? and b = ? and c = ? ", _genWhere([]string{"a", "b", "c"}))
+	as.Equal("(a = ? and b = ? and c = ? )", _genWhere([]string{"a", "b", "c"}))
 
 }
