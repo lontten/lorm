@@ -16,7 +16,6 @@ func TestDeleteByPrimaryKeys(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-
 	engine := MustConnectMock(db, &PgConf{}).Db(nil)
 
 	mock.ExpectExec("DELETE FROM *").
@@ -35,7 +34,6 @@ func TestDeleteByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-
 	engine := MustConnectMock(db, &PgConf{}).Db(nil)
 
 	mock.ExpectExec("DELETE FROM *").
@@ -60,7 +58,6 @@ func TestDeleteByModel(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-
 	engine := MustConnectMock(db, &PgConf{}).Db(nil)
 
 	mock.ExpectExec("DELETE FROM *").
