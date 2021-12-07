@@ -76,31 +76,6 @@ func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
 	}
 }
 
-//args 为 where 的 字段名列表， 生成where sql
-//sql 为 逻辑删除 附加where
-//todo 应该改为 统一 where sql 统一生成、  逻辑删除、 多租户
-func (ctx *OrmContext) tableWhereArgs2SqlStr(args []string) string {
-	var sb strings.Builder
-	for i, where := range args {
-		if i == 0 {
-			sb.WriteString(" WHERE ")
-			sb.WriteString(where)
-			sb.WriteString(" = ? ")
-			continue
-		}
-		sb.WriteString(" AND ")
-		sb.WriteString(where)
-		sb.WriteString(" = ? ")
-	}
-
-	//lgSql := strings.ReplaceAll(c.LogicDeleteNoSql, "lg.", "")
-	//if c.LogicDeleteNoSql != lgSql {
-	//	sb.WriteString(" AND ")
-	//	sb.WriteString(lgSql)
-	//}
-	return sb.String()
-}
-
 // create 生成
 func (ctx *OrmContext) tableCreateGen() string {
 	args := ctx.columns
@@ -169,7 +144,6 @@ func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-//v0.7
 func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 	if ctx.err != nil {
 		return
@@ -235,7 +209,6 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 	ctx.primaryKeyValues = idValuess
 }
 
-//v0.7
 func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 	if ctx.err != nil {
 		return
@@ -270,7 +243,6 @@ func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 	ctx.primaryKeyValues = append(ctx.primaryKeyValues, idValues)
 }
 
-//v0.7
 //生成select sql
 func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
 	tableName := ctx.tableName
@@ -280,25 +252,21 @@ func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
 	return append(selSql, where...)
 }
 
-//v0.6
 //生成del sql
 func (ctx *OrmContext) genDelByPrimaryKey() []byte {
 	return ormConfig.genDelSqlCommon(ctx.tableName, ctx.primaryKeyNames)
 }
 
-//v0.6
 //生成del sql
 func (ctx *OrmContext) genDelByKeys(keys []string) []byte {
 	return ormConfig.genDelSqlCommon(ctx.tableName, keys)
 }
 
-//v0.6
 //生成del sql
 func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
 	return ormConfig.genDelSqlByWhere(ctx.tableName, where)
 }
 
-//v0.6
 //生成where sql
 func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
 	keys := ctx.primaryKeyNames
@@ -308,7 +276,6 @@ func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
 	return ormConfig.GenWhere(keys, hasTen)
 }
 
-//v0.6
 //生成where sql
 func (ctx *OrmContext) genWhere(keys []string) []byte {
 	tableName := ctx.tableName
@@ -317,7 +284,6 @@ func (ctx *OrmContext) genWhere(keys []string) []byte {
 	return ormConfig.GenWhere(keys, hasTen)
 }
 
-//v0.6
 //为where语句附加上，租户，逻辑删除等。。。
 func (ctx *OrmContext) whereExtra(where []byte) []byte {
 	tableName := ctx.tableName

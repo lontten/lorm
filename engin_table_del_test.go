@@ -12,24 +12,6 @@ type User struct {
 	Name string
 }
 
-func TestDeleteByPrimaryKeys(t *testing.T) {
-	as := assert.New(t)
-	db, mock, err := sqlmock.New()
-	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
-
-	mock.ExpectExec("DELETE FROM *").
-		WithArgs(1, 2, 3).
-		WillReturnError(nil).
-		WillReturnResult(sqlmock.NewResult(0, 3))
-
-	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1, 2, 3)
-	as.Nil(err)
-	as.Equal(int64(3), num, "num error")
-
-	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
-}
-
 func TestDeleteByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
@@ -44,6 +26,24 @@ func TestDeleteByPrimaryKey(t *testing.T) {
 	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1)
 	as.Nil(err)
 	as.Equal(int64(1), num)
+
+	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
+}
+
+func TestDeleteByPrimaryKeys(t *testing.T) {
+	as := assert.New(t)
+	db, mock, err := sqlmock.New()
+	as.Nil(err, "new sqlmock error")
+	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs(1, 2, 3).
+		WillReturnError(nil).
+		WillReturnResult(sqlmock.NewResult(0, 3))
+
+	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1, 2, 3)
+	as.Nil(err)
+	as.Equal(int64(3), num, "num error")
 
 	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
 }
