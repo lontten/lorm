@@ -90,24 +90,6 @@ func delByWhere(engine lorm.Engine) {
 	fmt.Println(err)
 }
 
-func count(engine lorm.Engine) {
-	n := 0
-
-	num, err := engine.Classic.Query("select count(*) from common.t_task ").GetOne(&n)
-	fmt.Println(num)
-	fmt.Println(err)
-	fmt.Println(n)
-}
-
-func selectUUid(engine lorm.Engine) {
-	uuid := types.UUID{}
-
-	num, err := engine.Classic.Query("select gen_random_uuid() ").GetOne(&uuid)
-	fmt.Println(num)
-	fmt.Println(err)
-	fmt.Println(uuid)
-}
-
 func selectList(engine lorm.Engine) {
 	list := types.StringList{}
 	kk := make([]string, 0)
