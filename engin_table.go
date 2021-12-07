@@ -15,7 +15,8 @@ type EngineTable struct {
 	extraWhereSql []byte
 
 	//where values
-	args []interface{}
+	args      []interface{}
+	batchArgs [][]interface{}
 }
 
 //------------------------------------Create--------------------------------------------

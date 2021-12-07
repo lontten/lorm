@@ -36,7 +36,6 @@ func (e EngineTable) doDel() (int64, error) {
 	}
 	var bb bytes.Buffer
 	tableName := e.ctx.tableName
-	primaryKeyValues := e.ctx.primaryKeyValues
 	where := e.genWhereSqlByToken()
 
 	if ormConfig.LogicDeleteSetSql == "" {
@@ -51,13 +50,11 @@ func (e EngineTable) doDel() (int64, error) {
 		bb.Write(where)
 	}
 
-	if len(primaryKeyValues) == 0 {
+	argss := e.batchArgs
+	if len(argss) == 0 {
 		return e.dialect.exec(bb.String(), e.args...)
 	}
-	if len(primaryKeyValues) == 1 {
-		return e.dialect.exec(bb.String(), primaryKeyValues[0]...)
-	}
-	return e.dialect.execBatch(bb.String(), primaryKeyValues)
+	return e.dialect.execBatch(bb.String(), argss)
 }
 
 //update
@@ -85,7 +82,11 @@ func (e EngineTable) doSelect(extra string) (int64, error) {
 	bb.Write(e.genWhereSqlByToken())
 	bb.WriteString(extra)
 
-	return e.query(bb.String(), e.args...)
+	argss := e.batchArgs
+	if len(argss) == 0 {
+		return e.query(bb.String(), e.args...)
+	}
+	return e.queryBatch(bb.String(), argss)
 }
 
 //-------------------------------init------------------------
@@ -99,9 +100,7 @@ func (e *EngineTable) initByPrimaryKey() {
 
 	e.whereTokens = append(e.whereTokens, utils.GenwhereToken(ctx.primaryKeyNames)...)
 
-	for _, value := range ctx.primaryKeyValues {
-		e.args = append(e.args, value...)
-	}
+	e.batchArgs = ctx.primaryKeyValues
 }
 
 //根据 byModel 生成的where token
@@ -168,7 +167,6 @@ func (e *EngineTable) initLgDel() {
 
 //-------------------------------target------------------------
 
-//v0.6
 //*.comp
 //target scanDest 一个comp-struct
 func (e *EngineTable) setTargetDest(v interface{}) {
@@ -180,7 +178,6 @@ func (e *EngineTable) setTargetDest(v interface{}) {
 	e.initTableName()
 }
 
-//v0.6
 func (e *EngineTable) setTargetDest2TableName(v interface{}) {
 	if e.ctx.err != nil {
 		return
@@ -189,7 +186,6 @@ func (e *EngineTable) setTargetDest2TableName(v interface{}) {
 	e.initTableName()
 }
 
-//0.6
 //初始化主键
 func (e *EngineTable) initPrimaryKeyName() {
 	if e.ctx.err != nil {
@@ -198,7 +194,6 @@ func (e *EngineTable) initPrimaryKeyName() {
 	e.ctx.primaryKeyNames = ormConfig.primaryKeys(e.ctx.tableName)
 }
 
-//0.6
 //初始化 表名
 func (e *EngineTable) initTableName() {
 	if e.ctx.err != nil {
@@ -215,7 +210,6 @@ func (e *EngineTable) initTableName() {
 	e.ctx.tableName = tableName
 }
 
-//0.6
 //获取struct对应的字段名 和 其值，
 //slice为全部，一个为非nil字段。
 func (e *EngineTable) initColumnsValue() {
@@ -232,7 +226,6 @@ func (e *EngineTable) initColumnsValue() {
 	return
 }
 
-//v0.6
 //获取struct对应的字段名 有效部分
 func (e *EngineTable) initColumns() {
 	if e.ctx.err != nil {
@@ -248,7 +241,6 @@ func (e *EngineTable) initColumns() {
 }
 
 //-------------------------utils------------------------
-//v0.6
 //获取comp 的 cv
 //排除 nil 字段
 func getCompCV(v interface{}) ([]string, []interface{}, error) {
@@ -261,7 +253,6 @@ func getCompCV(v interface{}) ([]string, []interface{}, error) {
 	return getCompValueCV(value)
 }
 
-//v0.6
 //排除 nil 字段
 func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 	if !isCompType(v.Type()) {
@@ -283,7 +274,6 @@ func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 }
 
 //------------------------query--------------------------
-//v0.8
 func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
@@ -295,7 +285,6 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	return e.ctx.ScanLn(rows)
 }
 
-//v0.8
 func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
 	stmt, err := e.dialect.queryBatch(query)
 	if err != nil {
