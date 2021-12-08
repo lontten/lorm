@@ -74,11 +74,9 @@ func (tx TxEngine) Rollback() error {
 }
 
 type TxEngine struct {
-	tx      *sql.Tx
-	Base    EngineBase
-	Extra   EngineExtra
-	Table   EngineTable
-	Classic EngineNative
+	tx    *sql.Tx
+	Base  EngineClassic
+	Extra EngineExtra
 }
 
 func (e Engine) Begin() TxEngine {

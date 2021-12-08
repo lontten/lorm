@@ -19,7 +19,7 @@ func TestSelectByPrimaryKey(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(1, "test"))
 
 	user := User{}
-	num, err := engine.Select(user).ByPrimaryKey(1).ScanOne(&user)
+	num, err := engine.TableSelect(user).ByPrimaryKey(1).GetOne(&user)
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(int64(1), user.Id)
@@ -43,7 +43,7 @@ func TestSelectByPrimaryKeys(t *testing.T) {
 		)
 
 	users := make([]User, 0)
-	num, err := engine.Select(User{}).ByPrimaryKey(1, 2).ScanList(&users)
+	num, err := engine.TableSelect(User{}).ByPrimaryKey(1, 2).GetList(&users)
 	as.Nil(err)
 	as.Equal(int64(2), num)
 	as.Equal(2, len(users))
@@ -77,22 +77,22 @@ func TestSelectByModel(t *testing.T) {
 		)
 
 	user := User{}
-	num, err := engine.Select(User{}).ByModel(Whe{
+	num, err := engine.TableSelect(User{}).ByModel(Whe{
 		Name: types.NewString("kk"),
 		Age:  nil,
 		Uid:  nil,
-	}).ScanOne(&user)
+	}).GetOne(&user)
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(int64(1), user.Id)
 	as.Equal("test", user.Name)
 
 	users := make([]User, 0)
-	num, err = engine.Select(User{}).ByModel(Whe{
+	num, err = engine.TableSelect(User{}).ByModel(Whe{
 		Name: types.NewString("kk"),
 		Age:  types.NewInt(233),
 		Uid:  nil,
-	}).ScanList(&users)
+	}).GetList(&users)
 	as.Nil(err)
 	as.Equal(int64(2), num)
 	as.Equal(2, len(users))
@@ -119,9 +119,9 @@ func TestSelectByWhere(t *testing.T) {
 			AddRow(1, "test"),
 		)
 	user := User{}
-	num, err := engine.Select(User{}).ByWhere(new(WhereBuilder).
+	num, err := engine.TableSelect(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk"),
-	).ScanOne(&user)
+	).GetOne(&user)
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(int64(1), user.Id)
@@ -136,10 +136,10 @@ func TestSelectByWhere(t *testing.T) {
 			AddRow(2, "test2"),
 		)
 	users := make([]User, 0)
-	num, err = engine.Select(User{}).ByWhere(new(WhereBuilder).
+	num, err = engine.TableSelect(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk").
 		Eq("age", 233),
-	).ScanList(&users)
+	).GetList(&users)
 	as.Nil(err)
 	as.Equal(int64(2), num)
 	as.Equal(2, len(users))

@@ -3,12 +3,12 @@ package lorm
 import "log"
 
 //对基础SQL的简单封装
-type EngineBase struct {
+type EngineClassic struct {
 	dialect Dialect
 	context OrmContext
 }
 
-func (engine EngineBase) Select(args ...string) OrmSelect {
+func (engine EngineClassic) Select(args ...string) OrmSelect {
 	engine.context.selectArgsArr2SqlStr(args)
 	return OrmSelect{engine}
 }

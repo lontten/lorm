@@ -21,13 +21,13 @@ func (db DB) Db(c *OrmConf) Engine {
 }
 
 type OrmSelect struct {
-	base EngineBase
+	base EngineClassic
 }
 
 type OrmFrom struct {
-	base EngineBase
+	base EngineClassic
 }
 
 type OrmWhere struct {
-	base EngineBase
+	base EngineClassic
 }

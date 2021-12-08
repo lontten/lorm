@@ -5,13 +5,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-//------------------------------------Create--------------------------------------------
+//------------------------------------TableCreate--------------------------------------------
 
-// Create
+// TableCreate
 //v0.8
 //1.ptr
 //2.comp-struct
-func (e Engine) Create(v interface{}) (num int64, err error) {
+func (e Engine) TableCreate(v interface{}) (num int64, err error) {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	if e.ctx.err != nil {
@@ -23,11 +23,11 @@ func (e Engine) Create(v interface{}) (num int64, err error) {
 	return e.query(sqlStr, e.ctx.columnValues...)
 }
 
-// CreateOrUpdate
+// TableCreateOrUpdate
 //v0.6
 //1.ptr
 //2.comp-struct
-func (e Engine) CreateOrUpdate(v interface{}) OrmTableCreate {
+func (e Engine) TableCreateOrUpdate(v interface{}) OrmTableCreate {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	return OrmTableCreate{base: e}
@@ -76,11 +76,11 @@ func (orm OrmTableCreate) ByUnique(fs types.Fields) (int64, error) {
 	return base.dialect.insertOrUpdateByUnique(tableName, fs, cs, cvs...)
 }
 
-//------------------------------------Delete--------------------------------------------
+//------------------------------------TableDelete--------------------------------------------
 
-// Delete
+// TableDelete
 //delete
-func (e Engine) Delete(v interface{}) OrmTableDelete {
+func (e Engine) TableDelete(v interface{}) OrmTableDelete {
 	e.setTargetDest2TableName(v)
 	return OrmTableDelete{base: e}
 }
@@ -116,11 +116,11 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 	return orm.base.doDel()
 }
 
-//------------------------------------Update--------------------------------------------
+//------------------------------------TableUpdate--------------------------------------------
 
-// Update
+// TableUpdate
 //v0.6
-func (e Engine) Update(v interface{}) OrmTableUpdate {
+func (e Engine) TableUpdate(v interface{}) OrmTableUpdate {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	return OrmTableUpdate{base: e}
@@ -148,11 +148,11 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 	return orm.base.doUpdate()
 }
 
-//------------------------------------Select--------------------------------------------
+//------------------------------------TableSelect--------------------------------------------
 
-// Select
+// TableSelect
 //select
-func (e Engine) Select(v interface{}) OrmTableSelect {
+func (e Engine) TableSelect(v interface{}) OrmTableSelect {
 	e.setTargetDest2TableName(v)
 	return OrmTableSelect{base: e}
 }
@@ -179,7 +179,7 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
 	return OrmTableSelectWhere{base: orm.base}
 }
 
-func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
+func (orm OrmTableSelectWhere) GetFirst(v interface{}) (int64, error) {
 	orm.base.ctx.initScanDestOne(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
@@ -188,7 +188,7 @@ func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
 	return orm.base.doSelect("limit 1")
 }
 
-func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
+func (orm OrmTableSelectWhere) GetOne(v interface{}) (int64, error) {
 	orm.base.ctx.initScanDestOne(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
@@ -197,7 +197,7 @@ func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
 	return orm.base.doSelect("")
 }
 
-func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
+func (orm OrmTableSelectWhere) GetList(v interface{}) (int64, error) {
 	orm.base.ctx.initScanDestList(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
