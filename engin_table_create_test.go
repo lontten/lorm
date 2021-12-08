@@ -22,7 +22,7 @@ func TestCreate(t *testing.T) {
 		Name: types.NewString("up"),
 		Id:   types.NewInt(2),
 	}
-	num, err := engine.Table.Create(&user)
+	num, err := engine.Create(&user)
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(88, *user.Id)
@@ -48,7 +48,7 @@ func _TestCreateOrUpdate(t *testing.T) {
 		Name: types.NewString("add"),
 		Id:   types.NewInt(2),
 	}
-	num, err := engine.Table.CreateOrUpdate(&user).ByPrimaryKey()
+	num, err := engine.CreateOrUpdate(&user).ByPrimaryKey()
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(1, *user.Id)
@@ -74,7 +74,7 @@ func _TestCreateOrUpdate2(t *testing.T) {
 		Name: types.NewString("upd"),
 		Id:   types.NewInt(2),
 	}
-	num, err := engine.Table.CreateOrUpdate(&user).ByPrimaryKey()
+	num, err := engine.CreateOrUpdate(&user).ByPrimaryKey()
 	as.Nil(err)
 	as.Equal(int64(2), num)
 	as.Equal(2, *user.Id)

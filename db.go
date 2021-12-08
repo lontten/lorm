@@ -14,23 +14,9 @@ func (db DB) Db(c *OrmConf) Engine {
 		ormConfig = *c
 	}
 	return Engine{
-		db: db,
-		Base: EngineBase{
-			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
-		Extra: EngineExtra{
-			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
-		Classic: EngineNative{
-			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
-		Table: EngineTable{
-			ctx:     OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
+		db:      db,
+		ctx:     OrmContext{},
+		dialect: db.dbConfig.Dialect(db.db),
 	}
 }
 

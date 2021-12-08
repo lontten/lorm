@@ -5,27 +5,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type EngineTable struct {
-	dialect Dialect
-	ctx     OrmContext
-
-	//where tokens
-	whereTokens []string
-
-	extraWhereSql []byte
-
-	//where values
-	args      []interface{}
-	batchArgs [][]interface{}
-}
-
 //------------------------------------Create--------------------------------------------
 
 // Create
 //v0.8
 //1.ptr
 //2.comp-struct
-func (e EngineTable) Create(v interface{}) (num int64, err error) {
+func (e Engine) Create(v interface{}) (num int64, err error) {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	if e.ctx.err != nil {
@@ -41,7 +27,7 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 //v0.6
 //1.ptr
 //2.comp-struct
-func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
+func (e Engine) CreateOrUpdate(v interface{}) OrmTableCreate {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	return OrmTableCreate{base: e}
@@ -94,7 +80,7 @@ func (orm OrmTableCreate) ByUnique(fs types.Fields) (int64, error) {
 
 // Delete
 //delete
-func (e EngineTable) Delete(v interface{}) OrmTableDelete {
+func (e Engine) Delete(v interface{}) OrmTableDelete {
 	e.setTargetDest2TableName(v)
 	return OrmTableDelete{base: e}
 }
@@ -134,7 +120,7 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 
 // Update
 //v0.6
-func (e EngineTable) Update(v interface{}) OrmTableUpdate {
+func (e Engine) Update(v interface{}) OrmTableUpdate {
 	e.setTargetDest(v)
 	e.initColumnsValue()
 	return OrmTableUpdate{base: e}
@@ -166,7 +152,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 // Select
 //select
-func (e EngineTable) Select(v interface{}) OrmTableSelect {
+func (e Engine) Select(v interface{}) OrmTableSelect {
 	e.setTargetDest2TableName(v)
 	return OrmTableSelect{base: e}
 }
@@ -221,24 +207,24 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 }
 
 type OrmTableCreate struct {
-	base EngineTable
+	base Engine
 }
 
 type OrmTableSelect struct {
-	base EngineTable
+	base Engine
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableSelectWhere struct {
-	base EngineTable
+	base Engine
 }
 
 type OrmTableUpdate struct {
-	base EngineTable
+	base Engine
 }
 
 type OrmTableDelete struct {
-	base EngineTable
+	base Engine
 }

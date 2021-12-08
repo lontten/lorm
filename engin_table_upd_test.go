@@ -27,7 +27,7 @@ func TestUpdateByPrimaryKey(t *testing.T) {
 		Id:   types.NewInt(1),
 		Name: types.NewString("nn"),
 	}
-	num, err := engine.Table.Update(&user).ByPrimaryKey()
+	num, err := engine.Update(&user).ByPrimaryKey()
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(1, *user.Id)
@@ -51,7 +51,7 @@ func TestUpdateByModel(t *testing.T) {
 		Id:   types.NewInt(1),
 		Name: types.NewString("nn"),
 	}
-	num, err := engine.Table.Update(&user).ByModel(struct {
+	num, err := engine.Update(&user).ByModel(struct {
 		Age  *int
 		Name *string
 	}{
@@ -81,7 +81,7 @@ func TestUpdateByWhere(t *testing.T) {
 		Id:   types.NewInt(1),
 		Name: types.NewString("nn"),
 	}
-	num, err := engine.Table.Update(&user).ByWhere(new(WhereBuilder).
+	num, err := engine.Update(&user).ByWhere(new(WhereBuilder).
 		Eq("name", "name_name").
 		Eq("age", 233),
 	)

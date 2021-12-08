@@ -9,7 +9,7 @@ import (
 )
 
 //update
-func (e EngineTable) doUpdate() (int64, error) {
+func (e Engine) doUpdate() (int64, error) {
 	if err := e.ctx.err; err != nil {
 		return 0, err
 	}
@@ -30,7 +30,7 @@ func (e EngineTable) doUpdate() (int64, error) {
 }
 
 //del
-func (e EngineTable) doDel() (int64, error) {
+func (e Engine) doDel() (int64, error) {
 	if err := e.ctx.err; err != nil {
 		return 0, err
 	}
@@ -54,7 +54,7 @@ func (e EngineTable) doDel() (int64, error) {
 }
 
 //update
-func (e EngineTable) doSelect(extra string) (int64, error) {
+func (e Engine) doSelect(extra string) (int64, error) {
 	if err := e.ctx.err; err != nil {
 		return 0, err
 	}
@@ -84,7 +84,7 @@ func (e EngineTable) doSelect(extra string) (int64, error) {
 //-------------------------------init------------------------
 
 //根据 byModel 生成的where token
-func (e *EngineTable) initByPrimaryKey() {
+func (e *Engine) initByPrimaryKey() {
 	ctx := e.ctx
 	if err := ctx.err; err != nil {
 		return
@@ -98,7 +98,7 @@ func (e *EngineTable) initByPrimaryKey() {
 }
 
 //根据 byModel 生成的where token
-func (e *EngineTable) initByModel(v interface{}) {
+func (e *Engine) initByModel(v interface{}) {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -117,7 +117,7 @@ func (e *EngineTable) initByModel(v interface{}) {
 }
 
 //根据 byWhere 生成的where token
-func (e *EngineTable) initByWhere(w *WhereBuilder) {
+func (e *Engine) initByWhere(w *WhereBuilder) {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -134,7 +134,7 @@ func (e *EngineTable) initByWhere(w *WhereBuilder) {
 }
 
 //init 逻辑删除、租户
-func (e *EngineTable) initExtra() {
+func (e *Engine) initExtra() {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -150,7 +150,7 @@ func (e *EngineTable) initExtra() {
 }
 
 //初始化逻辑删除
-func (e *EngineTable) initLgDel() {
+func (e *Engine) initLgDel() {
 	if err := e.ctx.err; err != nil {
 		return
 	}
@@ -163,7 +163,7 @@ func (e *EngineTable) initLgDel() {
 
 //*.comp
 //target scanDest 一个comp-struct
-func (e *EngineTable) setTargetDest(v interface{}) {
+func (e *Engine) setTargetDest(v interface{}) {
 	if e.ctx.err != nil {
 		return
 	}
@@ -172,7 +172,7 @@ func (e *EngineTable) setTargetDest(v interface{}) {
 	e.initTableName()
 }
 
-func (e *EngineTable) setTargetDest2TableName(v interface{}) {
+func (e *Engine) setTargetDest2TableName(v interface{}) {
 	if e.ctx.err != nil {
 		return
 	}
@@ -181,7 +181,7 @@ func (e *EngineTable) setTargetDest2TableName(v interface{}) {
 }
 
 //初始化主键
-func (e *EngineTable) initPrimaryKeyName() {
+func (e *Engine) initPrimaryKeyName() {
 	if e.ctx.err != nil {
 		return
 	}
@@ -189,7 +189,7 @@ func (e *EngineTable) initPrimaryKeyName() {
 }
 
 //初始化 表名
-func (e *EngineTable) initTableName() {
+func (e *Engine) initTableName() {
 	if e.ctx.err != nil {
 		return
 	}
@@ -206,7 +206,7 @@ func (e *EngineTable) initTableName() {
 
 //获取struct对应的字段名 和 其值，
 //slice为全部，一个为非nil字段。
-func (e *EngineTable) initColumnsValue() {
+func (e *Engine) initColumnsValue() {
 	if e.ctx.err != nil {
 		return
 	}
@@ -221,7 +221,7 @@ func (e *EngineTable) initColumnsValue() {
 }
 
 //获取struct对应的字段名 有效部分
-func (e *EngineTable) initColumns() {
+func (e *Engine) initColumns() {
 	if e.ctx.err != nil {
 		return
 	}
@@ -268,7 +268,7 @@ func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 }
 
 //------------------------query--------------------------
-func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
+func (e Engine) query(query string, args ...interface{}) (int64, error) {
 	rows, err := e.dialect.query(query, args...)
 	if err != nil {
 		return 0, err
@@ -279,7 +279,7 @@ func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
 	return e.ctx.ScanLn(rows)
 }
 
-func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
+func (e Engine) queryBatch(query string, args [][]interface{}) (int64, error) {
 	stmt, err := e.dialect.queryBatch(query)
 	if err != nil {
 		return 0, err
@@ -299,7 +299,7 @@ func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, erro
 //------------------------gen-sql---------------------------
 
 //根据whereTokens生成的where sql
-func (e EngineTable) genWhereSqlByToken() []byte {
+func (e Engine) genWhereSqlByToken() []byte {
 	if len(e.whereTokens) == 0 && e.extraWhereSql == nil {
 		return nil
 	}

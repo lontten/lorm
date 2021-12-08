@@ -103,12 +103,18 @@ func (c *PgConf) Open() (*sql.DB, error) {
 }
 
 type Engine struct {
-	db DB
+	db      DB
+	ctx     OrmContext
+	dialect Dialect
 
-	Base    EngineBase
-	Extra   EngineExtra
-	Table   EngineTable
-	Classic EngineNative
+	//where tokens
+	whereTokens []string
+
+	extraWhereSql []byte
+
+	//where values
+	args      []interface{}
+	batchArgs [][]interface{}
 }
 
 type EngineEr interface {
