@@ -103,3 +103,50 @@ func TestSelectByModel(t *testing.T) {
 
 	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
 }
+
+func TestSelectByWhere(t *testing.T) {
+	as := assert.New(t)
+	db, mock, err := sqlmock.New()
+	as.Nil(err, "new sqlmock error")
+	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+
+	//---------------------------scan one------------------------
+
+	mock.ExpectQuery("SELECT *").
+		WithArgs("kk").
+		WillReturnError(nil).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).
+			AddRow(1, "test"),
+		)
+	user := User{}
+	num, err := engine.Table.Select(User{}).ByWhere(new(WhereBuilder).
+		Eq("name", "kk"),
+	).ScanOne(&user)
+	as.Nil(err)
+	as.Equal(int64(1), num)
+	as.Equal(int64(1), user.Id)
+	as.Equal("test", user.Name)
+
+	//---------------------------scan list------------------------
+	mock.ExpectQuery("SELECT *").
+		WithArgs("kk", 233).
+		WillReturnError(nil).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).
+			AddRow(1, "test").
+			AddRow(2, "test2"),
+		)
+	users := make([]User, 0)
+	num, err = engine.Table.Select(User{}).ByWhere(new(WhereBuilder).
+		Eq("name", "kk").
+		Eq("age", 233),
+	).ScanList(&users)
+	as.Nil(err)
+	as.Equal(int64(2), num)
+	as.Equal(2, len(users))
+	as.Equal(int64(1), users[0].Id)
+	as.Equal("test", users[0].Name)
+	as.Equal(int64(2), users[1].Id)
+	as.Equal("test2", users[1].Name)
+
+	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
+}

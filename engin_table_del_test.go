@@ -88,3 +88,24 @@ func TestDeleteByModel(t *testing.T) {
 
 	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
 }
+
+func TestDeleteByWhere(t *testing.T) {
+	as := assert.New(t)
+	db, mock, err := sqlmock.New()
+	as.Nil(err, "new sqlmock error")
+	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+
+	mock.ExpectExec("DELETE FROM *").
+		WithArgs("kk", "%kk%").
+		WillReturnError(nil).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	num, err := engine.Table.Delete(User{}).ByWhere(new(WhereBuilder).
+		Eq("name", "kk").
+		Like("age", "kk"),
+	)
+	as.Nil(err)
+	as.Equal(int64(1), num)
+
+	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
+}
