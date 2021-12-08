@@ -69,7 +69,7 @@ func TestSelectByModel(t *testing.T) {
 		)
 
 	mock.ExpectQuery("SELECT *").
-		WithArgs("kk", 233).
+		WithArgs(233, "kk").
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).
 			AddRow(1, "test").

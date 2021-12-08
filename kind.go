@@ -459,13 +459,13 @@ func checkStructFieldType(t reflect.Type) bool {
 
 // v0.7
 //检查 struct field，value是否valuer/nuller
-func checkStructFieldValue(v reflect.Value) bool {
+func checkStructFieldValue(v reflect.Value) error {
 	numField := v.NumField()
 	for i := 0; i < numField; i++ {
 		err := checkFieldNuller(v.Field(i).Type())
 		if err != nil {
-			return false
+			return err
 		}
 	}
-	return true
+	return nil
 }

@@ -2,9 +2,12 @@ package lorm
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
+	"sort"
 	"strings"
 	"unicode"
 )
@@ -242,19 +245,25 @@ func (c OrmConf) getCompColumnsValueNoNil(v reflect.Value) (columns []string, va
 	t := v.Type()
 
 	mappingColumns, err := c.getStructMappingColumns(t)
+	fmt.Println(mappingColumns)
+
 	if err != nil {
 		return
 	}
 
-	for column, i := range mappingColumns {
-		inter := getFieldInter(v.Field(i))
-
+	keys := types.StringList{}
+	for key := range mappingColumns {
+		keys = append(keys, key)
+	}
+	sort.Sort(keys)
+	for _, key := range keys {
+		inter := getFieldInter(v.Field(mappingColumns[key]))
 		if inter != nil {
-			columns = append(columns, column)
+			columns = append(columns, key)
 			values = append(values, inter)
 		}
-
 	}
+
 	return
 }
 

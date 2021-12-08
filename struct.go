@@ -134,8 +134,8 @@ func checkCompField(va reflect.Value) error {
 
 	//struct
 	if kind == reflect.Struct {
-		is := checkStructFieldValue(va)
-		if is {
+		err := checkStructFieldValue(va)
+		if err == nil {
 			compValidNullerCache[typ] = va
 			return nil
 		}
@@ -148,5 +148,5 @@ func checkCompField(va reflect.Value) error {
 			return nil
 		}
 	}
-	return errors.New("need a struct or map")
+	return errors.New("checkCompField err;need a struct or map")
 }

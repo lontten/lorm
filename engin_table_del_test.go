@@ -66,7 +66,7 @@ func TestDeleteByModel(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	mock.ExpectExec("DELETE FROM *").
-		WithArgs("kk", 233).
+		WithArgs(233, "kk").
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 

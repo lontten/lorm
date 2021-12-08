@@ -49,3 +49,17 @@ func (p *StringList) Scan(data interface{}) error {
 	err = json.Unmarshal(marshal, &p)
 	return err
 }
+
+func (p StringList) Len() int {
+	return len(p)
+}
+
+// 实现Less方法
+func (p StringList) Less(i, j int) bool {
+	return p[i] < p[j]
+}
+
+// 实现Swap方法
+func (p StringList) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}

@@ -18,13 +18,13 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 		return
 	}
 	if !isPtr {
-		ctx.err = errors.New("need a ptr")
+		ctx.err = errors.New("target need a ptr")
 		return
 	}
 
 	err = checkCompField(base)
 	if err != nil {
-		ctx.err = errors.New("need a struct")
+		ctx.err = err
 		return
 	}
 
