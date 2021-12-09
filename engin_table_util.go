@@ -81,6 +81,31 @@ func (e EngineTable) doSelect(extra string) (int64, error) {
 	return e.query(bb.String(), e.args...)
 }
 
+//has
+func (e EngineTable) doHas() (bool, error) {
+	if err := e.ctx.err; err != nil {
+		return false, err
+	}
+	var bb bytes.Buffer
+
+	ctx := e.ctx
+	tableName := ctx.tableName
+
+	bb.WriteString("SELECT 1 FROM ")
+	bb.WriteString(tableName)
+	bb.Write(e.genWhereSqlByToken())
+	bb.WriteString("LIMIT 1")
+	rows, err := e.dialect.query(bb.String(), e.args...)
+	if err != nil {
+		return false, err
+	}
+	//update
+	if rows.Next() {
+		return true, nil
+	}
+	return false, nil
+}
+
 //-------------------------------init------------------------
 
 //根据 byModel 生成的where token

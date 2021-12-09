@@ -220,11 +220,54 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 	return orm.base.doSelect("")
 }
 
+//------------------------------------has--------------------------------------------
+
+// Select
+//select
+func (e EngineTable) Has(v interface{}) OrmTableHas {
+	e.setTargetDest2TableName(v)
+	return OrmTableHas{base: e}
+}
+
+// ByPrimaryKey
+//v0.8
+func (orm OrmTableHas) ByPrimaryKey(v ...interface{}) (bool, error) {
+	orm.base.initPrimaryKeyName()
+	orm.base.ctx.initPrimaryKeyValues(v)
+	orm.base.initByPrimaryKey()
+	orm.base.initExtra()
+	return orm.base.doHas()
+}
+
+// ByModel
+//v0.6
+//ptr-comp
+func (orm OrmTableHas) ByModel(v interface{}) (bool, error) {
+	orm.base.initByModel(v)
+	orm.base.initExtra()
+	return orm.base.doHas()
+}
+
+func (orm OrmTableHas) ByWhere(w *WhereBuilder) (bool, error) {
+	orm.base.initByWhere(w)
+	orm.base.initExtra()
+	return orm.base.doHas()
+}
+
+//-----------------------------------------------------------
+
 type OrmTableCreate struct {
 	base EngineTable
 }
 
 type OrmTableSelect struct {
+	base EngineTable
+
+	query string
+	args  []interface{}
+}
+
+type OrmTableHas struct {
 	base EngineTable
 
 	query string
