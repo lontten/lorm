@@ -125,7 +125,6 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
 	if pc != nil {
 		db.SetConnMaxLifetime(pc.MaxLifetime)
