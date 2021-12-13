@@ -18,7 +18,7 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 		utils.PanicErr(rows.Close())
 	}(rows)
 
-	num = 1
+	num = 0
 	base := ctx.destValue
 	t := ctx.scanDestBaseType
 
@@ -38,6 +38,7 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 			return
 		}
 		base.Set(v)
+		num++
 	}
 
 	if rows.Next() {
