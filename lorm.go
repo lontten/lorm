@@ -94,9 +94,10 @@ func (c *PgConf) Open() (*sql.DB, error) {
 		" password=" + c.Password +
 		" dbname=" + c.DbName +
 		" host=" + c.Host +
-		" port= " + c.Port
+		" port= " + c.Port +
+		" "
 	if c.Other == "" {
-		dsn += " sslmode=disable TimeZone=Asia/Shanghai"
+		dsn += "sslmode=disable TimeZone=Asia/Shanghai"
 	}
 	dsn += c.Other
 	return sql.Open("pgx", dsn)
