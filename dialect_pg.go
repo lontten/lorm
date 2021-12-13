@@ -99,7 +99,7 @@ func (m PgDialect) execBatch(query string, args [][]interface{}) (int64, error) 
 func toPgSql(sql string) string {
 	var i = 1
 	for {
-		t := strings.Replace(sql, " ? ", " $"+strconv.Itoa(i)+" ", 1)
+		t := strings.Replace(sql, "?", " $"+strconv.Itoa(i)+" ", 1)
 		if t == sql {
 			break
 		}
