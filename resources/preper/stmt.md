@@ -18,10 +18,12 @@ sql,err:=db.update(user).by
 
 
 db.query("").where(where.byId().byMode().byWhere)
+UserField{
+    files []string
+}
+UserField{}.Name().Age().Id().Fileds()
 
-User{}.Name().Age().Id().Fileds()
-
-fun (u *User)Name() *User{
-    
+fun (u *UserField)Name() *UserField{
+    u.fields = append(u.fields, "name")
 }
 ```
