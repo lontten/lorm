@@ -11,6 +11,10 @@ type UserP struct {
 	Name *string
 	Id   *int
 }
+type UserUuid struct {
+	Name *string
+	ID   *types.UUID ``
+}
 
 func TestUpdateByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
@@ -18,20 +22,19 @@ func TestUpdateByPrimaryKey(t *testing.T) {
 	as.Nil(err, "new sqlmock error")
 	engine := MustConnectMock(db, &PgConf{}).Db(nil)
 
+	v4 := types.NewV4()
+
 	mock.ExpectExec("UPDATE *").
-		WithArgs(1, "nn", 1).
+		WithArgs(v4, "nn", v4).
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	user := UserP{
-		Id:   types.NewInt(1),
+	num, err := engine.Table.Update(&UserUuid{
+		ID:   &v4,
 		Name: types.NewString("nn"),
-	}
-	num, err := engine.Table.Update(&user).ByPrimaryKey()
+	}).ByPrimaryKey()
 	as.Nil(err)
 	as.Equal(int64(1), num)
-	as.Equal(1, *user.Id)
-	as.Equal("nn", *user.Name)
 
 	as.Nil(mock.ExpectationsWereMet(), "we make sure that all expectations were met")
 }

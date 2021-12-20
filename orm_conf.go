@@ -188,7 +188,7 @@ func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error)
 		name := field.Name
 
 		if name == "ID" {
-			cMap["Id"] = i
+			cMap["id"] = i
 			num++
 			if len(cMap) < num {
 				return cMap, errors.New("字段::id" + "error")
