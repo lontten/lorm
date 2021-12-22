@@ -55,7 +55,7 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 	exec, err := m.db.Exec(query, args...)
 	if err != nil {
 		if errors.As(err, &ErrNoPkOrUnique) {
-			return 0, errors.New("insertOrUpdateByUnique fields need to be unique or primary key")
+			return 0, errors.New("insertOrUpdateByUnique fields need to be unique or primary key:" + err.Error())
 		}
 		return 0, err
 	}
