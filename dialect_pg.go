@@ -46,9 +46,12 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 
 	var query = "INSERT INTO " + table + "(" + strings.Join(columns, ",") +
 		") VALUES (" + strings.Repeat(" ? ,", len(args)-1) +
-		" ? ) ON CONFLICT (" + strings.Join(fields, ",") + ") DO UPDATE SET " +
-		strings.Join(cs, "= ? , ") + "= ? "
-
+		" ? ) ON CONFLICT (" + strings.Join(fields, ",") + ") DO"
+	if len(vs) == 0 {
+		query += "NOTHING"
+	} else {
+		query += " UPDATE SET " + strings.Join(cs, "= ? , ") + "= ? "
+	}
 	args = append(args, vs...)
 	query = toPgSql(query)
 	Log.Println(query, args)
