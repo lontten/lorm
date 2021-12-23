@@ -34,7 +34,7 @@ func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *Whe
 			return &WhereBuilder{context: w.context}
 		}
 	}
-	t := reflect.TypeOf(arg)
+	t := reflect.ValueOf(arg)
 	w.context.wheres = append(w.context.wheres, query+" = ? ")
 	if t.Kind() == reflect.Ptr {
 		arg = t.Elem()
@@ -49,7 +49,7 @@ func (w *WhereBuilder) Ne(query string, arg interface{}, condition ...bool) *Whe
 			return &WhereBuilder{context: w.context}
 		}
 	}
-	t := reflect.TypeOf(arg)
+	t := reflect.ValueOf(arg)
 	w.context.wheres = append(w.context.wheres, query+" <> ? ")
 	if t.Kind() == reflect.Ptr {
 		arg = t.Elem()
