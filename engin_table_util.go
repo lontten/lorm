@@ -6,6 +6,7 @@ import (
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
+	"strings"
 )
 
 //update
@@ -54,7 +55,7 @@ func (e EngineTable) doDel() (int64, error) {
 }
 
 //update
-func (e EngineTable) doSelect(extra string) (int64, error) {
+func (e EngineTable) doSelect() (int64, error) {
 	if err := e.ctx.err; err != nil {
 		return 0, err
 	}
@@ -76,7 +77,6 @@ func (e EngineTable) doSelect(extra string) (int64, error) {
 	bb.WriteString(" FROM ")
 	bb.WriteString(tableName)
 	bb.Write(e.genWhereSqlByToken())
-	bb.WriteString(extra)
 
 	return e.query(bb.String(), e.args...)
 }
@@ -172,6 +172,24 @@ func (e *EngineTable) initExtra() {
 		e.whereTokens = append(e.whereTokens, ormConfig.TenantIdFieldName)
 		e.args = append(e.args, ormConfig.TenantIdValueFun())
 	}
+
+	var buf bytes.Buffer
+	buf.Write(e.extraWhereSql)
+
+	if len(e.orderByTokens) > 0 {
+		buf.WriteString(" ORDER BY ? ")
+		buf.WriteString(strings.Join(e.orderByTokens, ","))
+	}
+	if e.limit > 0 {
+		buf.WriteString(" LIMIT ")
+		e.args = append(e.args, e.limit)
+	}
+	if e.offset > 0 {
+		buf.WriteString(" OFFSET ")
+		e.args = append(e.args, e.offset)
+	}
+	e.extraWhereSql = buf.Bytes()
+
 }
 
 //初始化逻辑删除

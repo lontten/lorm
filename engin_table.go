@@ -14,6 +14,11 @@ type EngineTable struct {
 
 	extraWhereSql []byte
 
+	orderByTokens []string
+
+	limit  int64
+	offset int64
+
 	//where values
 	args      []interface{}
 	batchArgs [][]interface{}
@@ -197,13 +202,34 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
 	return OrmTableSelectWhere{base: orm.base}
 }
 
+func (orm OrmTableSelectWhere) OrderBy(name string) OrmTableSelectWhere {
+	orm.base.orderByTokens = append(orm.base.orderByTokens, name)
+	return OrmTableSelectWhere{base: orm.base}
+}
+
+func (orm OrmTableSelectWhere) OrderDescBy(name string) OrmTableSelectWhere {
+	orm.base.orderByTokens = append(orm.base.orderByTokens, name+" desc")
+	return OrmTableSelectWhere{base: orm.base}
+}
+
+func (orm OrmTableSelectWhere) Limit(num int64) OrmTableSelectWhere {
+	orm.base.limit = num
+	return OrmTableSelectWhere{base: orm.base}
+}
+
+func (orm OrmTableSelectWhere) Offset(num int64) OrmTableSelectWhere {
+	orm.base.offset = num
+	return OrmTableSelectWhere{base: orm.base}
+}
+
 func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
+	orm.Limit(1)
 	orm.base.ctx.initScanDestOne(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
 
 	orm.base.initExtra()
-	return orm.base.doSelect("limit 1")
+	return orm.base.doSelect()
 }
 
 func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
@@ -212,7 +238,7 @@ func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
 	orm.base.initColumns()
 
 	orm.base.initExtra()
-	return orm.base.doSelect("")
+	return orm.base.doSelect()
 }
 
 func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
@@ -221,7 +247,7 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 	orm.base.initColumns()
 
 	orm.base.initExtra()
-	return orm.base.doSelect("")
+	return orm.base.doSelect()
 }
 
 //------------------------------------has--------------------------------------------
