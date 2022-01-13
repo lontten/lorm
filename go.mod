@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/jackc/pgtype v1.9.0
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/shopspring/decimal v1.2.0
 	github.com/stretchr/testify v1.7.0
@@ -23,6 +24,8 @@ require (
 	github.com/jackc/pgx/v4 v4.14.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/jonboulle/clockwork v0.2.2 // indirect
+	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/text v0.3.7 // indirect

@@ -25,7 +25,8 @@ type OrmContext struct {
 
 	//-------------------target---------------------
 	//当前struct对象
-	scanDest interface{}
+	scanDest  interface{}
+	destIsPtr bool
 	//去除 ptr
 	destValue reflect.Value
 	//用作 参数合法行校验
@@ -51,7 +52,7 @@ type OrmContext struct {
 	err     error
 
 	//log的层级
-	log int
+	log *Logger
 }
 
 //select 生成

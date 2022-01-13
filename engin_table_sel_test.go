@@ -62,7 +62,7 @@ func TestSelectByModel(t *testing.T) {
 	engine := MustConnectMock(db, &PgConf{}).Db(nil)
 
 	mock.ExpectQuery("SELECT *").
-		WithArgs("kk").
+		WithArgs("123").
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).
 			AddRow(1, "test"),
@@ -78,7 +78,7 @@ func TestSelectByModel(t *testing.T) {
 
 	user := User{}
 	num, err := engine.Table.Select(User{}).ByModel(Whe{
-		Name: types.NewString("kk"),
+		Name: types.NewString("123"),
 		Age:  nil,
 		Uid:  nil,
 	}).ScanOne(&user)

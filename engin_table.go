@@ -33,8 +33,12 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 	}
 	sqlStr := e.ctx.tableCreateGen()
 
-	sqlStr += " RETURNING id"
-	return e.query(sqlStr, e.ctx.columnValues...)
+	if e.ctx.destIsPtr {
+		sqlStr += " RETURNING id"
+		return e.query(sqlStr, e.ctx.columnValues...)
+	}
+
+	return e.dialect.exec(sqlStr, e.ctx.columnValues...)
 }
 
 // CreateOrUpdate

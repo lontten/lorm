@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
+	"log"
 	"reflect"
 	"time"
 )
@@ -46,6 +47,8 @@ type PoolConf struct {
 	MaxOpen      int           // <= 0 means unlimited
 	MaxLifetime  time.Duration // maximum amount of time a connection may be reused
 	MaxIdleTime  time.Duration // maximum amount of time a connection may be idle before being closed
+
+	Logger *log.Logger
 }
 
 type MysqlConf struct {
@@ -126,12 +129,12 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if pc != nil {
 		db.SetConnMaxLifetime(pc.MaxLifetime)
 		db.SetConnMaxIdleTime(pc.MaxIdleTime)
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
+		Log.log = pc.Logger
 	}
 	return &DB{
 		db:       db,

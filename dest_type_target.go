@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
 )
 
@@ -17,10 +16,7 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 		ctx.err = err
 		return
 	}
-	if !isPtr {
-		ctx.err = errors.New("target need a ptr")
-		return
-	}
+	ctx.destIsPtr = isPtr
 
 	err = checkCompField(base)
 	if err != nil {

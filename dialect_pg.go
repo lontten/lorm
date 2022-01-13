@@ -86,6 +86,7 @@ func (m PgDialect) execBatch(query string, args [][]interface{}) (int64, error) 
 	}
 	for _, arg := range args {
 		exec, err := stmt.Exec(arg...)
+
 		Log.Println(query, arg)
 		if err != nil {
 			return num, err
