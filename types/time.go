@@ -16,6 +16,10 @@ func NowTime() Time {
 	return Time{time.Now()}
 }
 
+func NowTimeP() *Time {
+	return &Time{time.Now()}
+}
+
 func (t Time) MarshalJSON() ([]byte, error) {
 	tune := t.Time.Format(`"15:04:05"`)
 	return []byte(tune), nil
@@ -116,6 +120,10 @@ func NowDate() Date {
 	return Date{time.Now()}
 }
 
+func NowDateP() *Date {
+	return &Date{time.Now()}
+}
+
 func (t Date) MarshalJSON() ([]byte, error) {
 	tune := t.Format(`"2006-01-02"`)
 	return []byte(tune), nil
@@ -208,6 +216,10 @@ type DateTime struct {
 
 func NowDateTime() DateTime {
 	return DateTime{time.Now()}
+}
+
+func NowDateTimeP() *DateTime {
+	return &DateTime{time.Now()}
 }
 
 func (t DateTime) MarshalJSON() ([]byte, error) {
