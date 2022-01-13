@@ -202,22 +202,44 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
 	return OrmTableSelectWhere{base: orm.base}
 }
 
-func (orm OrmTableSelectWhere) OrderBy(name string) OrmTableSelectWhere {
+func (orm OrmTableSelectWhere) OrderBy(name string, condition ...bool) OrmTableSelectWhere {
+	for _, b := range condition {
+		if !b {
+			return OrmTableSelectWhere{base: orm.base}
+		}
+	}
+
 	orm.base.orderByTokens = append(orm.base.orderByTokens, name)
 	return OrmTableSelectWhere{base: orm.base}
 }
 
-func (orm OrmTableSelectWhere) OrderDescBy(name string) OrmTableSelectWhere {
+func (orm OrmTableSelectWhere) OrderDescBy(name string, condition ...bool) OrmTableSelectWhere {
+	for _, b := range condition {
+		if !b {
+			return OrmTableSelectWhere{base: orm.base}
+		}
+	}
+
 	orm.base.orderByTokens = append(orm.base.orderByTokens, name+" desc")
 	return OrmTableSelectWhere{base: orm.base}
 }
 
-func (orm OrmTableSelectWhere) Limit(num int64) OrmTableSelectWhere {
+func (orm OrmTableSelectWhere) Limit(num int64, condition ...bool) OrmTableSelectWhere {
+	for _, b := range condition {
+		if !b {
+			return OrmTableSelectWhere{base: orm.base}
+		}
+	}
 	orm.base.limit = num
 	return OrmTableSelectWhere{base: orm.base}
 }
 
-func (orm OrmTableSelectWhere) Offset(num int64) OrmTableSelectWhere {
+func (orm OrmTableSelectWhere) Offset(num int64, condition ...bool) OrmTableSelectWhere {
+	for _, b := range condition {
+		if !b {
+			return OrmTableSelectWhere{base: orm.base}
+		}
+	}
 	orm.base.offset = num
 	return OrmTableSelectWhere{base: orm.base}
 }
