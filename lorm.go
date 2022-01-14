@@ -85,7 +85,7 @@ func (c *PgConf) Open() (*sql.DB, error) {
 }
 
 var _ormCtx = OrmContext{
-	ormConf: OrmConf{
+	conf: OrmConf{
 		PoDir:           "src/model/po",
 		Author:          "lontten",
 		IdType:          0,

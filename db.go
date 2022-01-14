@@ -30,7 +30,7 @@ func (db DB) OrmConf(c *OrmConf) DB {
 	if c == nil {
 		return db
 	}
-	db.ctx.ormConf = *c
+	db.ctx.conf = *c
 	return db
 }
 
