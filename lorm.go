@@ -127,6 +127,7 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 
 	return &DB{
 		db:       db,
+		dbBase:   db,
 		dbConfig: c,
 		ctx:      _ormCtx,
 		dialect:  c.Dialect(db, pc.Logger),
@@ -155,7 +156,8 @@ func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = pool.db.Ping()
+
+	err = pool.dbBase.Ping()
 	if err != nil {
 		return nil, err
 	}

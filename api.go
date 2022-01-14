@@ -4,12 +4,11 @@ import (
 	"database/sql"
 )
 
-//
-//type DBer interface {
-//	ScanLn(rows *sql.Rows, v interface{}) (int64, error)
-//
-//	Scan(rows *sql.Rows, v interface{}) (int64, error)
-//}
+type DBer interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
+}
 
 type Dialect interface {
 	DriverName() string
@@ -29,16 +28,4 @@ type SqlUtil interface {
 	tableCreateArgs2SqlStr(args []string) string
 	tableUpdateArgs2SqlStr(args []string) string
 	tableWherePrimaryKey2SqlStr(ids []string, c OrmConf) string
-}
-
-type Queryer interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-}
-
-type Execer interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-}
-
-type Preparer interface {
-	Prepare(query string) (*sql.Stmt, error)
 }

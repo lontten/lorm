@@ -1,11 +1,11 @@
 package lorm
 
-import (
-	"database/sql"
-)
+import "database/sql"
 
 type DB struct {
-	db       *sql.DB
+	db     DBer
+	dbBase *sql.DB
+
 	dbConfig DbConfig
 	ctx      OrmContext
 
