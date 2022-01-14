@@ -2,17 +2,17 @@ package lorm
 
 import "github.com/pkg/errors"
 
-type NativeQuery struct {
-	base  DB
+type NativeTxQuery struct {
+	base  Tx
 	query string
 	args  []interface{}
 }
 
-func (db DB) Query(query string, args ...interface{}) *NativeQuery {
-	return &NativeQuery{base: db, query: query, args: args}
+func (tx Tx) Query(query string, args ...interface{}) *NativeTxQuery {
+	return &NativeTxQuery{base: tx, query: query, args: args}
 }
 
-func (q NativeQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
+func (q NativeTxQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
@@ -32,7 +32,7 @@ func (q NativeQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	return q.base.ctx.ScanLn(rows)
 }
 
-func (q NativeQuery) GetList(dest interface{}) (rowsNum int64, err error) {
+func (q NativeTxQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
@@ -50,6 +50,6 @@ func (q NativeQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	return q.base.ctx.Scan(rows)
 }
 
-func (db DB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	return db.dialect.exec(query, args...)
+func (tx Tx) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	return tx.dialect.exec(query, args...)
 }
