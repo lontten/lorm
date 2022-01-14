@@ -38,9 +38,9 @@ type OrmConf struct {
 	PrimaryKeyNameFun func(tableName string) []string
 
 	//逻辑删除 logicDeleteFieldName不为零值，即开启
-	// LogicDeleteYesSql   lg.deleted_at is null
-	// LogicDeleteNoSql   lg.deleted_at is not null
-	// LogicDeleteSetSql   lg.deleted_at = now()
+	// LogicDeleteYesSql   deleted_at is null
+	// LogicDeleteNoSql   deleted_at is not null
+	// LogicDeleteSetSql   deleted_at = now()
 	LogicDeleteYesSql string
 	LogicDeleteNoSql  string
 	LogicDeleteSetSql string
