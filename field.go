@@ -6,7 +6,6 @@ import (
 	"reflect"
 )
 
-// v0.7
 //校验struct 的 field 是否合法
 //1. check single
 func checkField(t reflect.Type) error {
@@ -19,7 +18,6 @@ func checkField(t reflect.Type) error {
 	return nil
 }
 
-// v0.7
 //校验struct 的 field 是否合法
 //1. check single
 //3. nuller
@@ -43,7 +41,6 @@ func checkFieldNuller(t reflect.Type) error {
 	return errors.New("field  no imp nuller:: " + t.String())
 }
 
-// v0.7
 //获取field的值 interface类型
 func getFieldInter(v reflect.Value) interface{} {
 	_, v, err := basePtrDeepValue(v)

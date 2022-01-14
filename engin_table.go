@@ -47,7 +47,6 @@ func (e EngineTable) Create(v interface{}) (num int64, err error) {
 }
 
 // CreateOrUpdate
-//v0.6
 //1.ptr
 //2.comp-struct
 func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
@@ -57,7 +56,6 @@ func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
 }
 
 // ByPrimaryKey
-//v0.6
 //ptr
 //single / comp复合主键
 func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {

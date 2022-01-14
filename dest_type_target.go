@@ -11,7 +11,7 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 		return
 	}
 	v := reflect.ValueOf(dest)
-	isPtr, base, err := basePtrDeepValue(v)
+	isPtr, base, err := basePtrValue(v)
 	if err != nil {
 		ctx.err = err
 		return
