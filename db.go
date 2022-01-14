@@ -1,10 +1,8 @@
 package lorm
 
-import "database/sql"
-
 type DB struct {
-	db     DBer
-	dbBase *sql.DB
+	db   DBer
+	isTx bool
 
 	dbConfig DbConfig
 	ctx      OrmContext
