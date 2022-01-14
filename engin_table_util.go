@@ -165,7 +165,7 @@ func (e *EngineTable) initExtra() {
 	}
 
 	if ormConfig.LogicDeleteYesSql != "" {
-		e.extraWhereSql = []byte(ormConfig.LogicDeleteYesSql)
+		e.whereTokens = append(e.whereTokens, ormConfig.LogicDeleteYesSql)
 	}
 
 	if ormConfig.TenantIdFieldName != "" {
@@ -181,11 +181,11 @@ func (e *EngineTable) initExtra() {
 		buf.WriteString(strings.Join(e.orderByTokens, ","))
 	}
 	if e.limit > 0 {
-		buf.WriteString(" LIMIT ")
+		buf.WriteString(" LIMIT ? ")
 		e.args = append(e.args, e.limit)
 	}
 	if e.offset > 0 {
-		buf.WriteString(" OFFSET ")
+		buf.WriteString(" OFFSET ? ")
 		e.args = append(e.args, e.offset)
 	}
 	e.extraWhereSql = buf.Bytes()
