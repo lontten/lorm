@@ -11,7 +11,7 @@ type DBer interface {
 }
 
 type Dialect interface {
-	DriverName() string
+	SetDb(db DBer)
 
 	exec(query string, args ...interface{}) (int64, error)
 	execBatch(query string, args [][]interface{}) (int64, error)

@@ -9,12 +9,12 @@ import (
 )
 
 type PgDialect struct {
-	db  *sql.DB
+	db  DBer
 	log Logger
 }
 
-func (m PgDialect) DriverName() string {
-	return POSTGRES
+func (m *PgDialect) SetDb(db DBer) {
+	m.db = db
 }
 
 func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {

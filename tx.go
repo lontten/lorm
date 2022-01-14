@@ -11,6 +11,7 @@ func (db DB) Begin() DB {
 		panic(err)
 	}
 	db.db = t
+	db.dialect.SetDb(t)
 	return db
 }
 
@@ -20,5 +21,6 @@ func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
 		panic(err)
 	}
 	db.db = t
+	db.dialect.SetDb(t)
 	return db
 }

@@ -15,13 +15,7 @@ import (
 var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
 var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
 
-const (
-	MYSQL    = "mysql"
-	POSTGRES = "postgres"
-)
-
 type DbConfig interface {
-	DriverName() string
 	Open() (*sql.DB, error)
 	Dialect(db *sql.DB, log *log.Logger) Dialect
 }
@@ -43,16 +37,12 @@ type MysqlConf struct {
 	Password string
 }
 
-func (c *MysqlConf) DriverName() string {
-	return MYSQL
-}
-
 func (c *MysqlConf) Dialect(db *sql.DB, logger *log.Logger) Dialect {
 	if logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
 		log.SetFlags(log.LstdFlags | log.Llongfile)
 	}
-	return MysqlDialect{db: db, log: Logger{log: logger}}
+	return &MysqlDialect{db: db, log: Logger{log: logger}}
 }
 
 func (c *MysqlConf) Open() (*sql.DB, error) {
@@ -77,11 +67,7 @@ func (c *PgConf) Dialect(db *sql.DB, logger *log.Logger) Dialect {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
 		log.SetFlags(log.LstdFlags | log.Llongfile)
 	}
-	return PgDialect{db: db, log: Logger{log: logger}}
-}
-
-func (c *PgConf) DriverName() string {
-	return POSTGRES
+	return &PgDialect{db: db, log: Logger{log: logger}}
 }
 
 func (c *PgConf) Open() (*sql.DB, error) {

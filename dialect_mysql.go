@@ -8,12 +8,12 @@ import (
 )
 
 type MysqlDialect struct {
-	db  *sql.DB
+	db  DBer
 	log Logger
 }
 
-func (m MysqlDialect) DriverName() string {
-	return MYSQL
+func (m *MysqlDialect) SetDb(db DBer) {
+	m.db = db
 }
 
 func (m MysqlDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
