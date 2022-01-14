@@ -6,17 +6,6 @@ import (
 	"os"
 )
 
-var (
-	Log = Logger{}
-)
-
-func init() {
-
-	logger := log.New(os.Stdout, "", log.LstdFlags)
-	logger.SetFlags(log.LstdFlags | log.Llongfile)
-	Log = Logger{log: logger}
-}
-
 type Logger struct {
 	log *log.Logger
 }
@@ -40,7 +29,6 @@ func (l *Logger) Panicln(msg string, v ...interface{}) {
 }
 
 func (l *Logger) Println(msg string, v ...interface{}) {
-
 
 	arr := make([]interface{}, 0)
 	arr = append(arr, "\n")

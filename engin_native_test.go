@@ -12,7 +12,7 @@ func TestQuery(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	//-------------base------------
 
@@ -23,7 +23,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	n := 0
-	num, err := engine.Classic.Query("select 1").GetOne(&n)
+	num, err := engine.Query("select 1").GetOne(&n)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(4, n, "n error")
@@ -35,7 +35,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	name := ""
-	num, err = engine.Classic.Query("select 'kk' ").GetOne(&name)
+	num, err = engine.Query("select 'kk' ").GetOne(&name)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal("kk", name, "name error")
@@ -50,7 +50,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	uid := types.UUID{}
-	num, err = engine.Classic.Query("select gen_random_uuid() ").GetOne(&uid)
+	num, err = engine.Query("select gen_random_uuid() ").GetOne(&uid)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(v4, uid, "uuid error")
@@ -64,7 +64,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	d := types.Date{}
-	num, err = engine.Classic.Query("select gen_random_uuid() ").GetOne(&d)
+	num, err = engine.Query("select gen_random_uuid() ").GetOne(&d)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(date, d, "uuid error")
@@ -79,7 +79,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	u := User{}
-	num, err = engine.Classic.Query("select id,name from user limit 1").GetOne(&u)
+	num, err = engine.Query("select id,name from user limit 1").GetOne(&u)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(user, u, "user error")
@@ -91,14 +91,14 @@ func TestExec(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("delete from user where id = ? ").
 		WithArgs(1).
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := engine.Classic.Exec("delete from user where id = ?", 1)
+	num, err := engine.Exec("delete from user where id = ?", 1)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 
@@ -107,7 +107,7 @@ func TestExec(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err = engine.Classic.Exec("update user set name = 'kk' where id = ? ", 1)
+	num, err = engine.Exec("update user set name = 'kk' where id = ? ", 1)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 

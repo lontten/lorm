@@ -357,11 +357,12 @@ func (c OrmConf) getColFieldIndexLinkMap(columns []string, t reflect.Type) (ColF
 //hasTen true开启多租户
 func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
 	var bb bytes.Buffer
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
+
+	hasTen := c.TenantIdFieldName != "" && !c.TenantIgnoreTableFun(tableName)
 	whereSql := c.GenWhere(keys, hasTen)
 
-	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
-	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	logicDeleteSetSql := c.LogicDeleteSetSql
+	logicDeleteYesSql := c.LogicDeleteYesSql
 	if logicDeleteSetSql == "" {
 		bb.WriteString("DELETE FROM ")
 		bb.WriteString(tableName)
@@ -382,13 +383,13 @@ func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
 //keys
 //hasTen true开启多租户
 func (c OrmConf) genDelSqlByWhere(tableName string, where []byte) []byte {
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
+	hasTen := c.TenantIdFieldName != "" && !c.TenantIgnoreTableFun(tableName)
 
 	var bb bytes.Buffer
 	whereSql := c.whereExtra(where, hasTen)
 
-	logicDeleteSetSql := ormConfig.LogicDeleteSetSql
-	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	logicDeleteSetSql := c.LogicDeleteSetSql
+	logicDeleteYesSql := c.LogicDeleteYesSql
 	lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
 	logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
 	if logicDeleteSetSql == lgSql {
@@ -410,7 +411,7 @@ func (c OrmConf) genDelSqlByWhere(tableName string, where []byte) []byte {
 //有tenantid功能
 func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 	if hasTen {
-		keys = append(keys, ormConfig.TenantIdFieldName)
+		keys = append(keys, c.TenantIdFieldName)
 	}
 	if len(keys) == 0 {
 		return []byte("")
@@ -435,7 +436,7 @@ func (c OrmConf) whereExtra(where []byte, hasTen bool) []byte {
 	var bb bytes.Buffer
 	bb.Write(where)
 
-	logicDeleteYesSql := ormConfig.LogicDeleteYesSql
+	logicDeleteYesSql := c.LogicDeleteYesSql
 	lg := strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
 	if lg != logicDeleteYesSql {
 		bb.WriteString(" and ")
@@ -444,7 +445,7 @@ func (c OrmConf) whereExtra(where []byte, hasTen bool) []byte {
 
 	if hasTen {
 		bb.WriteString(" AND ")
-		bb.WriteString(ormConfig.TenantIdFieldName)
+		bb.WriteString(c.TenantIdFieldName)
 		bb.WriteString(" = ? ")
 	}
 

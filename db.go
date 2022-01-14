@@ -7,31 +7,31 @@ import (
 type DB struct {
 	db       *sql.DB
 	dbConfig DbConfig
+	ctx      OrmContext
+
+	dialect Dialect
+
+	//where tokens
+	whereTokens []string
+
+	extraWhereSql []byte
+
+	orderByTokens []string
+
+	limit  int64
+	offset int64
+
+	//where values
+	args      []interface{}
+	batchArgs [][]interface{}
 }
 
-func (db DB) Db(c *OrmConf) Engine {
-	if c != nil {
-		ormConfig = *c
+func (db DB) OrmConf(c *OrmConf) DB {
+	if c == nil {
+		return db
 	}
-	return Engine{
-		db: db,
-		Base: EngineBase{
-			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
-		Extra: EngineExtra{
-			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
-		Classic: EngineNative{
-			context: OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
-		Table: EngineTable{
-			ctx:     OrmContext{},
-			dialect: db.dbConfig.Dialect(db.db),
-		},
-	}
+	db.ctx.ormConf = *c
+	return db
 }
 
 type OrmSelect struct {

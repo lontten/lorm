@@ -10,7 +10,6 @@ import (
 
 // ScanLn
 //接收一行结果
-// v0.7
 // 1.ptr single/comp
 // 2.slice- single
 func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
@@ -26,7 +25,7 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 	if err != nil {
 		return
 	}
-	cfm, err := ormConfig.getColFieldIndexLinkMap(columns, t)
+	cfm, err := ctx.ormConf.getColFieldIndexLinkMap(columns, t)
 	if err != nil {
 		return
 	}
@@ -49,7 +48,6 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 
 // ScanBatch
 //批量
-// v0.7
 // 1.ptr single/comp
 // 2.slice- single
 func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
@@ -68,7 +66,7 @@ func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		cfm, err := ormConfig.getColFieldIndexLinkMap(columns, t)
+		cfm, err := ctx.ormConf.getColFieldIndexLinkMap(columns, t)
 		if err != nil {
 			return 0, err
 		}
@@ -93,7 +91,6 @@ func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 }
 
 //Scan
-// v0.7
 //接收多行结果
 //1.[]- *
 func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
@@ -107,7 +104,7 @@ func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	cfm, err := ormConfig.getColFieldIndexLinkMap(columns, t)
+	cfm, err := ctx.ormConf.getColFieldIndexLinkMap(columns, t)
 	if err != nil {
 		return 0, err
 	}

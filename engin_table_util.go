@@ -10,13 +10,13 @@ import (
 )
 
 //update
-func (e EngineTable) doUpdate() (int64, error) {
-	if err := e.ctx.err; err != nil {
+func (db DB) doUpdate() (int64, error) {
+	if err := db.ctx.err; err != nil {
 		return 0, err
 	}
 	var bb bytes.Buffer
 
-	ctx := e.ctx
+	ctx := db.ctx
 	tableName := ctx.tableName
 	cs := ctx.columns
 
@@ -24,22 +24,22 @@ func (e EngineTable) doUpdate() (int64, error) {
 	bb.WriteString(tableName)
 	bb.WriteString(" SET ")
 	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
-	bb.Write(e.genWhereSqlByToken())
+	bb.Write(db.genWhereSqlByToken())
 
-	return e.dialect.exec(bb.String(), append(ctx.columnValues, e.args...)...)
+	return db.dialect.exec(bb.String(), append(ctx.columnValues, db.args...)...)
 
 }
 
 //del
-func (e EngineTable) doDel() (int64, error) {
-	if err := e.ctx.err; err != nil {
+func (db DB) doDel() (int64, error) {
+	if err := db.ctx.err; err != nil {
 		return 0, err
 	}
 	var bb bytes.Buffer
-	tableName := e.ctx.tableName
-	where := e.genWhereSqlByToken()
+	tableName := db.ctx.tableName
+	where := db.genWhereSqlByToken()
 
-	if ormConfig.LogicDeleteSetSql == "" {
+	if db.ctx.ormConf.LogicDeleteSetSql == "" {
 		bb.WriteString("DELETE FROM ")
 		bb.WriteString(tableName)
 		bb.Write(where)
@@ -47,21 +47,21 @@ func (e EngineTable) doDel() (int64, error) {
 		bb.WriteString("UPDATE ")
 		bb.WriteString(tableName)
 		bb.WriteString(" SET ")
-		bb.WriteString(ormConfig.LogicDeleteSetSql)
+		bb.WriteString(db.ctx.ormConf.LogicDeleteSetSql)
 		bb.Write(where)
 	}
 
-	return e.dialect.exec(bb.String(), e.args...)
+	return db.dialect.exec(bb.String(), db.args...)
 }
 
 //update
-func (e EngineTable) doSelect() (int64, error) {
-	if err := e.ctx.err; err != nil {
+func (db DB) doSelect() (int64, error) {
+	if err := db.ctx.err; err != nil {
 		return 0, err
 	}
 	var bb bytes.Buffer
 
-	ctx := e.ctx
+	ctx := db.ctx
 	tableName := ctx.tableName
 	columns := ctx.columns
 
@@ -76,26 +76,26 @@ func (e EngineTable) doSelect() (int64, error) {
 	}
 	bb.WriteString(" FROM ")
 	bb.WriteString(tableName)
-	bb.Write(e.genWhereSqlByToken())
+	bb.Write(db.genWhereSqlByToken())
 
-	return e.query(bb.String(), e.args...)
+	return db.query(bb.String(), db.args...)
 }
 
 //has
-func (e EngineTable) doHas() (bool, error) {
-	if err := e.ctx.err; err != nil {
+func (db DB) doHas() (bool, error) {
+	if err := db.ctx.err; err != nil {
 		return false, err
 	}
 	var bb bytes.Buffer
 
-	ctx := e.ctx
+	ctx := db.ctx
 	tableName := ctx.tableName
 
 	bb.WriteString("SELECT 1 FROM ")
 	bb.WriteString(tableName)
-	bb.Write(e.genWhereSqlByToken())
+	bb.Write(db.genWhereSqlByToken())
 	bb.WriteString("LIMIT 1")
-	rows, err := e.dialect.query(bb.String(), e.args...)
+	rows, err := db.dialect.query(bb.String(), db.args...)
 	if err != nil {
 		return false, err
 	}
@@ -109,96 +109,96 @@ func (e EngineTable) doHas() (bool, error) {
 //-------------------------------init------------------------
 
 //根据 byModel 生成的where token
-func (e *EngineTable) initByPrimaryKey() {
-	ctx := e.ctx
+func (db *DB) initByPrimaryKey() {
+	ctx := db.ctx
 	if err := ctx.err; err != nil {
 		return
 	}
 	pkNum := len(ctx.primaryKeyValues)
-	e.whereTokens = append(e.whereTokens, utils.GenwhereTokenOfBatch(ctx.primaryKeyNames, pkNum))
+	db.whereTokens = append(db.whereTokens, utils.GenwhereTokenOfBatch(ctx.primaryKeyNames, pkNum))
 
 	for _, value := range ctx.primaryKeyValues {
-		e.args = append(e.args, value...)
+		db.args = append(db.args, value...)
 	}
 }
 
 //根据 byModel 生成的where token
-func (e *EngineTable) initByModel(v interface{}) {
-	if err := e.ctx.err; err != nil {
+func (db *DB) initByModel(v interface{}) {
+	if err := db.ctx.err; err != nil {
 		return
 	}
 	if v == nil {
-		e.ctx.err = errors.New("model is nil")
+		db.ctx.err = errors.New("model is nil")
 		return
 	}
 
-	columns, values, err := getCompCV(v)
+	columns, values, err := getCompCV(v, db.ctx.ormConf)
 	if err != nil {
-		e.ctx.err = err
+		db.ctx.err = err
 		return
 	}
-	e.whereTokens = append(e.whereTokens, utils.GenwhereToken(columns)...)
-	e.args = append(e.args, values...)
+	db.whereTokens = append(db.whereTokens, utils.GenwhereToken(columns)...)
+	db.args = append(db.args, values...)
 }
 
 //根据 byWhere 生成的where token
-func (e *EngineTable) initByWhere(w *WhereBuilder) {
-	if err := e.ctx.err; err != nil {
+func (db *DB) initByWhere(w *WhereBuilder) {
+	if err := db.ctx.err; err != nil {
 		return
 	}
 	if w == nil {
-		e.ctx.err = errors.New("ByWhere is nil")
+		db.ctx.err = errors.New("ByWhere is nil")
 		return
 	}
 
 	args := w.context.args
 	wheres := w.context.wheres
 
-	e.whereTokens = append(e.whereTokens, wheres...)
-	e.args = append(e.args, args...)
+	db.whereTokens = append(db.whereTokens, wheres...)
+	db.args = append(db.args, args...)
 }
 
 //init 逻辑删除、租户
-func (e *EngineTable) initExtra() {
-	if err := e.ctx.err; err != nil {
+func (db *DB) initExtra() {
+	if err := db.ctx.err; err != nil {
 		return
 	}
 
-	if ormConfig.LogicDeleteYesSql != "" {
-		e.whereTokens = append(e.whereTokens, ormConfig.LogicDeleteYesSql)
+	if db.ctx.ormConf.LogicDeleteYesSql != "" {
+		db.whereTokens = append(db.whereTokens, db.ctx.ormConf.LogicDeleteYesSql)
 	}
 
-	if ormConfig.TenantIdFieldName != "" {
-		e.whereTokens = append(e.whereTokens, ormConfig.TenantIdFieldName)
-		e.args = append(e.args, ormConfig.TenantIdValueFun())
+	if db.ctx.ormConf.TenantIdFieldName != "" {
+		db.whereTokens = append(db.whereTokens, db.ctx.ormConf.TenantIdFieldName)
+		db.args = append(db.args, db.ctx.ormConf.TenantIdValueFun())
 	}
 
 	var buf bytes.Buffer
-	buf.Write(e.extraWhereSql)
+	buf.Write(db.extraWhereSql)
 
-	if len(e.orderByTokens) > 0 {
+	if len(db.orderByTokens) > 0 {
 		buf.WriteString(" ORDER BY ")
-		buf.WriteString(strings.Join(e.orderByTokens, ","))
+		buf.WriteString(strings.Join(db.orderByTokens, ","))
 	}
-	if e.limit > 0 {
+	if db.limit > 0 {
 		buf.WriteString(" LIMIT ? ")
-		e.args = append(e.args, e.limit)
+		db.args = append(db.args, db.limit)
 	}
-	if e.offset > 0 {
+	if db.offset > 0 {
 		buf.WriteString(" OFFSET ? ")
-		e.args = append(e.args, e.offset)
+		db.args = append(db.args, db.offset)
 	}
-	e.extraWhereSql = buf.Bytes()
+	db.extraWhereSql = buf.Bytes()
 
 }
 
 //初始化逻辑删除
-func (e *EngineTable) initLgDel() {
-	if err := e.ctx.err; err != nil {
+func (db *DB) initLgDel() {
+	if err := db.ctx.err; err != nil {
 		return
 	}
-	if ormConfig.LogicDeleteYesSql != "" {
-		e.extraWhereSql = []byte(ormConfig.LogicDeleteYesSql)
+	if db.ctx.ormConf.LogicDeleteYesSql != "" {
+		db.extraWhereSql = []byte(db.ctx.ormConf.LogicDeleteYesSql)
 	}
 }
 
@@ -206,92 +206,92 @@ func (e *EngineTable) initLgDel() {
 
 //*.comp
 //target scanDest 一个comp-struct
-func (e *EngineTable) setTargetDest(v interface{}) {
-	if e.ctx.err != nil {
+func (db *DB) setTargetDest(v interface{}) {
+	if db.ctx.err != nil {
 		return
 	}
-	e.ctx.initTargetDest(v)
-	e.ctx.checkTargetDestField()
-	e.initTableName()
+	db.ctx.initTargetDest(v)
+	db.ctx.checkTargetDestField()
+	db.initTableName()
 }
 
-func (e *EngineTable) setTargetDest2TableName(v interface{}) {
-	if e.ctx.err != nil {
+func (db *DB) setTargetDest2TableName(v interface{}) {
+	if db.ctx.err != nil {
 		return
 	}
-	e.ctx.initTargetDest2TableName(v)
-	e.initTableName()
+	db.ctx.initTargetDest2TableName(v)
+	db.initTableName()
 }
 
 //初始化主键
-func (e *EngineTable) initPrimaryKeyName() {
-	if e.ctx.err != nil {
+func (db *DB) initPrimaryKeyName() {
+	if db.ctx.err != nil {
 		return
 	}
-	e.ctx.primaryKeyNames = ormConfig.primaryKeys(e.ctx.tableName)
+	db.ctx.primaryKeyNames = db.ctx.ormConf.primaryKeys(db.ctx.tableName)
 }
 
 //初始化 表名
-func (e *EngineTable) initTableName() {
-	if e.ctx.err != nil {
+func (db *DB) initTableName() {
+	if db.ctx.err != nil {
 		return
 	}
-	if e.ctx.tableName != "" {
+	if db.ctx.tableName != "" {
 		return
 	}
-	tableName, err := ormConfig.tableName(e.ctx.destBaseType)
+	tableName, err := db.ctx.ormConf.tableName(db.ctx.destBaseType)
 	if err != nil {
-		e.ctx.err = err
+		db.ctx.err = err
 		return
 	}
-	e.ctx.tableName = tableName
+	db.ctx.tableName = tableName
 }
 
 //获取struct对应的字段名 和 其值，
 //slice为全部，一个为非nil字段。
-func (e *EngineTable) initColumnsValue() {
-	if e.ctx.err != nil {
+func (db *DB) initColumnsValue() {
+	if db.ctx.err != nil {
 		return
 	}
-	columns, valuess, err := ormConfig.getCompColumnsValueNoNil(e.ctx.destValue)
+	columns, valuess, err := db.ctx.ormConf.getCompColumnsValueNoNil(db.ctx.destValue)
 	if err != nil {
-		e.ctx.err = err
+		db.ctx.err = err
 		return
 	}
-	e.ctx.columns = columns
-	e.ctx.columnValues = valuess
+	db.ctx.columns = columns
+	db.ctx.columnValues = valuess
 	return
 }
 
 //获取struct对应的字段名 有效部分
-func (e *EngineTable) initColumns() {
-	if e.ctx.err != nil {
+func (db *DB) initColumns() {
+	if db.ctx.err != nil {
 		return
 	}
 
-	columns, err := ormConfig.initColumns(e.ctx.scanDestBaseType)
+	columns, err := db.ctx.ormConf.initColumns(db.ctx.scanDestBaseType)
 	if err != nil {
-		e.ctx.err = err
+		db.ctx.err = err
 		return
 	}
-	e.ctx.columns = columns
+	db.ctx.columns = columns
 }
 
 //-------------------------utils------------------------
 //获取comp 的 cv
 //排除 nil 字段
-func getCompCV(v interface{}) ([]string, []interface{}, error) {
+func getCompCV(v interface{}, c OrmConf) ([]string, []interface{}, error) {
 	value := reflect.ValueOf(v)
 	_, value, err := basePtrDeepValue(value)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return getCompValueCV(value)
+	return getCompValueCV(value, c)
 }
 
 //排除 nil 字段
-func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
+func getCompValueCV(v reflect.Value, c OrmConf) ([]string, []interface{}, error) {
 	if !isCompType(v.Type()) {
 		return nil, nil, errors.New("getvcv not comp")
 	}
@@ -300,7 +300,7 @@ func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 		return nil, nil, err
 	}
 
-	columns, values, err := ormConfig.getCompColumnsValueNoNil(v)
+	columns, values, err := c.getCompColumnsValueNoNil(v)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -311,19 +311,19 @@ func getCompValueCV(v reflect.Value) ([]string, []interface{}, error) {
 }
 
 //------------------------query--------------------------
-func (e EngineTable) query(query string, args ...interface{}) (int64, error) {
-	rows, err := e.dialect.query(query, args...)
+func (db DB) query(query string, args ...interface{}) (int64, error) {
+	rows, err := db.dialect.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	if e.ctx.scanIsSlice {
-		return e.ctx.Scan(rows)
+	if db.ctx.scanIsSlice {
+		return db.ctx.Scan(rows)
 	}
-	return e.ctx.ScanLn(rows)
+	return db.ctx.ScanLn(rows)
 }
 
-func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, error) {
-	stmt, err := e.dialect.queryBatch(query)
+func (db DB) queryBatch(query string, args [][]interface{}) (int64, error) {
+	stmt, err := db.dialect.queryBatch(query)
 	if err != nil {
 		return 0, err
 	}
@@ -336,24 +336,24 @@ func (e EngineTable) queryBatch(query string, args [][]interface{}) (int64, erro
 		}
 		rowss = append(rowss, rows)
 	}
-	return e.ctx.ScanBatch(rowss)
+	return db.ctx.ScanBatch(rowss)
 }
 
 //------------------------gen-sql---------------------------
 
 //根据whereTokens生成的where sql
-func (e EngineTable) genWhereSqlByToken() []byte {
-	if len(e.whereTokens) == 0 && e.extraWhereSql == nil {
+func (db DB) genWhereSqlByToken() []byte {
+	if len(db.whereTokens) == 0 && db.extraWhereSql == nil {
 		return nil
 	}
 	var buf bytes.Buffer
 	buf.WriteString(" WHERE ")
-	for i, token := range e.whereTokens {
+	for i, token := range db.whereTokens {
 		if i > 0 {
 			buf.WriteString(" AND ")
 		}
 		buf.WriteString(token)
 	}
-	buf.Write(e.extraWhereSql)
+	buf.Write(db.extraWhereSql)
 	return buf.Bytes()
 }

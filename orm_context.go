@@ -7,6 +7,8 @@ import (
 )
 
 type OrmContext struct {
+	ormConf OrmConf
+
 	isLgDel bool
 	isTen   bool
 
@@ -52,7 +54,7 @@ type OrmContext struct {
 	err     error
 
 	//log的层级
-	log *Logger
+	log Logger
 }
 
 //select 生成
@@ -191,7 +193,7 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 				return
 			}
 
-			columns, values, err := getCompValueCV(value)
+			columns, values, err := getCompValueCV(value, ctx.ormConf)
 			if err != nil {
 				ctx.err = err
 				return
@@ -217,7 +219,7 @@ func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 
 	keyNum := len(ctx.primaryKeyNames)
 	idValues := make([]interface{}, 0)
-	columns, values, err := getCompCV(ctx.scanDest)
+	columns, values, err := getCompCV(ctx.scanDest, ctx.ormConf)
 	if err != nil {
 		ctx.err = err
 		return
@@ -248,24 +250,24 @@ func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
 	tableName := ctx.tableName
 	columns := ctx.columns
-	selSql := ormConfig.genSelectSqlCommon(tableName, columns)
+	selSql := ctx.ormConf.genSelectSqlCommon(tableName, columns)
 	where := ctx.genWhereByPrimaryKey()
 	return append(selSql, where...)
 }
 
 //生成del sql
 func (ctx *OrmContext) genDelByPrimaryKey() []byte {
-	return ormConfig.genDelSqlCommon(ctx.tableName, ctx.primaryKeyNames)
+	return ctx.ormConf.genDelSqlCommon(ctx.tableName, ctx.primaryKeyNames)
 }
 
 //生成del sql
 func (ctx *OrmContext) genDelByKeys(keys []string) []byte {
-	return ormConfig.genDelSqlCommon(ctx.tableName, keys)
+	return ctx.ormConf.genDelSqlCommon(ctx.tableName, keys)
 }
 
 //生成del sql
 func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
-	return ormConfig.genDelSqlByWhere(ctx.tableName, where)
+	return ctx.ormConf.genDelSqlByWhere(ctx.tableName, where)
 }
 
 //生成where sql
@@ -273,22 +275,22 @@ func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
 	keys := ctx.primaryKeyNames
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
-	return ormConfig.GenWhere(keys, hasTen)
+	hasTen := ctx.ormConf.TenantIdFieldName != "" && !ctx.ormConf.TenantIgnoreTableFun(tableName)
+	return ctx.ormConf.GenWhere(keys, hasTen)
 }
 
 //生成where sql
 func (ctx *OrmContext) genWhere(keys []string) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
-	return ormConfig.GenWhere(keys, hasTen)
+	hasTen := ctx.ormConf.TenantIdFieldName != "" && !ctx.ormConf.TenantIgnoreTableFun(tableName)
+	return ctx.ormConf.GenWhere(keys, hasTen)
 }
 
 //为where语句附加上，租户，逻辑删除等。。。
 func (ctx *OrmContext) whereExtra(where []byte) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ormConfig.TenantIdFieldName != "" && !ormConfig.TenantIgnoreTableFun(tableName)
-	return ormConfig.whereExtra(where, hasTen)
+	hasTen := ctx.ormConf.TenantIdFieldName != "" && !ctx.ormConf.TenantIgnoreTableFun(tableName)
+	return ctx.ormConf.whereExtra(where, hasTen)
 }

@@ -8,7 +8,8 @@ import (
 )
 
 type MysqlDialect struct {
-	db *sql.DB
+	db  *sql.DB
+	log Logger
 }
 
 func (m MysqlDialect) DriverName() string {
@@ -16,7 +17,7 @@ func (m MysqlDialect) DriverName() string {
 }
 
 func (m MysqlDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
-	Log.Println(query, args)
+	m.log.Println(query, args)
 	return m.db.Query(query, args...)
 }
 
@@ -37,7 +38,7 @@ func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, 
 		") ON duplicate key UPDATE " + strings.Join(cs, "=?, ") + "=?"
 
 	args = append(args, vs...)
-	Log.Println(query, args)
+	m.log.Println(query, args)
 
 	exec, err := m.db.Exec(query, args...)
 	if err != nil {
@@ -55,7 +56,7 @@ func (m MysqlDialect) queryBatch(query string) (*sql.Stmt, error) {
 }
 
 func (m MysqlDialect) exec(query string, args ...interface{}) (int64, error) {
-	Log.Println(query, args)
+	m.log.Println(query, args)
 
 	exec, err := m.db.Exec(query, args...)
 	if err != nil {
@@ -65,7 +66,7 @@ func (m MysqlDialect) exec(query string, args ...interface{}) (int64, error) {
 }
 
 func (m MysqlDialect) execBatch(query string, args [][]interface{}) (int64, error) {
-	Log.Println(query, args)
+	m.log.Println(query, args)
 
 	var num int64 = 0
 	stmt, err := m.db.Prepare(query)
@@ -74,7 +75,7 @@ func (m MysqlDialect) execBatch(query string, args [][]interface{}) (int64, erro
 	}
 	for _, arg := range args {
 		exec, err := stmt.Exec(arg...)
-		Log.Println(query, args)
+		m.log.Println(query, args)
 		if err != nil {
 			return num, err
 		}

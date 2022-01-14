@@ -2,36 +2,30 @@ package lorm
 
 import "github.com/pkg/errors"
 
-//对 query exec 的简单封装
-type EngineNative struct {
-	dialect Dialect
-	context OrmContext
-}
-
 type ClassicQuery struct {
-	base  EngineNative
+	base  DB
 	query string
 	args  []interface{}
 }
 
 type ClassicExec struct {
-	base EngineNative
+	base DB
 }
 
-func (engine EngineNative) Query(query string, args ...interface{}) *ClassicQuery {
-	return &ClassicQuery{base: engine, query: query, args: args}
+func (db DB) Query(query string, args ...interface{}) *ClassicQuery {
+	return &ClassicQuery{base: db, query: query, args: args}
 }
 
 func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
-	if err = q.base.context.err; err != nil {
+	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
-	q.base.context.initScanDestOne(dest)
-	if q.base.context.scanIsSlice {
+	q.base.ctx.initScanDestOne(dest)
+	if q.base.ctx.scanIsSlice {
 		return 0, errors.New("not support GetOne for slice")
 	}
-	q.base.context.checkScanDestField()
-	if err = q.base.context.err; err != nil {
+	q.base.ctx.checkScanDestField()
+	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
 
@@ -41,17 +35,17 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.context.ScanLn(rows)
+	return q.base.ctx.ScanLn(rows)
 }
 
 func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
-	if err = q.base.context.err; err != nil {
+	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
-	q.base.context.initScanDestList(dest)
-	q.base.context.checkScanDestField()
+	q.base.ctx.initScanDestList(dest)
+	q.base.ctx.checkScanDestField()
 
-	if err = q.base.context.err; err != nil {
+	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
 
@@ -61,9 +55,9 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.context.Scan(rows)
+	return q.base.ctx.Scan(rows)
 }
 
-func (engine EngineNative) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	return engine.dialect.exec(query, args...)
+func (db DB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	return db.dialect.exec(query, args...)
 }

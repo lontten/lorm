@@ -7,6 +7,7 @@ import (
 	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
 	"log"
+	"os"
 	"reflect"
 	"time"
 )
@@ -19,27 +20,10 @@ const (
 	POSTGRES = "postgres"
 )
 
-var ormConfig = OrmConf{
-	PoDir:                "src/model/po",
-	IsFileOverride:       false,
-	Author:               "lontten",
-	IsActiveRecord:       false,
-	IdType:               0,
-	TableNamePrefix:      "",
-	FieldNamePrefix:      "",
-	PrimaryKeyNames:      []string{"id"},
-	LogicDeleteYesSql:    "",
-	LogicDeleteNoSql:     "",
-	LogicDeleteSetSql:    "",
-	TenantIdFieldName:    "",
-	TenantIdValueFun:     nil,
-	TenantIgnoreTableFun: nil,
-}
-
 type DbConfig interface {
 	DriverName() string
 	Open() (*sql.DB, error)
-	Dialect(db *sql.DB) Dialect
+	Dialect(db *sql.DB, log *log.Logger) Dialect
 }
 
 type PoolConf struct {
@@ -63,8 +47,12 @@ func (c *MysqlConf) DriverName() string {
 	return MYSQL
 }
 
-func (c *MysqlConf) Dialect(db *sql.DB) Dialect {
-	return MysqlDialect{db}
+func (c *MysqlConf) Dialect(db *sql.DB, logger *log.Logger) Dialect {
+	if logger == nil {
+		logger = log.New(os.Stdout, "", log.LstdFlags)
+		log.SetFlags(log.LstdFlags | log.Llongfile)
+	}
+	return MysqlDialect{db: db, log: Logger{log: logger}}
 }
 
 func (c *MysqlConf) Open() (*sql.DB, error) {
@@ -84,8 +72,12 @@ type PgConf struct {
 	Other    string
 }
 
-func (c *PgConf) Dialect(db *sql.DB) Dialect {
-	return PgDialect{db}
+func (c *PgConf) Dialect(db *sql.DB, logger *log.Logger) Dialect {
+	if logger == nil {
+		logger = log.New(os.Stdout, "", log.LstdFlags)
+		log.SetFlags(log.LstdFlags | log.Llongfile)
+	}
+	return PgDialect{db: db, log: Logger{log: logger}}
 }
 
 func (c *PgConf) DriverName() string {
@@ -106,17 +98,13 @@ func (c *PgConf) Open() (*sql.DB, error) {
 	return sql.Open("pgx", dsn)
 }
 
-type Engine struct {
-	db DB
-
-	Base    EngineBase
-	Extra   EngineExtra
-	Table   EngineTable
-	Classic EngineNative
-}
-
-type EngineEr interface {
-	Db(c *OrmConf) Engine
+var _ormCtx = OrmContext{
+	ormConf: OrmConf{
+		PoDir:           "src/model/po",
+		Author:          "lontten",
+		IdType:          0,
+		PrimaryKeyNames: []string{"id"},
+	},
 }
 
 func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
@@ -129,20 +117,23 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if pc != nil {
 		db.SetConnMaxLifetime(pc.MaxLifetime)
 		db.SetConnMaxIdleTime(pc.MaxIdleTime)
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
-		Log.log = pc.Logger
 	}
+
 	return &DB{
 		db:       db,
 		dbConfig: c,
+		ctx:      _ormCtx,
+		dialect:  c.Dialect(db, pc.Logger),
 	}, nil
 }
 
-func MustConnect(c DbConfig, pc *PoolConf) EngineEr {
+func MustConnect(c DbConfig, pc *PoolConf) *DB {
 	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
@@ -150,14 +141,16 @@ func MustConnect(c DbConfig, pc *PoolConf) EngineEr {
 	return db
 }
 
-func MustConnectMock(db *sql.DB, c DbConfig) EngineEr {
+func MustConnectMock(db *sql.DB, c DbConfig) *DB {
 	return &DB{
 		db:       db,
 		dbConfig: c,
+		ctx:      _ormCtx,
+		dialect:  c.Dialect(db, nil),
 	}
 }
 
-func Connect(c DbConfig, pc *PoolConf) (EngineEr, error) {
+func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
 	pool, err := open(c, pc)
 	if err != nil {
 		return nil, err

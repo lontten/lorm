@@ -9,7 +9,8 @@ import (
 )
 
 type PgDialect struct {
-	db *sql.DB
+	db  *sql.DB
+	log Logger
 }
 
 func (m PgDialect) DriverName() string {
@@ -18,7 +19,7 @@ func (m PgDialect) DriverName() string {
 
 func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = toPgSql(query)
-	Log.Println(query, args)
+	m.log.Println(query, args)
 	return m.db.Query(query, args...)
 }
 
@@ -54,7 +55,7 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 	}
 	args = append(args, vs...)
 	query = toPgSql(query)
-	Log.Println(query, args)
+	m.log.Println(query, args)
 	exec, err := m.db.Exec(query, args...)
 	if err != nil {
 		if errors.As(err, &ErrNoPkOrUnique) {
@@ -67,7 +68,7 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 
 func (m PgDialect) exec(query string, args ...interface{}) (int64, error) {
 	query = toPgSql(query)
-	Log.Println(query, args)
+	m.log.Println(query, args)
 
 	exec, err := m.db.Exec(query, args...)
 	if err != nil {
@@ -87,7 +88,7 @@ func (m PgDialect) execBatch(query string, args [][]interface{}) (int64, error) 
 	for _, arg := range args {
 		exec, err := stmt.Exec(arg...)
 
-		Log.Println(query, arg)
+		m.log.Println(query, arg)
 		if err != nil {
 			return num, err
 		}

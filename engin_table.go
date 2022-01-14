@@ -5,54 +5,34 @@ import (
 	"github.com/pkg/errors"
 )
 
-type EngineTable struct {
-	dialect Dialect
-	ctx     OrmContext
-
-	//where tokens
-	whereTokens []string
-
-	extraWhereSql []byte
-
-	orderByTokens []string
-
-	limit  int64
-	offset int64
-
-	//where values
-	args      []interface{}
-	batchArgs [][]interface{}
-}
-
 //------------------------------------Create--------------------------------------------
 
 // Create
-//v0.8
 //1.ptr
 //2.comp-struct
-func (e EngineTable) Create(v interface{}) (num int64, err error) {
-	e.setTargetDest(v)
-	e.initColumnsValue()
-	if e.ctx.err != nil {
-		return 0, e.ctx.err
+func (db DB) Create(v interface{}) (num int64, err error) {
+	db.setTargetDest(v)
+	db.initColumnsValue()
+	if db.ctx.err != nil {
+		return 0, db.ctx.err
 	}
-	sqlStr := e.ctx.tableCreateGen()
+	sqlStr := db.ctx.tableCreateGen()
 
-	if e.ctx.destIsPtr {
+	if db.ctx.destIsPtr {
 		sqlStr += " RETURNING id"
-		return e.query(sqlStr, e.ctx.columnValues...)
+		return db.query(sqlStr, db.ctx.columnValues...)
 	}
 
-	return e.dialect.exec(sqlStr, e.ctx.columnValues...)
+	return db.dialect.exec(sqlStr, db.ctx.columnValues...)
 }
 
 // CreateOrUpdate
 //1.ptr
 //2.comp-struct
-func (e EngineTable) CreateOrUpdate(v interface{}) OrmTableCreate {
-	e.setTargetDest(v)
-	e.initColumnsValue()
-	return OrmTableCreate{base: e}
+func (db DB) CreateOrUpdate(v interface{}) OrmTableCreate {
+	db.setTargetDest(v)
+	db.initColumnsValue()
+	return OrmTableCreate{base: db}
 }
 
 // ByPrimaryKey
@@ -75,7 +55,6 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 }
 
 // ByUnique
-//v0.6
 //ptr-comp
 func (orm OrmTableCreate) ByUnique(fs types.Fields) (int64, error) {
 	if fs == nil {
@@ -101,13 +80,12 @@ func (orm OrmTableCreate) ByUnique(fs types.Fields) (int64, error) {
 
 // Delete
 //delete
-func (e EngineTable) Delete(v interface{}) OrmTableDelete {
-	e.setTargetDest2TableName(v)
-	return OrmTableDelete{base: e}
+func (db DB) Delete(v interface{}) OrmTableDelete {
+	db.setTargetDest2TableName(v)
+	return OrmTableDelete{base: db}
 }
 
 // ByPrimaryKey
-//v0.8
 //[]
 //single -> 单主键
 //comp -> 复合主键
@@ -120,7 +98,6 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 }
 
 // ByModel
-//v0.6
 //ptr
 //comp,只能一个comp-struct
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
@@ -129,8 +106,6 @@ func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
 	return orm.base.doDel()
 }
 
-// ByWhere
-//v0.6
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 	orm.base.initByWhere(w)
 	orm.base.initExtra()
@@ -139,16 +114,12 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
 
 //------------------------------------Update--------------------------------------------
 
-// Update
-//v0.6
-func (e EngineTable) Update(v interface{}) OrmTableUpdate {
-	e.setTargetDest(v)
-	e.initColumnsValue()
-	return OrmTableUpdate{base: e}
+func (db DB) Update(v interface{}) OrmTableUpdate {
+	db.setTargetDest(v)
+	db.initColumnsValue()
+	return OrmTableUpdate{base: db}
 }
 
-// ByPrimaryKey
-//v0.8
 func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initSelfPrimaryKeyValues()
@@ -171,15 +142,11 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //------------------------------------Select--------------------------------------------
 
-// Select
-//select
-func (e EngineTable) Select(v interface{}) OrmTableSelect {
-	e.setTargetDest2TableName(v)
-	return OrmTableSelect{base: e}
+func (db DB) Select(v interface{}) OrmTableSelect {
+	db.setTargetDest2TableName(v)
+	return OrmTableSelect{base: db}
 }
 
-// ByPrimaryKey
-//v0.8
 func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initPrimaryKeyValues(v)
@@ -188,7 +155,6 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
 }
 
 // ByModel
-//v0.6
 //ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
 	orm.base.initByModel(v)
@@ -274,9 +240,9 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 
 // Select
 //select
-func (e EngineTable) Has(v interface{}) OrmTableHas {
-	e.setTargetDest2TableName(v)
-	return OrmTableHas{base: e}
+func (db DB) Has(v interface{}) OrmTableHas {
+	db.setTargetDest2TableName(v)
+	return OrmTableHas{base: db}
 }
 
 // ByPrimaryKey
@@ -307,31 +273,31 @@ func (orm OrmTableHas) ByWhere(w *WhereBuilder) (bool, error) {
 //-----------------------------------------------------------
 
 type OrmTableCreate struct {
-	base EngineTable
+	base DB
 }
 
 type OrmTableSelect struct {
-	base EngineTable
+	base DB
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableHas struct {
-	base EngineTable
+	base DB
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableSelectWhere struct {
-	base EngineTable
+	base DB
 }
 
 type OrmTableUpdate struct {
-	base EngineTable
+	base DB
 }
 
 type OrmTableDelete struct {
-	base EngineTable
+	base DB
 }
