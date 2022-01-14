@@ -29,9 +29,7 @@ func (q ClassicQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 		return 0, err
 	}
 
-	query := q.query
-	args := q.args
-	rows, err := q.base.dialect.query(query, args...)
+	rows, err := q.base.dialect.query(q.query, q.args...)
 	if err != nil {
 		return 0, err
 	}
@@ -49,9 +47,7 @@ func (q ClassicQuery) GetList(dest interface{}) (rowsNum int64, err error) {
 		return 0, err
 	}
 
-	query := q.query
-	args := q.args
-	rows, err := q.base.dialect.query(query, args...)
+	rows, err := q.base.dialect.query(q.query, q.args...)
 	if err != nil {
 		return 0, err
 	}
