@@ -11,7 +11,7 @@ func TestSelectByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("SELECT *").
 		WithArgs(1).
@@ -19,7 +19,7 @@ func TestSelectByPrimaryKey(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(1, "test"))
 
 	user := User{}
-	num, err := engine.Table.Select(user).ByPrimaryKey(1).ScanOne(&user)
+	num, err := engine.Select(user).ByPrimaryKey(1).ScanOne(&user)
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(int64(1), user.Id)
@@ -32,7 +32,7 @@ func TestSelectByPrimaryKeys(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("SELECT *").
 		WithArgs(1, 2).
@@ -43,7 +43,7 @@ func TestSelectByPrimaryKeys(t *testing.T) {
 		)
 
 	users := make([]User, 0)
-	num, err := engine.Table.Select(User{}).ByPrimaryKey(1, 2).ScanList(&users)
+	num, err := engine.Select(User{}).ByPrimaryKey(1, 2).ScanList(&users)
 	as.Nil(err)
 	as.Equal(int64(2), num)
 	as.Equal(2, len(users))
@@ -59,7 +59,7 @@ func TestSelectByModel(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("SELECT *").
 		WithArgs("123").
@@ -77,7 +77,7 @@ func TestSelectByModel(t *testing.T) {
 		)
 
 	user := User{}
-	num, err := engine.Table.Select(User{}).ByModel(Whe{
+	num, err := engine.Select(User{}).ByModel(Whe{
 		Name: types.NewString("123"),
 		Age:  nil,
 		Uid:  nil,
@@ -88,7 +88,7 @@ func TestSelectByModel(t *testing.T) {
 	as.Equal("test", user.Name)
 
 	users := make([]User, 0)
-	num, err = engine.Table.Select(User{}).ByModel(Whe{
+	num, err = engine.Select(User{}).ByModel(Whe{
 		Name: types.NewString("kk"),
 		Age:  types.NewInt(233),
 		Uid:  nil,
@@ -108,7 +108,7 @@ func TestSelectByWhere(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	//---------------------------scan one------------------------
 
@@ -119,7 +119,7 @@ func TestSelectByWhere(t *testing.T) {
 			AddRow(1, "test"),
 		)
 	user := User{}
-	num, err := engine.Table.Select(User{}).ByWhere(new(WhereBuilder).
+	num, err := engine.Select(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk"),
 	).ScanOne(&user)
 	as.Nil(err)
@@ -136,7 +136,7 @@ func TestSelectByWhere(t *testing.T) {
 			AddRow(2, "test2"),
 		)
 	users := make([]User, 0)
-	num, err = engine.Table.Select(User{}).ByWhere(new(WhereBuilder).
+	num, err = engine.Select(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk").
 		Eq("age", 233),
 	).ScanList(&users)

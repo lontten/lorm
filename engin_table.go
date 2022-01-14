@@ -5,18 +5,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-//------------------------------------Create--------------------------------------------
+//------------------------------------Insert--------------------------------------------
 
-// Create
+// Insert
 //1.ptr
 //2.comp-struct
-func (db DB) Create(v interface{}) (num int64, err error) {
+func (db DB) Insert(v interface{}) (num int64, err error) {
 	db.setTargetDest(v)
 	db.initColumnsValue()
 	if db.ctx.err != nil {
 		return 0, db.ctx.err
 	}
-	sqlStr := db.ctx.tableCreateGen()
+	sqlStr := db.ctx.tableInsertGen()
 
 	if db.ctx.destIsPtr {
 		sqlStr += " RETURNING id"
@@ -26,10 +26,10 @@ func (db DB) Create(v interface{}) (num int64, err error) {
 	return db.dialect.exec(sqlStr, db.ctx.columnValues...)
 }
 
-// CreateOrUpdate
+// InsertOrUpdate
 //1.ptr
 //2.comp-struct
-func (db DB) CreateOrUpdate(v interface{}) OrmTableCreate {
+func (db DB) InsertOrUpdate(v interface{}) OrmTableCreate {
 	db.setTargetDest(v)
 	db.initColumnsValue()
 	return OrmTableCreate{base: db}

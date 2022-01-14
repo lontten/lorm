@@ -20,7 +20,7 @@ func TestUpdateByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	v4 := types.NewV4()
 
@@ -29,7 +29,7 @@ func TestUpdateByPrimaryKey(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := engine.Table.Update(&UserUuid{
+	num, err := engine.Update(&UserUuid{
 		ID:   &v4,
 		Name: types.NewString("nn"),
 	}).ByPrimaryKey()
@@ -43,7 +43,7 @@ func TestUpdateByModel(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("UPDATE *").
 		WithArgs(1, "nn", 22, "nmmn").
@@ -54,7 +54,7 @@ func TestUpdateByModel(t *testing.T) {
 		Id:   types.NewInt(1),
 		Name: types.NewString("nn"),
 	}
-	num, err := engine.Table.Update(&user).ByModel(struct {
+	num, err := engine.Update(&user).ByModel(struct {
 		Age  *int
 		Name *string
 	}{
@@ -73,7 +73,7 @@ func TestUpdateByWhere(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("UPDATE *").
 		WithArgs(1, "nn", "name_name", 233).
@@ -84,7 +84,7 @@ func TestUpdateByWhere(t *testing.T) {
 		Id:   types.NewInt(1),
 		Name: types.NewString("nn"),
 	}
-	num, err := engine.Table.Update(&user).ByWhere(new(WhereBuilder).
+	num, err := engine.Update(&user).ByWhere(new(WhereBuilder).
 		Eq("name", "name_name").
 		Eq("age", 233),
 	)

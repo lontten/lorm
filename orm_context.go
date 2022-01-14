@@ -80,7 +80,7 @@ func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
 }
 
 // create 生成
-func (ctx *OrmContext) tableCreateGen() string {
+func (ctx *OrmContext) tableInsertGen() string {
 	args := ctx.columns
 	var sb strings.Builder
 

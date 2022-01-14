@@ -11,7 +11,7 @@ func TestCreate(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("user_p *").
 		WithArgs(2, "up").
@@ -22,7 +22,7 @@ func TestCreate(t *testing.T) {
 		Name: types.NewString("up"),
 		Id:   types.NewInt(2),
 	}
-	num, err := engine.Table.Create(&user)
+	num, err := engine.Insert(&user)
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(88, *user.Id)
@@ -34,7 +34,7 @@ func _TestCreateOrUpdate(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	//-----------------create--------------------------
 	mock.ExpectQuery("INSERT *").
@@ -48,7 +48,7 @@ func _TestCreateOrUpdate(t *testing.T) {
 		Name: types.NewString("add"),
 		Id:   types.NewInt(2),
 	}
-	num, err := engine.Table.CreateOrUpdate(&user).ByPrimaryKey()
+	num, err := engine.InsertOrUpdate(&user).ByPrimaryKey()
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(1, *user.Id)
@@ -60,7 +60,7 @@ func _TestCreateOrUpdate2(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	//-----------------update--------------------------
 	mock.ExpectQuery("INSERT*").
@@ -74,7 +74,7 @@ func _TestCreateOrUpdate2(t *testing.T) {
 		Name: types.NewString("upd"),
 		Id:   types.NewInt(2),
 	}
-	num, err := engine.Table.CreateOrUpdate(&user).ByPrimaryKey()
+	num, err := engine.InsertOrUpdate(&user).ByPrimaryKey()
 	as.Nil(err)
 	as.Equal(int64(2), num)
 	as.Equal(2, *user.Id)

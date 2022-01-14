@@ -11,14 +11,14 @@ func TestHasByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("t_user *").
 		WithArgs(1).
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(1))
 
-	has, err := engine.Table.Has(User{}).ByPrimaryKey(1)
+	has, err := engine.Has(User{}).ByPrimaryKey(1)
 	as.Nil(err)
 	as.Equal(true, has)
 
@@ -27,7 +27,7 @@ func TestHasByPrimaryKey(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}))
 
-	has, err = engine.Table.Has("t_false").ByPrimaryKey(1)
+	has, err = engine.Has("t_false").ByPrimaryKey(1)
 	as.Nil(err)
 	as.Equal(false, has)
 
@@ -38,14 +38,14 @@ func TestHasByPrimaryKeys(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("t_user *").
 		WithArgs(1, 2).
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(1))
 
-	has, err := engine.Table.Has(User{}).ByPrimaryKey(1, 2)
+	has, err := engine.Has(User{}).ByPrimaryKey(1, 2)
 	as.Nil(err)
 	as.Equal(true, has)
 
@@ -54,7 +54,7 @@ func TestHasByPrimaryKeys(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}))
 
-	has, err = engine.Table.Has("t_false").ByPrimaryKey(1, 2)
+	has, err = engine.Has("t_false").ByPrimaryKey(1, 2)
 	as.Nil(err)
 	as.Equal(false, has)
 
@@ -65,7 +65,7 @@ func TestHasByModel(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("t_user *").
 		WithArgs("kk").
@@ -74,7 +74,7 @@ func TestHasByModel(t *testing.T) {
 			AddRow(1),
 		)
 
-	has, err := engine.Table.Has(User{}).ByModel(Whe{
+	has, err := engine.Has(User{}).ByModel(Whe{
 		Name: types.NewString("kk"),
 		Age:  nil,
 		Uid:  nil,
@@ -87,7 +87,7 @@ func TestHasByModel(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}))
 
-	has, err = engine.Table.Has("t_false").ByModel(Whe{
+	has, err = engine.Has("t_false").ByModel(Whe{
 		Name: types.NewString("kk"),
 		Age:  nil,
 		Uid:  nil,
@@ -102,7 +102,7 @@ func TestHasByWhere(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectQuery("t_user *").
 		WithArgs("kk").
@@ -110,7 +110,7 @@ func TestHasByWhere(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{""}).
 			AddRow(1),
 		)
-	num, err := engine.Table.Has(User{}).ByWhere(new(WhereBuilder).
+	num, err := engine.Has(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk"),
 	)
 	as.Nil(err)
@@ -121,7 +121,7 @@ func TestHasByWhere(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}))
 
-	num, err = engine.Table.Has("t_false").ByWhere(new(WhereBuilder).
+	num, err = engine.Has("t_false").ByWhere(new(WhereBuilder).
 		Eq("name", "kk"),
 	)
 	as.Nil(err)

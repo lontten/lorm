@@ -16,14 +16,14 @@ func TestDeleteByPrimaryKey(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("DELETE FROM *").
 		WithArgs(1).
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1)
+	num, err := engine.Delete(User{}).ByPrimaryKey(1)
 	as.Nil(err)
 	as.Equal(int64(1), num)
 
@@ -34,14 +34,14 @@ func TestDeleteByPrimaryKeys(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("DELETE FROM *").
 		WithArgs(1, 2, 3).
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 3))
 
-	num, err := engine.Table.Delete(User{}).ByPrimaryKey(1, 2, 3)
+	num, err := engine.Delete(User{}).ByPrimaryKey(1, 2, 3)
 	as.Nil(err)
 	as.Equal(int64(3), num, "num error")
 
@@ -58,7 +58,7 @@ func TestDeleteByModel(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("DELETE FROM *").
 		WithArgs("kk").
@@ -70,7 +70,7 @@ func TestDeleteByModel(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := engine.Table.Delete(User{}).ByModel(Whe{
+	num, err := engine.Delete(User{}).ByModel(Whe{
 		Name: types.NewString("kk"),
 		Age:  nil,
 		Uid:  nil,
@@ -78,7 +78,7 @@ func TestDeleteByModel(t *testing.T) {
 	as.Nil(err)
 	as.Equal(int64(1), num)
 
-	num, err = engine.Table.Delete(User{}).ByModel(Whe{
+	num, err = engine.Delete(User{}).ByModel(Whe{
 		Name: types.NewString("kk"),
 		Age:  types.NewInt(233),
 		Uid:  nil,
@@ -93,14 +93,14 @@ func TestDeleteByWhere(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
 	as.Nil(err, "new sqlmock error")
-	engine := MustConnectMock(db, &PgConf{}).Db(nil)
+	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("DELETE FROM *").
 		WithArgs("kk", "%kk%").
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := engine.Table.Delete(User{}).ByWhere(new(WhereBuilder).
+	num, err := engine.Delete(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk").
 		Like("age", "kk"),
 	)
