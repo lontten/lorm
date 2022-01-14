@@ -177,7 +177,7 @@ func (e *EngineTable) initExtra() {
 	buf.Write(e.extraWhereSql)
 
 	if len(e.orderByTokens) > 0 {
-		buf.WriteString(" ORDER BY ? ")
+		buf.WriteString(" ORDER BY ")
 		buf.WriteString(strings.Join(e.orderByTokens, ","))
 	}
 	if e.limit > 0 {
