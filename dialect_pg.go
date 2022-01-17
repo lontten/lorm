@@ -13,7 +13,7 @@ type PgDialect struct {
 	log Logger
 }
 
-func (m *PgDialect) SetDb(db DBer) {
+func (m *PgDialect) SetDber(db DBer) {
 	m.db = db
 }
 

@@ -17,7 +17,7 @@ func (db DB) Begin() DB {
 	}
 	db.tx = t
 	db.isTx = true
-	db.dialect.SetDb(t)
+	db.dialect.SetDber(t)
 	return db
 }
 
@@ -28,7 +28,7 @@ func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
 	}
 	db.tx = t
 	db.isTx = true
-	db.dialect.SetDb(t)
+	db.dialect.SetDber(t)
 	return db
 }
 
@@ -41,7 +41,7 @@ func (db DB) Rollback() error {
 		return err
 	}
 	db.isTx = false
-	db.dialect.SetDb(db.db)
+	db.dialect.SetDber(db.db)
 	return nil
 }
 
@@ -54,6 +54,6 @@ func (db DB) Commit() error {
 		return err
 	}
 	db.isTx = false
-	db.dialect.SetDb(db.db)
+	db.dialect.SetDber(db.db)
 	return nil
 }

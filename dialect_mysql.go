@@ -12,7 +12,7 @@ type MysqlDialect struct {
 	log Logger
 }
 
-func (m *MysqlDialect) SetDb(db DBer) {
+func (m *MysqlDialect) SetDber(db DBer) {
 	m.db = db
 }
 
