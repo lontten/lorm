@@ -47,6 +47,7 @@ func (db DB) Rollback() error {
 	if err != nil {
 		return err
 	}
+	db.ctx.log.Println("rollback")
 	return nil
 }
 
@@ -58,5 +59,6 @@ func (db DB) Commit() error {
 	if err != nil {
 		return err
 	}
+	db.ctx.log.Println("commit")
 	return nil
 }

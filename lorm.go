@@ -17,7 +17,7 @@ var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
 
 type DbConfig interface {
 	Open() (*sql.DB, error)
-	Dialect(db *sql.DB, log *log.Logger) Dialect
+	Dialect(db *sql.DB, pc *PoolConf) Dialect
 }
 
 type PoolConf struct {
@@ -37,12 +37,15 @@ type MysqlConf struct {
 	Password string
 }
 
-func (c *MysqlConf) Dialect(db *sql.DB, logger *log.Logger) Dialect {
-	if logger == nil {
+func (c *MysqlConf) Dialect(db *sql.DB, pc *PoolConf) Dialect {
+	var logger *log.Logger
+	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
 		log.SetFlags(log.LstdFlags | log.Llongfile)
+	} else {
+		logger = pc.Logger
 	}
-	return &MysqlDialect{db: db, log: Logger{log: logger}}
+	return &PgDialect{db: db, log: Logger{log: logger}}
 }
 
 func (c *MysqlConf) Open() (*sql.DB, error) {
@@ -62,10 +65,13 @@ type PgConf struct {
 	Other    string
 }
 
-func (c *PgConf) Dialect(db *sql.DB, logger *log.Logger) Dialect {
-	if logger == nil {
+func (c *PgConf) Dialect(db *sql.DB, pc *PoolConf) Dialect {
+	var logger *log.Logger
+	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
 		log.SetFlags(log.LstdFlags | log.Llongfile)
+	} else {
+		logger = pc.Logger
 	}
 	return &PgDialect{db: db, log: Logger{log: logger}}
 }
@@ -84,13 +90,23 @@ func (c *PgConf) Open() (*sql.DB, error) {
 	return sql.Open("pgx", dsn)
 }
 
-var _ormCtx = OrmContext{
-	conf: OrmConf{
-		PoDir:           "src/model/po",
-		Author:          "lontten",
-		IdType:          0,
-		PrimaryKeyNames: []string{"id"},
-	},
+func setOrmCtx(pc *PoolConf) OrmContext {
+	var logger *log.Logger
+	if pc == nil || pc.Logger == nil {
+		logger = log.New(os.Stdout, "", log.LstdFlags)
+		log.SetFlags(log.LstdFlags | log.Llongfile)
+	} else {
+		logger = pc.Logger
+	}
+	return OrmContext{
+		log: Logger{log: logger},
+		conf: OrmConf{
+			PoDir:           "src/model/po",
+			Author:          "lontten",
+			IdType:          0,
+			PrimaryKeyNames: []string{"id"},
+		},
+	}
 }
 
 func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
@@ -113,8 +129,8 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	return &DB{
 		db:       db,
 		dbConfig: c,
-		ctx:      _ormCtx,
-		dialect:  c.Dialect(db, pc.Logger),
+		ctx:      setOrmCtx(pc),
+		dialect:  c.Dialect(db, pc),
 	}, nil
 }
 
@@ -130,7 +146,7 @@ func MustConnectMock(db *sql.DB, c DbConfig) *DB {
 	return &DB{
 		db:       db,
 		dbConfig: c,
-		ctx:      _ormCtx,
+		ctx:      setOrmCtx(nil),
 		dialect:  c.Dialect(db, nil),
 	}
 }

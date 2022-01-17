@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 type Logger struct {
@@ -29,6 +30,9 @@ func (l *Logger) Panicln(msg string, v ...interface{}) {
 }
 
 func (l *Logger) Println(msg string, v ...interface{}) {
+	if !strings.HasPrefix(msg, "\n") {
+		msg = "\n" + msg
+	}
 	arr := make([]interface{}, 0)
 	arr = append(arr, msg)
 	arr = append(arr, "\n")
