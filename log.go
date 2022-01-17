@@ -29,13 +29,10 @@ func (l *Logger) Panicln(msg string, v ...interface{}) {
 }
 
 func (l *Logger) Println(msg string, v ...interface{}) {
-
 	arr := make([]interface{}, 0)
-	arr = append(arr, "\n")
 	arr = append(arr, msg)
 	arr = append(arr, "\n")
 	arr = append(arr, v...)
-	arr = append(arr, "\n")
 
 	l.log.Output(2, fmt.Sprintln(arr...))
 }
