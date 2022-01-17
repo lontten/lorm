@@ -9,6 +9,14 @@ type Stmt struct {
 }
 
 func (db DB) Prepare(query string) (s Stmt, err error) {
+	if db.isTx {
+		stmt, err := db.tx.Prepare(query)
+		if err != nil {
+			return s, err
+		}
+		s.stmt = stmt
+		return s, nil
+	}
 	stmt, err := db.db.Prepare(query)
 	if err != nil {
 		return

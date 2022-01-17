@@ -1,7 +1,10 @@
 package lorm
 
+import "database/sql"
+
 type DB struct {
-	db   DBer
+	db   *sql.DB
+	tx   *sql.Tx
 	isTx bool
 
 	dbConfig DbConfig

@@ -110,7 +110,6 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
-
 	return &DB{
 		db:       db,
 		dbConfig: c,
@@ -142,7 +141,7 @@ func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
 		return nil, err
 	}
 
-	err = pool.db.(*sql.DB).Ping()
+	err = pool.db.Ping()
 	if err != nil {
 		return nil, err
 	}
