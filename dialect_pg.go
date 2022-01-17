@@ -13,8 +13,11 @@ type PgDialect struct {
 	log Logger
 }
 
-func (m *PgDialect) SetDber(db DBer) {
-	m.db = db
+func (m PgDialect) Copy(db DBer) Dialect {
+	return &PgDialect{
+		db:  db,
+		log: m.log,
+	}
 }
 
 func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {

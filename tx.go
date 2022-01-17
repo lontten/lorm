@@ -7,18 +7,20 @@ import (
 )
 
 func (db DB) Begin() DB {
-	if db.isTx {
-		return db
-	}
-
 	t, err := db.db.Begin()
 	if err != nil {
 		panic(err)
 	}
-	db.tx = t
-	db.isTx = true
-	db.dialect.SetDber(t)
-	return db
+
+	d := DB{
+		db:       db.db,
+		tx:       t,
+		isTx:     true,
+		dbConfig: db.dbConfig,
+		ctx:      db.ctx.Copy(),
+		dialect:  db.dialect.Copy(t),
+	}
+	return d
 }
 
 func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
@@ -26,10 +28,15 @@ func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
 	if err != nil {
 		panic(err)
 	}
-	db.tx = t
-	db.isTx = true
-	db.dialect.SetDber(t)
-	return db
+
+	return DB{
+		db:       db.db,
+		tx:       t,
+		isTx:     true,
+		dbConfig: db.dbConfig,
+		ctx:      db.ctx.Copy(),
+		dialect:  db.dialect.Copy(t),
+	}
 }
 
 func (db DB) Rollback() error {
@@ -40,8 +47,6 @@ func (db DB) Rollback() error {
 	if err != nil {
 		return err
 	}
-	db.isTx = false
-	db.dialect.SetDber(db.db)
 	return nil
 }
 
@@ -53,7 +58,5 @@ func (db DB) Commit() error {
 	if err != nil {
 		return err
 	}
-	db.isTx = false
-	db.dialect.SetDber(db.db)
 	return nil
 }

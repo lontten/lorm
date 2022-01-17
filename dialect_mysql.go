@@ -12,8 +12,11 @@ type MysqlDialect struct {
 	log Logger
 }
 
-func (m *MysqlDialect) SetDber(db DBer) {
-	m.db = db
+func (m MysqlDialect) Copy(db DBer) Dialect {
+	return &MysqlDialect{
+		db:  db,
+		log: m.log,
+	}
 }
 
 func (m MysqlDialect) query(query string, args ...interface{}) (*sql.Rows, error) {

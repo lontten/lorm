@@ -11,7 +11,7 @@ type DBer interface {
 }
 
 type Dialect interface {
-	SetDber(db DBer)
+	Copy(db DBer) Dialect
 
 	exec(query string, args ...interface{}) (int64, error)
 	execBatch(query string, args [][]interface{}) (int64, error)

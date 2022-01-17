@@ -57,6 +57,13 @@ type OrmContext struct {
 	log Logger
 }
 
+func (ctx OrmContext) Copy() OrmContext {
+	return OrmContext{
+		conf: ctx.conf,
+		log:  ctx.log,
+	}
+}
+
 //select 生成
 func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
 	query := ctx.query
