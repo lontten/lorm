@@ -5,7 +5,6 @@ import (
 )
 
 //------------------base------------------
-//	v0.7
 //是否基本类型
 func _isBaseType(t reflect.Type) bool {
 	kind := t.Kind()
@@ -19,14 +18,12 @@ func _isBaseType(t reflect.Type) bool {
 }
 
 //------------------struct------------------
-//	v0.7
 //是否基本类型
 func _isStructType(t reflect.Type) bool {
 	return t.Kind() == reflect.Struct
 }
 
 //-----------------map-------
-// v0.7
 // is 是否 slice has 是否有内容
 func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 	if v.Kind() != reflect.Map {
@@ -40,18 +37,15 @@ func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 }
 
 //-----------------single-------
-// v0.7
 func isSingleType(t reflect.Type) bool {
 	return checkCompType(t) == Single
 }
 
 //-----------------composite-------
-// v0.7
 func isCompType(t reflect.Type) bool {
 	return checkCompType(t) == Composite
 }
 
-// v0.7
 // is 是否 slice has 是否有内容
 func baseMapType(t reflect.Type) (is, has bool) {
 	if t.Kind() != reflect.Map {
@@ -65,7 +59,6 @@ func baseMapType(t reflect.Type) (is, has bool) {
 }
 
 //-----------------------nuller---------------------------------
-// v0.7
 //检查是否nuller
 func isNullerType(t reflect.Type) bool {
 	return t.Implements(ImpNuller)

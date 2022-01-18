@@ -62,3 +62,29 @@ func getFieldInter(v reflect.Value) interface{} {
 	}
 	return v.Interface()
 }
+
+//获取  interface类型
+func getTargetInter(v reflect.Value) interface{} {
+	_, v, err := basePtrDeepValue(v)
+	if err != nil {
+		return nil
+	}
+	if isValuerType(v.Type()) {
+		return v.Interface()
+	}
+
+	is, _, err := baseSliceDeepValue(v)
+	if err != nil {
+		return nil
+	}
+
+	if is {
+		value, err := types.ArrayOf(v.Interface()).Value()
+		if err != nil {
+			return nil
+		}
+		return value
+	}
+	return v.Interface()
+}
+

@@ -34,11 +34,11 @@ func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *Whe
 			return &WhereBuilder{context: w.context}
 		}
 	}
-	t := reflect.ValueOf(arg)
-	w.context.wheres = append(w.context.wheres, query+" = ? ")
-	if t.Kind() == reflect.Ptr {
-		arg = t.Elem()
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return &WhereBuilder{context: w.context}
 	}
+	w.context.wheres = append(w.context.wheres, query+" = ? ")
 	w.context.args = append(w.context.args, arg)
 	return &WhereBuilder{context: w.context}
 }
@@ -49,11 +49,11 @@ func (w *WhereBuilder) Ne(query string, arg interface{}, condition ...bool) *Whe
 			return &WhereBuilder{context: w.context}
 		}
 	}
-	t := reflect.ValueOf(arg)
-	w.context.wheres = append(w.context.wheres, query+" <> ? ")
-	if t.Kind() == reflect.Ptr {
-		arg = t.Elem()
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return &WhereBuilder{context: w.context}
 	}
+	w.context.wheres = append(w.context.wheres, query+" <> ? ")
 	w.context.args = append(w.context.args, arg)
 	return &WhereBuilder{context: w.context}
 }
