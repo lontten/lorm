@@ -34,15 +34,3 @@ func (db DB) OrmConf(c *OrmConf) DB {
 	db.ctx.conf = *c
 	return db
 }
-
-type OrmSelect struct {
-	base EngineBase
-}
-
-type OrmFrom struct {
-	base EngineBase
-}
-
-type OrmWhere struct {
-	base EngineBase
-}
