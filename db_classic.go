@@ -5,93 +5,163 @@ import (
 	"strings"
 )
 
-type SqlBuilder struct {
-	base DB
-
-	queryTokens []string
-	query       *strings.Builder
-	args        []interface{}
-	start       bool
+func (db DB) Builder() *SqlBuilder {
+	return &SqlBuilder{
+		db:          db,
+		selectQuery: &strings.Builder{},
+		otherQuery:  &strings.Builder{},
+	}
 }
 
-func (b *SqlBuilder) AppendArg(arg interface{}) *SqlBuilder {
-	b.args = append(b.args, arg)
+type SqlBuilder struct {
+	db    DB
+	query string
+	args  []interface{}
+
+	// select部分
+	selectTokens []string
+	selectQuery  *strings.Builder
+	selectArgs   []interface{}
+	selectStatus int8
+
+	// 其他部分
+	otherQuery  *strings.Builder
+	otherArgs   []interface{}
+	whereStatus int8
+
+	// page
+	other interface{}
+}
+
+const (
+	selectNone = iota
+	selectIng
+	selectDone
+)
+
+const (
+	whereNone = iota
+	whereIng
+	whereDone
+)
+
+func (b *SqlBuilder) updStatus() {
+	if b.selectStatus == selectNone {
+		b.selectStatus = selectIng
+	}
+	if b.selectStatus == selectIng {
+		b.selectStatus = selectDone
+	}
+
+	if b.whereStatus == whereIng {
+		b.whereStatus = whereDone
+	}
+}
+
+func (b *SqlBuilder) initSelectSql() {
+	b.selectQuery.WriteString("SELECT ")
+	b.selectQuery.WriteString(strings.Join(b.selectTokens, ","))
+	b.query = b.selectQuery.String() + " " + b.otherQuery.String()
+	b.args = append(b.selectArgs, b.otherArgs...)
+}
+
+func (b *SqlBuilder) AppendArg(arg interface{}, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
+	for _, c := range condition {
+		if !c {
+			return b
+		}
+	}
+	if b.selectStatus == selectIng {
+		b.selectArgs = append(b.selectArgs, arg)
+		return b
+	}
+	b.otherArgs = append(b.otherArgs, arg)
 	return b
 }
 
-func (b *SqlBuilder) initSelectSql() *SqlBuilder {
-	if b.start {
-		b.query.WriteString(strings.Join(b.queryTokens, ","))
-	}
-	b.start = false
+func (b *SqlBuilder) AppendSql(sql string) *SqlBuilder {
+	b.otherQuery.WriteString(sql)
 	return b
 }
 
 func (b *SqlBuilder) AppendArgs(args ...interface{}) *SqlBuilder {
-	b.args = append(b.args, args...)
+	if b.db.ctx.err != nil {
+		return b
+	}
+	if b.selectStatus == selectIng {
+		b.selectArgs = append(b.selectArgs, args...)
+		return b
+	}
+	b.otherArgs = append(b.otherArgs, args...)
 	return b
 }
 
-func (db DB) Builder() *SqlBuilder {
-	return &SqlBuilder{
-		base:  db,
-		query: &strings.Builder{},
-	}
-}
-
 func (b *SqlBuilder) Select(arg string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
 
-	if !b.start {
-		b.query.WriteString("SELECT ")
-		b.start = true
-	}
-	b.queryTokens = append(b.queryTokens, arg)
+	b.updStatus()
+	b.selectTokens = append(b.selectTokens, arg)
+
 	return b
 }
 
 func (b *SqlBuilder) SelectModel(v interface{}) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	if v == nil {
 		return b
 	}
 
-	if !b.start {
-		b.query.WriteString("SELECT ")
-		b.start = true
-	}
-
-	b.base.ctx.initScanDestOne(v)
-	columns, err := b.base.ctx.conf.initColumns(b.base.ctx.scanDestBaseType)
+	b.db.ctx.initScanDestOne(v)
+	columns, err := b.db.ctx.conf.initColumns(b.db.ctx.scanDestBaseType)
 	if err != nil {
-		b.base.ctx.err = err
+		b.db.ctx.err = err
 		return b
 	}
-	b.queryTokens = append(b.queryTokens, columns...)
+
+	b.updStatus()
+	b.selectTokens = append(b.selectTokens, columns...)
 	return b
 }
 
 func (b *SqlBuilder) From(name string) *SqlBuilder {
-	b.initSelectSql()
-	b.query.WriteString(" FROM " + name)
+	if b.db.ctx.err != nil {
+		return b
+	}
+	b.updStatus()
+	b.otherQuery.WriteString(" FROM " + name)
 	return b
 }
 
 func (b *SqlBuilder) Join(name string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString(" JOIN " + name)
+	b.updStatus()
+	b.otherQuery.WriteString(" JOIN " + name)
 	return b
 }
 
 func (b *SqlBuilder) Arg(arg interface{}, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
@@ -102,150 +172,217 @@ func (b *SqlBuilder) Arg(arg interface{}, condition ...bool) *SqlBuilder {
 }
 
 func (b *SqlBuilder) Args(args ...interface{}) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	b.AppendArgs(args...)
 	return b
 }
 
 func (b *SqlBuilder) LeftJoin(name string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString("\n")
-	b.query.WriteString("LEFT JOIN " + name)
-	b.query.WriteString("\n")
+	b.updStatus()
+	b.otherQuery.WriteString("\n")
+	b.otherQuery.WriteString("LEFT JOIN " + name)
+	b.otherQuery.WriteString("\n")
 
 	return b
 }
 
 func (b *SqlBuilder) RightJoin(name string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString(" RIGHT JOIN " + name)
+	b.updStatus()
+	b.otherQuery.WriteString(" RIGHT JOIN " + name)
 	return b
 }
 
 func (b *SqlBuilder) OrderBy(name string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString(" ORDER BY " + name)
+	b.updStatus()
+	b.otherQuery.WriteString(" ORDER BY " + name)
 	return b
 }
 
 func (b *SqlBuilder) Native(sql string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString(" ")
-	b.query.WriteString(sql)
-	b.query.WriteString(" ")
+	b.updStatus()
+	b.otherQuery.WriteString(" ")
+	b.otherQuery.WriteString(sql)
+	b.otherQuery.WriteString(" ")
 	return b
 }
 
 func (b *SqlBuilder) OrderDescBy(name string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString(" ORDER BY " + name + " DESC")
+	b.updStatus()
+	b.otherQuery.WriteString(" ORDER BY " + name + " DESC")
 	return b
 }
 
 func (b *SqlBuilder) Limit(num int64, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString(" LIMIT ? ")
+	b.updStatus()
+	b.otherQuery.WriteString(" LIMIT ? ")
 	b.AppendArg(num)
 	return b
 }
 
 func (b *SqlBuilder) Offset(num int64, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.initSelectSql()
-	b.query.WriteString(" OFFSET ? ")
+	b.updStatus()
+	b.otherQuery.WriteString(" OFFSET ? ")
 	b.AppendArg(num)
 	return b
 }
 
-func (b *SqlBuilder) Where(v *WhereBuilder) *SqlBuilder {
+func (b *SqlBuilder) WhereBuilder(v *WhereBuilder) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
 	if v == nil {
 		return b
 	}
-
+	b.updStatus()
 	wheres := v.context.wheres
-	for i, where := range wheres {
-		if i == 0 {
-			b.query.WriteString(" WHERE " + where)
-			continue
-		}
-		b.query.WriteString(" AND " + where)
+	whereStr := strings.Join(wheres, " AND ")
+
+	switch b.whereStatus {
+	case whereNone:
+		b.whereStatus = whereIng
+		b.otherQuery.WriteString(" WHERE ")
+		b.otherQuery.WriteString(whereStr)
+	case whereIng:
+		b.otherQuery.WriteString(" AND ")
+		b.otherQuery.WriteString(whereStr)
+	case whereDone:
+		b.db.ctx.err = errors.New("where has been done")
 	}
-	b.initSelectSql()
+
 	b.AppendArgs(v.context.args)
 	return b
 }
 
+func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
+	if b.db.ctx.err != nil {
+		return b
+	}
+	for _, c := range condition {
+		if !c {
+			return b
+		}
+	}
+
+	b.updStatus()
+
+	switch b.whereStatus {
+	case whereNone:
+		b.whereStatus = whereIng
+		b.otherQuery.WriteString(" WHERE ")
+		b.otherQuery.WriteString(whereStr)
+	case whereIng:
+		b.otherQuery.WriteString(" AND ")
+		b.otherQuery.WriteString(whereStr)
+	case whereDone:
+		b.db.ctx.err = errors.New("where has been done")
+	}
+
+	return b
+}
+
 func (b *SqlBuilder) ScanOne(dest interface{}) (rowsNum int64, err error) {
-	b.initSelectSql()
-	b.base.ctx.initScanDestOne(dest)
-	if b.base.ctx.scanIsSlice {
+	if err = b.db.ctx.err; err != nil {
+		return 0, err
+	}
+	b.updStatus()
+	b.db.ctx.initScanDestOne(dest)
+	if b.db.ctx.scanIsSlice {
 		return 0, errors.New("not support GetOne for slice")
 	}
-	b.base.ctx.checkScanDestField()
-	if err = b.base.ctx.err; err != nil {
+	b.db.ctx.checkScanDestField()
+	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
 
-	rows, err := b.base.dialect.query(b.query.String(), b.args...)
+	rows, err := b.db.dialect.query(b.query, b.args...)
 	if err != nil {
 		return 0, err
 	}
-	return b.base.ctx.ScanLn(rows)
+	return b.db.ctx.ScanLn(rows)
 }
 
 func (b *SqlBuilder) ScanList(dest interface{}) (rowsNum int64, err error) {
-	if err = b.base.ctx.err; err != nil {
+	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
-	b.initSelectSql()
-	b.base.ctx.initScanDestList(dest)
-	b.base.ctx.checkScanDestField()
+	b.updStatus()
+	b.db.ctx.initScanDestList(dest)
+	b.db.ctx.checkScanDestField()
 
-	if err = b.base.ctx.err; err != nil {
+	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
 
-	rows, err := b.base.dialect.query(b.query.String(), b.args...)
+	rows, err := b.db.dialect.query(b.query, b.args...)
 	if err != nil {
 		return 0, err
 	}
-	return b.base.ctx.Scan(rows)
+	return b.db.ctx.Scan(rows)
 }
 
-func (b *SqlBuilder) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	b.initSelectSql()
-	return b.base.dialect.exec(query, args...)
+func (b *SqlBuilder) Exec() (rowsNum int64, err error) {
+	b.updStatus()
+	if err = b.db.ctx.err; err != nil {
+		return 0, err
+	}
+
+	return b.db.dialect.exec(b.query, b.args...)
 }
