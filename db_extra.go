@@ -44,6 +44,7 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	var size = b.other.(PageCnfig).size
 	var current = b.other.(PageCnfig).current
 
+	b.initSelectSql()
 	b.db.ctx.initScanDestList(dest)
 	b.db.ctx.checkScanDestField()
 	if err = b.db.ctx.err; err != nil {
@@ -51,14 +52,14 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	}
 	var countSql = "select count(*) " + b.otherQuery.String()
 
-	rows, err := b.db.dialect.query(countSql, b.selectArgs...)
+	rows, err := b.db.dialect.query(countSql, b.otherArgs...)
 	if err != nil {
 		return
 	}
 
 	defer rows.Close()
 	for rows.Next() {
-		box := reflect.ValueOf(&total).Addr().Interface()
+		box := reflect.ValueOf(&total).Interface()
 		err = rows.Scan(box)
 		if err != nil {
 			return
