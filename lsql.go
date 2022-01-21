@@ -1,10 +1,10 @@
-package lorm
+package lsql
 
 import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"github.com/lontten/lorm/types"
+	"github.com/lontten/lsql/types"
 	"github.com/pkg/errors"
 	"log"
 	"os"

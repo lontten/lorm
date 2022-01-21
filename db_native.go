@@ -1,4 +1,4 @@
-package lorm
+package lsql
 
 import "github.com/pkg/errors"
 

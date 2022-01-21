@@ -1,9 +1,9 @@
-package lorm
+package lsql
 
 import (
 	"bytes"
 	"database/sql"
-	"github.com/lontten/lorm/utils"
+	"github.com/lontten/lsql/utils"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"

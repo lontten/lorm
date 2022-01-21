@@ -1,8 +1,8 @@
-package lorm
+package lsql
 
 import (
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/lontten/lorm/types"
+	"github.com/lontten/lsql/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

@@ -1,8 +1,8 @@
-package lorm
+package lsql
 
 import (
 	"errors"
-	"github.com/lontten/lorm/utils"
+	"github.com/lontten/lsql/utils"
 	"reflect"
 	"strings"
 	"sync"

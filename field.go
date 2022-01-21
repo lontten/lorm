@@ -1,7 +1,7 @@
-package lorm
+package lsql
 
 import (
-	"github.com/lontten/lorm/types"
+	"github.com/lontten/lsql/types"
 	"github.com/pkg/errors"
 	"reflect"
 )
@@ -87,4 +87,3 @@ func getTargetInter(v reflect.Value) interface{} {
 	}
 	return v.Interface()
 }
-
