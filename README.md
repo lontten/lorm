@@ -17,7 +17,7 @@
 
 	var dbName = pg.DbName
 
-	pgConf := lorm.PgConf{
+	pgConf := lsql.PgConf{
 		Host:     pg.Ip,
 		Port:     pg.Port,
 		DbName:   pg.dbName,
@@ -25,18 +25,18 @@
 		Password: pg.Pwd,
 		Other:    "sslmode=disable TimeZone=Asia/Shanghai",
 	}
-	poolConf := lorm.PoolConf{
+	poolConf := lsql.PoolConf{
 		MaxIdleCount: 10,
 		MaxOpen:      100,
 		MaxLifetime:  time.Hour,
 		Logger:       newLogger,
 	}
-	ormConf := lorm.OrmConf{
+	ormConf := lsql.OrmConf{
 		TableNamePrefix: "t_",
 		PrimaryKeyNames: []string{"id"},
 	}
 
-	engine := lorm.MustConnect(&pgConf, &poolConf).Db(&ormConf)
+	db := lsql.MustConnect(&pgConf, &poolConf).OrmConf(&ormConf)
 
 ```
 ```go
@@ -61,7 +61,7 @@ type NullUser struct {
 		Age:  types.NewInt(12),
 	}
 	// create 是引用，会返回id
-	num, err := engine.Table.Create(&user)
+	num, err := db.Insert(&user)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ type NullUser struct {
 	}
 	
 	// create 不是引用，不会返回id
-	num, err := engine.Table.Create(user)
+	num, err := db.Insert(user)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ type NullUser struct {
 	}
 	
 	// 创建或更新，根据主键
-	num, err := Engine.Table.CreateOrUpdate(&user).ByPrimaryKey()
+	num, err := db.InsertOrUpdate(&user).ByPrimaryKey()
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ type NullUser struct {
 	}
 	
 	// 创建或更新，根据 name,age组合的唯一索引；mysql不支持此功能
-	num, err := Engine.Table.CreateOrUpdate(&user).ByUnique([]string{"name","age"})
+	num, err := db.InsertOrUpdate(&user).ByUnique([]string{"name","age"})
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ type NullUser struct {
 	}
 	
 	//根据主键更新
-	num, err := Engine.Table.Update(&user).ByPrimaryKey()
+	num, err := db.Update(&user).ByPrimaryKey()
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ type NullUser struct {
 	}
 	
 	//根据条件更新
-	num, err := Engine.Table.Update(&user).ByModel(NullUser{
+	num, err := db.Update(&user).ByModel(NullUser{
 		Name: types.NewString("tom"),
 	})
 	if err != nil {
@@ -165,7 +165,7 @@ type NullUser struct {
 	}
 	
 	//使用条件构造器
-	num, err := Engine.Table.Update(&user).ByWhere(new(lorm.WhereBuilder).
+	num, err := db.Update(&user).ByWhere(new(lorm.WhereBuilder).
 		Eq("id", user.ID,true).
 		NoLike("age", *user.Name, user.Name != nil).
 		Ne("age", user.Age,false))
@@ -181,7 +181,7 @@ type NullUser struct {
  
 	
 	//根据主键删除
-	num, err := Engine.Table.Delete(User{}).ByPrimaryKey(id)
+	num, err := db.Delete(User{}).ByPrimaryKey(id)
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ type NullUser struct {
 	
  
 	//根据条件删除
-	num, err := Engine.Table.Delete(User{}).ByModel(NullUser{
+	num, err := db.Delete(User{}).ByModel(NullUser{
 		Name: types.NewString("tom"),
 	})
 	if err != nil {
@@ -205,7 +205,7 @@ type NullUser struct {
 	 
 	
 	//使用条件构造器
-	num, err := Engine.Table.Delete(User{}).ByWhere(new(lorm.WhereBuilder).
+	num, err := db.Delete(User{}).ByWhere(new(lsql.WhereBuilder).
 		Eq("id", user.ID,true).
 		NoLike("age", *user.Name, user.Name != nil).
 		Ne("age", user.Age,false))
@@ -220,7 +220,7 @@ type NullUser struct {
 ###select
 ```go
 	user := User{}
-	num, err := Engine.Table.Select(User{}).ByPrimaryKey(id).ScanOne(&user)
+	num, err := db.Select(User{}).ByPrimaryKey(id).ScanOne(&user)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ type NullUser struct {
 	//-----------------
 	
 	users := make([]User,0)
-	num, err := Engine.Table.Select(User{}).ByPrimaryKey(id1,id2,id3).ScanList(&users)
+	num, err := db.Select(User{}).ByPrimaryKey(id1,id2,id3).ScanList(&users)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ type NullUser struct {
 	
 	
 	users := make([]User, 0)
-	num, err := Engine.Table.Select(User{}).ByModel(NullUser{
+	num, err := db.Select(User{}).ByModel(NullUser{
 		Name: types.NewString("tom"),
 		Age:  types.NewInt(12),
 	}).ScanList(&users)
@@ -258,7 +258,7 @@ type NullUser struct {
 	
 	user := User{}
 	//随机获取一个
-	num, err := Engine.Table.Select(User{}).ByModel(NullUser{
+	num, err := db.Select(User{}).ByModel(NullUser{
 		Name: types.NewString("tom"),
 		Age:  types.NewInt(12),
 	}).ScanFirst(&user)
@@ -272,7 +272,7 @@ type NullUser struct {
 	//-----------------------
 	
 	
-	has, err := Engine.Table.Select(User{}).ByModel(NullUser{
+	has, err := db.Select(User{}).ByModel(NullUser{
 		Name: types.NewString("tom"),
 		Age:  types.NewInt(12),
 	})
@@ -285,7 +285,7 @@ type NullUser struct {
 	
 	
 	//----------------------------
-	has, err := Engine.Table.Has(User{}).ByWhere(new(lorm.WhereBuilder).
+	has, err := db.Has(User{}).ByWhere(new(lsql.WhereBuilder).
 		Eq("id", user.ID, true).
 		NoLike("age", *user.Name, user.Name != nil).
 		Ne("age", user.Age, false))
@@ -298,7 +298,7 @@ type NullUser struct {
 	
 	
 	
-	has, err := Engine.Table.Has(User{}).ByWhere(new(lorm.WhereBuilder).
+	has, err := db.Has(User{}).ByWhere(new(lsql.WhereBuilder).
 		Eq("id", user.ID, true).
 		NoLike("age", *user.Name, user.Name != nil).
 		Ne("age", user.Age, false))
