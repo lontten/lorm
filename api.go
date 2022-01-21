@@ -21,11 +21,3 @@ type Dialect interface {
 	insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error)
 	insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error)
 }
-
-type SqlUtil interface {
-	selectArgsArr2SqlStr(args []string)
-	tableWhereArgs2SqlStr(args []string, c OrmConf) string
-	tableCreateArgs2SqlStr(args []string) string
-	tableUpdateArgs2SqlStr(args []string) string
-	tableWherePrimaryKey2SqlStr(ids []string, c OrmConf) string
-}
