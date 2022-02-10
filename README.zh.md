@@ -1,6 +1,6 @@
 # lsql
 
-[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/lontten/lsql/main/LICENSE)
+[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/lontten/lorm/main/LICENSE)
 
 target - 必须是struct，用于tableName
 
