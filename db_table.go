@@ -1,7 +1,7 @@
 package lsql
 
 import (
-	"github.com/lontten/lsql/types"
+	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
 )
 

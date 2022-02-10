@@ -2,7 +2,7 @@ package lsql
 
 import (
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/lontten/lsql/types"
+	"github.com/lontten/lorm/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

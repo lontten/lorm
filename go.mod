@@ -1,4 +1,4 @@
-module github.com/lontten/lsql
+module github.com/lontten/lorm
 
 go 1.17
 

@@ -2,7 +2,7 @@ package lsql
 
 import (
 	"errors"
-	"github.com/lontten/lsql/utils"
+	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
 	"sync"

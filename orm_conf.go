@@ -2,8 +2,8 @@ package lsql
 
 import (
 	"bytes"
-	"github.com/lontten/lsql/types"
-	"github.com/lontten/lsql/utils"
+	"github.com/lontten/lorm/types"
+	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
 	"sort"

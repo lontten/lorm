@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"github.com/lontten/lsql/types"
+	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
 	"log"
 	"os"

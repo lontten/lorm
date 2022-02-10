@@ -3,7 +3,7 @@ package lsql
 import (
 	"database/sql"
 	"errors"
-	"github.com/lontten/lsql/utils"
+	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
 )

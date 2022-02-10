@@ -1,9 +1,9 @@
-# lsql
+# lorm
 
-[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/lontten/lsql/main/LICENSE)
+[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/lontten/lorm/main/LICENSE)
 
 
-### init lsql
+### init lorm
 ```go
 
 	path := "./log/go.log"
@@ -17,7 +17,7 @@
 
 	var dbName = pg.DbName
 
-	pgConf := lsql.PgConf{
+	pgConf := lorm.PgConf{
 		Host:     pg.Ip,
 		Port:     pg.Port,
 		DbName:   pg.dbName,
@@ -25,18 +25,18 @@
 		Password: pg.Pwd,
 		Other:    "sslmode=disable TimeZone=Asia/Shanghai",
 	}
-	poolConf := lsql.PoolConf{
+	poolConf := lorm.PoolConf{
 		MaxIdleCount: 10,
 		MaxOpen:      100,
 		MaxLifetime:  time.Hour,
 		Logger:       newLogger,
 	}
-	ormConf := lsql.OrmConf{
+	ormConf := lorm.OrmConf{
 		TableNamePrefix: "t_",
 		PrimaryKeyNames: []string{"id"},
 	}
 
-	db := lsql.MustConnect(&pgConf, &poolConf).OrmConf(&ormConf)
+	db := lorm.MustConnect(&pgConf, &poolConf).OrmConf(&ormConf)
 
 ```
 ```go
@@ -205,7 +205,7 @@ type NullUser struct {
 	 
 	
 	//使用条件构造器
-	num, err := db.Delete(User{}).ByWhere(new(lsql.WhereBuilder).
+	num, err := db.Delete(User{}).ByWhere(new(lorm.WhereBuilder).
 		Eq("id", user.ID,true).
 		NoLike("age", *user.Name, user.Name != nil).
 		Ne("age", user.Age,false))
@@ -285,7 +285,7 @@ type NullUser struct {
 	
 	
 	//----------------------------
-	has, err := db.Has(User{}).ByWhere(new(lsql.WhereBuilder).
+	has, err := db.Has(User{}).ByWhere(new(lorm.WhereBuilder).
 		Eq("id", user.ID, true).
 		NoLike("age", *user.Name, user.Name != nil).
 		Ne("age", user.Age, false))
@@ -298,7 +298,7 @@ type NullUser struct {
 	
 	
 	
-	has, err := db.Has(User{}).ByWhere(new(lsql.WhereBuilder).
+	has, err := db.Has(User{}).ByWhere(new(lorm.WhereBuilder).
 		Eq("id", user.ID, true).
 		NoLike("age", *user.Name, user.Name != nil).
 		Ne("age", user.Age, false))
@@ -311,4 +311,12 @@ type NullUser struct {
 	
 	
 	
+```
+
+
+###tx
+```go
+	tx := Db.Begin()
+    err := tx.Commit()
+    err := tx.Rollback()
 ```
