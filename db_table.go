@@ -162,6 +162,9 @@ func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
 }
 
 func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
+	if w == nil {
+		return OrmTableSelectWhere{base: orm.base}
+	}
 	orm.base.initByWhere(w)
 	return OrmTableSelectWhere{base: orm.base}
 }
