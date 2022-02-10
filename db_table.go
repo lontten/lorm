@@ -1,4 +1,4 @@
-package lsql
+package lorm
 
 import (
 	"github.com/lontten/lorm/types"

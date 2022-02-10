@@ -1,4 +1,4 @@
-package lsql
+package lorm
 
 import (
 	"github.com/DATA-DOG/go-sqlmock"

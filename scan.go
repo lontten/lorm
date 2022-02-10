@@ -1,4 +1,4 @@
-package lsql
+package lorm
 
 import (
 	"database/sql"
