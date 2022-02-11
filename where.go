@@ -91,7 +91,7 @@ func (w *WhereBuilder) LessEq(query string, arg interface{}, condition ...bool) 
 }
 
 // 大于
-func (w *WhereBuilder) More(query string, arg interface{}, condition ...bool) *WhereBuilder {
+func (w *WhereBuilder) Greater(query string, arg interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
 			return w
@@ -107,7 +107,7 @@ func (w *WhereBuilder) More(query string, arg interface{}, condition ...bool) *W
 }
 
 // 大于等于
-func (w *WhereBuilder) MoreEq(query string, arg interface{}, condition ...bool) *WhereBuilder {
+func (w *WhereBuilder) GreaterEq(query string, arg interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
 			return w
