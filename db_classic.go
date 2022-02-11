@@ -291,8 +291,12 @@ func (b *SqlBuilder) WhereBuilder(v *WhereBuilder) *SqlBuilder {
 	if v == nil {
 		return b
 	}
-	b.updStatus()
 	wheres := v.context.wheres
+	if len(wheres) == 0 {
+		return b
+	}
+
+	b.updStatus()
 	whereStr := strings.Join(wheres, " AND ")
 
 	switch b.whereStatus {
