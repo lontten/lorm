@@ -43,6 +43,85 @@ func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *Whe
 	return w
 }
 
+func (w *WhereBuilder) NotEq(query string, arg interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
+	}
+	w.context.wheres = append(w.context.wheres, query+" != ? ")
+	w.context.args = append(w.context.args, arg)
+	return w
+}
+
+// 小于
+func (w *WhereBuilder) Less(query string, arg interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
+	}
+	w.context.wheres = append(w.context.wheres, query+" < ? ")
+	w.context.args = append(w.context.args, arg)
+	return w
+}
+
+// 小于等于
+func (w *WhereBuilder) LessEq(query string, arg interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
+	}
+	w.context.wheres = append(w.context.wheres, query+" <= ? ")
+	w.context.args = append(w.context.args, arg)
+	return w
+}
+
+// 大于
+func (w *WhereBuilder) More(query string, arg interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
+	}
+	w.context.wheres = append(w.context.wheres, query+" > ? ")
+	w.context.args = append(w.context.args, arg)
+	return w
+}
+
+// 大于等于
+func (w *WhereBuilder) MoreEq(query string, arg interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
+	}
+	w.context.wheres = append(w.context.wheres, query+" >= ? ")
+	w.context.args = append(w.context.args, arg)
+	return w
+}
+
 func (w *WhereBuilder) Between(query string, arg1, arg2 interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
@@ -53,6 +132,21 @@ func (w *WhereBuilder) Between(query string, arg1, arg2 interface{}, condition .
 	w.context.wheres = append(w.context.wheres, query+" BETWEEN ? AND ? ")
 	w.context.args = append(w.context.args, arg1)
 	w.context.args = append(w.context.args, arg2)
+	return w
+}
+
+func (w *WhereBuilder) Arg(arg interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	w.context.args = append(w.context.args, arg)
+	return w
+}
+
+func (w *WhereBuilder) Args(args ...interface{}) *WhereBuilder {
+	w.context.args = append(w.context.args, args...)
 	return w
 }
 
