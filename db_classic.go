@@ -311,7 +311,7 @@ func (b *SqlBuilder) WhereBuilder(v *WhereBuilder) *SqlBuilder {
 		b.db.ctx.err = errors.New("where has been done")
 	}
 
-	b.AppendArgs(v.context.args)
+	b.AppendArgs(v.context.args...)
 	return b
 }
 

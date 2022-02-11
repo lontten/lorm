@@ -31,31 +31,31 @@ func (w *WhereBuilder) toWhereSqlOneself() ([]byte, []interface{}) {
 func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
-			return &WhereBuilder{context: w.context}
+			return w
 		}
 	}
 	arg = getTargetInter(reflect.ValueOf(arg))
 	if arg == nil {
-		return &WhereBuilder{context: w.context}
+		return w
 	}
 	w.context.wheres = append(w.context.wheres, query+" = ? ")
 	w.context.args = append(w.context.args, arg)
-	return &WhereBuilder{context: w.context}
+	return w
 }
 
 func (w *WhereBuilder) Ne(query string, arg interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
-			return &WhereBuilder{context: w.context}
+			return w
 		}
 	}
 	arg = getTargetInter(reflect.ValueOf(arg))
 	if arg == nil {
-		return &WhereBuilder{context: w.context}
+		return w
 	}
 	w.context.wheres = append(w.context.wheres, query+" <> ? ")
 	w.context.args = append(w.context.args, arg)
-	return &WhereBuilder{context: w.context}
+	return w
 }
 
 func (w *WhereBuilder) Like(query string, arg interface{}, condition ...bool) *WhereBuilder {
