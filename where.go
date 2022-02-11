@@ -43,6 +43,65 @@ func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *Whe
 	return w
 }
 
+func (w *WhereBuilder) Between(query string, arg1, arg2 interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	w.context.wheres = append(w.context.wheres, query+" BETWEEN ? AND ? ")
+	w.context.args = append(w.context.args, arg1)
+	w.context.args = append(w.context.args, arg2)
+	return w
+}
+
+func (w *WhereBuilder) IsNull(query string, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	w.context.wheres = append(w.context.wheres, query+" IS NULL ")
+	return w
+}
+
+func (w *WhereBuilder) IsNotNull(query string, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	w.context.wheres = append(w.context.wheres, query+" IS NOT NULL ")
+	return w
+}
+
+func (w *WhereBuilder) NotBetween(query string, arg1, arg2 interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	w.context.wheres = append(w.context.wheres, query+" NOT BETWEEN ? AND ? ")
+	w.context.args = append(w.context.args, arg1)
+	w.context.args = append(w.context.args, arg2)
+	return w
+}
+
+func (w *WhereBuilder) And(query string, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	w.context.wheres = append(w.context.wheres, query)
+	return w
+}
+
 func (w *WhereBuilder) Ne(query string, arg interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
