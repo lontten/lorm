@@ -217,6 +217,10 @@ func (w *WhereBuilder) Like(query string, arg interface{}, condition ...bool) *W
 			return w
 		}
 	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
+	}
 
 	var key = ""
 	switch arg.(type) {
@@ -241,6 +245,10 @@ func (w *WhereBuilder) NoLike(query string, arg interface{}, condition ...bool) 
 		if !b {
 			return &WhereBuilder{context: w.context}
 		}
+	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
 	}
 	var key = ""
 	switch arg.(type) {
