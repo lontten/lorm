@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
 )
 
@@ -56,10 +55,7 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 
 // ByUnique
 //ptr-comp
-func (orm OrmTableCreate) ByUnique(fs types.Fields) (int64, error) {
-	if fs == nil {
-		return 0, errors.New("ByUnique is nil")
-	}
+func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
 	if len(fs) == 0 {
 		return 0, errors.New("ByUnique is empty")
 	}
@@ -97,7 +93,6 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
 	return orm.base.doDel()
 }
 
-// ByModel
 //ptr
 //comp,只能一个comp-struct
 func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
@@ -154,7 +149,6 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
 	return OrmTableSelectWhere{base: orm.base}
 }
 
-// ByModel
 //ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
 	orm.base.initByModel(v)
@@ -241,8 +235,6 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 
 //------------------------------------has--------------------------------------------
 
-// Select
-//select
 func (db DB) Has(v interface{}) OrmTableHas {
 	db.setTargetDest2TableName(v)
 	return OrmTableHas{base: db}
@@ -258,8 +250,6 @@ func (orm OrmTableHas) ByPrimaryKey(v ...interface{}) (bool, error) {
 	return orm.base.doHas()
 }
 
-// ByModel
-//v0.6
 //ptr-comp
 func (orm OrmTableHas) ByModel(v interface{}) (bool, error) {
 	orm.base.initByModel(v)

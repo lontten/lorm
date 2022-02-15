@@ -1,4 +1,4 @@
-# lsql
+# lorm
 
 [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/lontten/lorm/main/LICENSE)
 
