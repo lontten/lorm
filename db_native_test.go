@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+type Hello struct {
+	Name string
+}
+
 func TestQuery(t *testing.T) {
 	as := assert.New(t)
 	db, mock, err := sqlmock.New()
@@ -23,7 +27,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	n := 0
-	num, err := engine.Query("select 1").GetOne(&n)
+	num, err := engine.Query("select 1").ScanOne(&n)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(4, n, "n error")
@@ -35,7 +39,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	name := ""
-	num, err = engine.Query("select 'kk' ").GetOne(&name)
+	num, err = engine.Query("select 'kk' ").ScanOne(&name)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal("kk", name, "name error")
@@ -50,7 +54,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	uid := types.UUID{}
-	num, err = engine.Query("select gen_random_uuid() ").GetOne(&uid)
+	num, err = engine.Query("select gen_random_uuid() ").ScanOne(&uid)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(v4, uid, "uuid error")
@@ -64,7 +68,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	d := types.Date{}
-	num, err = engine.Query("select gen_random_uuid() ").GetOne(&d)
+	num, err = engine.Query("select gen_random_uuid() ").ScanOne(&d)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(date, d, "uuid error")
@@ -79,7 +83,7 @@ func TestQuery(t *testing.T) {
 		)
 
 	u := User{}
-	num, err = engine.Query("select id,name from user limit 1").GetOne(&u)
+	num, err = engine.Query("select id,name from user limit 1").ScanOne(&u)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 	as.Equal(user, u, "user error")

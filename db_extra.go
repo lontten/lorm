@@ -80,7 +80,7 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	}
 
 	dto = Page{
-		Records: dest,
+		Records: reflect.ValueOf(dest).Elem().Interface(),
 		Size:    size,
 		Current: current,
 		Total:   total,

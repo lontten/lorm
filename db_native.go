@@ -12,7 +12,7 @@ func (db DB) Query(query string, args ...interface{}) *NativeQuery {
 	return &NativeQuery{base: db, query: query, args: args}
 }
 
-func (q NativeQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
+func (q NativeQuery) ScanOne(dest interface{}) (rowsNum int64, err error) {
 	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
@@ -32,7 +32,7 @@ func (q NativeQuery) GetOne(dest interface{}) (rowsNum int64, err error) {
 	return q.base.ctx.ScanLn(rows)
 }
 
-func (q NativeQuery) GetList(dest interface{}) (rowsNum int64, err error) {
+func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
 	if err = q.base.ctx.err; err != nil {
 		return 0, err
 	}
