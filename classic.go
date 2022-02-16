@@ -65,6 +65,11 @@ func (b *SqlBuilder) initSelectSql() {
 	b.args = append(b.selectArgs, b.otherArgs...)
 }
 
+func (b *SqlBuilder) initQuerySql() {
+	b.query = b.otherQuery.String()
+	b.args = b.otherArgs
+}
+
 func (b *SqlBuilder) AppendArg(arg interface{}, condition ...bool) *SqlBuilder {
 	if b.db.ctx.err != nil {
 		return b
@@ -355,7 +360,7 @@ func (b *SqlBuilder) ScanOne(dest interface{}) (rowsNum int64, err error) {
 	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
-	b.initSelectSql()
+	b.initQuerySql()
 	rows, err := b.db.dialect.query(b.query, b.args...)
 	if err != nil {
 		return 0, err
@@ -374,7 +379,7 @@ func (b *SqlBuilder) ScanList(dest interface{}) (rowsNum int64, err error) {
 	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
-	b.initSelectSql()
+	b.initQuerySql()
 	rows, err := b.db.dialect.query(b.query, b.args...)
 	if err != nil {
 		return 0, err
@@ -387,6 +392,6 @@ func (b *SqlBuilder) Exec() (rowsNum int64, err error) {
 	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
-	b.initSelectSql()
+	b.initQuerySql()
 	return b.db.dialect.exec(b.query, b.args...)
 }
