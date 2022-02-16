@@ -99,7 +99,7 @@ func (db DB) doHas() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	//update
+	defer rows.Close()
 	if rows.Next() {
 		return true, nil
 	}

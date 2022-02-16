@@ -57,7 +57,6 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 		return
 	}
 
-	defer rows.Close()
 	for rows.Next() {
 		box := reflect.ValueOf(&total).Interface()
 		err = rows.Scan(box)
@@ -65,6 +64,7 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 			return
 		}
 	}
+	rows.Close()
 	// 计算总页数
 
 	var selectSql = b.query + " limit ? offset ?"
@@ -74,6 +74,7 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	num, err := b.db.ctx.Scan(rows)
 	if err != nil {
 		return

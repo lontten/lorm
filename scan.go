@@ -94,7 +94,9 @@ func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 //接收多行结果
 //1.[]- *
 func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		utils.PanicErr(rows.Close())
+	}(rows)
 
 	arr := ctx.destValue
 	t := ctx.scanDestBaseType
