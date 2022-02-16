@@ -355,7 +355,7 @@ func (b *SqlBuilder) ScanOne(dest interface{}) (rowsNum int64, err error) {
 	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
-
+	b.initSelectSql()
 	rows, err := b.db.dialect.query(b.query, b.args...)
 	if err != nil {
 		return 0, err
@@ -374,7 +374,7 @@ func (b *SqlBuilder) ScanList(dest interface{}) (rowsNum int64, err error) {
 	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
-
+	b.initSelectSql()
 	rows, err := b.db.dialect.query(b.query, b.args...)
 	if err != nil {
 		return 0, err
@@ -387,6 +387,6 @@ func (b *SqlBuilder) Exec() (rowsNum int64, err error) {
 	if err = b.db.ctx.err; err != nil {
 		return 0, err
 	}
-
+	b.initSelectSql()
 	return b.db.dialect.exec(b.query, b.args...)
 }
