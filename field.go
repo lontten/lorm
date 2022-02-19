@@ -11,8 +11,8 @@ import (
 func checkField(t reflect.Type) error {
 	_, base := checkPackType(t)
 
-	typ := checkCompType(base)
-	if typ != Single {
+	typ := checkAtomType(base)
+	if typ != Atom {
 		return errors.New("field没有实现valuer " + t.String())
 	}
 	return nil
@@ -30,8 +30,8 @@ func checkFieldNuller(t reflect.Type) error {
 		isNuller = isNullerType(base)
 	}
 
-	ctyp := checkCompType(base)
-	if ctyp != Single {
+	ctyp := checkAtomType(base)
+	if ctyp != Atom {
 		return errors.New("field  no imp valuer:: " + t.String())
 	}
 	//nuller

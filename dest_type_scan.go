@@ -31,8 +31,8 @@ func (ctx *OrmContext) initScanDestList(dest interface{}) {
 		return
 	}
 
-	ctyp := checkCompType(base)
-	if ctyp == Invade {
+	ctyp := checkAtomType(base)
+	if ctyp == Invalid {
 		ctx.err = errors.New("scan type is not supported")
 		return
 	}
@@ -79,11 +79,11 @@ func (ctx *OrmContext) initScanDestOne(dest interface{}) {
 
 	}
 
-	ctyp := Single
+	ctyp := Atom
 
 	if !is {
-		ctyp = checkCompType(base)
-		if ctyp == Invade {
+		ctyp = checkAtomType(base)
+		if ctyp == Invalid {
 			ctx.err = errors.New("scan type is not supported")
 			return
 		}

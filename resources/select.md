@@ -7,6 +7,22 @@ users,err:=db.select(user).byId(...id).getList<User>()
 
 
 
+db.select("t_user").
+ 
+    byModel(user)
+    byMap(map)
+        .isNull("name")
+    byPrimaryKeys(interface{})
+    filterPrimaryKeys(interface{})
+    byWhere(*whereBuider)
+    .scanOne() //返回受影响的行数  num,dto,err
+    .scanFirst() //返回受影响的行数  num,dto,err
+    .scanList() //返回受影响的行数  num,dto,err
+    .sql()  //获取sql
+
+
+
+
 pages,err:=db.select(user).byMode(model).getPage<User>(page,size)
 
 

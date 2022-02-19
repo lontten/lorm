@@ -4,6 +4,12 @@ import (
 	"reflect"
 )
 
+// single 不是数组
+// array 是数组
+
+// atom 原子类型
+// composite 非原子类型
+
 //------------------base------------------
 //是否基本类型
 func _isBaseType(t reflect.Type) bool {
@@ -38,12 +44,12 @@ func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 
 //-----------------single-------
 func isSingleType(t reflect.Type) bool {
-	return checkCompType(t) == Single
+	return checkAtomType(t) == Atom
 }
 
 //-----------------composite-------
 func isCompType(t reflect.Type) bool {
-	return checkCompType(t) == Composite
+	return checkAtomType(t) == Composite
 }
 
 // is 是否 slice has 是否有内容
@@ -82,7 +88,7 @@ func isStructCompValue(v reflect.Value) bool {
 	if !is {
 		return false
 	}
-	typ := checkCompValue(v)
+	typ := checkAtomValue(v)
 	return typ == Composite
 }
 
@@ -91,7 +97,7 @@ func isStructCompType(t reflect.Type) bool {
 	if !is {
 		return false
 	}
-	typ := checkCompType(t)
+	typ := checkAtomType(t)
 	return typ == Composite
 }
 
@@ -146,8 +152,8 @@ base:
 // v0.7
 //是数组类型，返回数组的基类型
 func baseSliceType(t reflect.Type) (bool, reflect.Type) {
-	typ := checkCompType(t)
-	if typ != Invade {
+	typ := checkAtomType(t)
+	if typ != Invalid {
 		return false, t
 	}
 	if t.Kind() == reflect.Slice {
@@ -159,8 +165,8 @@ func baseSliceType(t reflect.Type) (bool, reflect.Type) {
 // v0.7
 // is 是否 slice
 func baseSliceValue(v reflect.Value, canEmpty bool) (is bool, structType reflect.Value) {
-	typ := checkCompValue(v)
-	if typ != Invade {
+	typ := checkAtomValue(v)
+	if typ != Invalid {
 		return false, v
 	}
 
@@ -349,22 +355,24 @@ func checkPackValue(v reflect.Value) (PackTyp, error) {
 
 //--------------------
 // v0.7
+// 数据原子性
+// atom composite
 //检查是 single 还是 composite
 //base和实现valuer的是single，
 //否则，并且类型是struct、map的是composite
 //其他为invade
-type compType int
+type atomType int
 
 const (
-	Invade compType = iota
-	Single
+	Invalid atomType = iota
+	Atom
 	Composite
 )
 
-func checkCompValue(v reflect.Value) compType {
+func checkAtomValue(v reflect.Value) atomType {
 	is := isValuerType(v.Type())
 	if is {
-		return Single
+		return Atom
 	}
 	is = _isStructType(v.Type())
 	if is {
@@ -376,13 +384,13 @@ func checkCompValue(v reflect.Value) compType {
 		return Composite
 	}
 
-	return Invade
+	return Invalid
 }
 
-func checkCompType(t reflect.Type) compType {
+func checkAtomType(t reflect.Type) atomType {
 	is := isValuerType(t)
 	if is {
-		return Single
+		return Atom
 	}
 
 	is = _isStructType(t)
@@ -394,7 +402,7 @@ func checkCompType(t reflect.Type) compType {
 	if is {
 		return Composite
 	}
-	return Invade
+	return Invalid
 }
 
 //-----------------------map--------------------------------

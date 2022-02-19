@@ -16,14 +16,14 @@ db.insertFast(users)
 
 通过遍历
 //如果存在则更新，不存在则插入
-db.set(user).byId(id)
-db.set(user).byUni(...string)
+db.insertOrUpdate(user).byId(id)
+db.insertOrUpdate(user).byUni(...string)
 
-db.set(user).byModel(model)
-db.set(user).byWhere(where)
+db.insertOrUpdate(user).byModel(model)
+db.insertOrUpdate(user).byWhere(where)
 
 //如果存在则更新，不存在则插入，
-db.set(&user)
+db.insertOrUpdate(&user)
 
 
 
