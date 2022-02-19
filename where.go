@@ -3,6 +3,7 @@ package lorm
 import (
 	"bytes"
 	"reflect"
+	"strings"
 )
 
 type WhereContext struct {
@@ -40,6 +41,48 @@ func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *Whe
 	}
 	w.context.wheres = append(w.context.wheres, query+" = ? ")
 	w.context.args = append(w.context.args, arg)
+	return w
+}
+
+func (w *WhereBuilder) In(query string, args ArgArray, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	if len(args) == 0 {
+		return w
+	}
+	var queryArr []string
+	for i := 0; i < len(args); i++ {
+		queryArr = append(queryArr, "?")
+	}
+
+	var str = query + " IN (" + strings.Join(queryArr, ",") + ") "
+
+	w.context.wheres = append(w.context.wheres, str)
+	w.context.args = append(w.context.args, args...)
+	return w
+}
+
+func (w *WhereBuilder) NotIn(query string, args ArgArray, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	if len(args) == 0 {
+		return w
+	}
+	var queryArr []string
+	for i := 0; i < len(args); i++ {
+		queryArr = append(queryArr, "?")
+	}
+
+	var str = query + " NOT IN (" + strings.Join(queryArr, ",") + ") "
+
+	w.context.wheres = append(w.context.wheres, str)
+	w.context.args = append(w.context.args, args...)
 	return w
 }
 

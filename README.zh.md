@@ -32,14 +32,24 @@ db.update("t_user").byWhere(
 // map 和struct等价,filed中的slice，自动转成
 //数组型字段。
 user=User{}
-db.update("t_user").byModel(user)
-map=Map{}
-db.update("t_user").byModel(map)
 
-db.update("t_user").byWhere(*whereBuider)
 
-db.update(user).setNull("student_name",user.Name==nil)
-
+// setModel/setMap nil会被排除，setnull，若前面没有，则添加 set null
+db.update("t_user").
+    setModel(user).
+    setMap(map).
+    setNull("name").
+    setCurrentDate("create_time").
+    setGreeterSelf("num",-1).
+    setCurrentTime("create_time").
+    setCurrentDateTime("create_time").
+    byModel(user)
+    byMap(map)
+    byPrimaryKey(interface{})
+    byWhere(*whereBuider)
+    .exec() //返回受影响的行数
+    .sql()  //获取sql
+    .prepare() //返回*sql.Stmt
 
 db.update(user)
 db.update().set("name",age)
