@@ -182,27 +182,27 @@ func baseSliceValue(v reflect.Value) (bool, reflect.Value) {
 // v0.7
 //是数组类型，返回数组的最基类型
 func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
-
-	isSlice := false
-	tmp := t
-
-	for true {
-		isDeepFlag := true //base
-
-		is, base = _baseSliceDeepType(base)
-		if is {
-			isDeepFlag = false
-			isSlice = true
-		}
-		if isDeepFlag {
-			if isSlice {
-				return true, base
-			}
-			return false, t
-		}
-		tmp = base
-	}
-	return false, t
+	return _baseSliceDeepType(t)
+	//isSlice := false
+	//tmp := t
+	//
+	//for true {
+	//	isDeepFlag := true //base
+	//
+	//	is, base = _baseSliceDeepType(base)
+	//	if is {
+	//		isDeepFlag = false
+	//		isSlice = true
+	//	}
+	//	if isDeepFlag {
+	//		if isSlice {
+	//			return true, base
+	//		}
+	//		return false, t
+	//	}
+	//	tmp = base
+	//}
+	//return false, t
 }
 
 // v0.6

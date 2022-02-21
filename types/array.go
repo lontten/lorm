@@ -6,6 +6,10 @@ import (
 	"reflect"
 )
 
+type (
+	StringList []string
+)
+
 func ArrayOf(v ...interface{}) Array {
 	array := Array{}
 	for _, i := range v {
@@ -53,4 +57,18 @@ func (a Array) Value() (driver.Value, error) {
 	str = str[:len(str)-1]
 	str += "}"
 	return str, nil
+}
+
+func (p StringList) Len() int {
+	return len(p)
+}
+
+// 实现Less方法
+func (p StringList) Less(i, j int) bool {
+	return p[i] < p[j]
+}
+
+// 实现Swap方法
+func (p StringList) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
 }

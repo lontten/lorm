@@ -3,8 +3,8 @@ package types
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	"strings"
 )
 
@@ -62,16 +62,11 @@ func Str2UUIDMustP(v string) *UUID {
 }
 
 func NewV4() UUID {
-	v4, _ := uuid.NewV4()
-	return UUID(v4)
+	return UUID(uuid.NewV4())
 }
 
 func NewV4P() *UUID {
-	v4, err := uuid.NewV4()
-	if err != nil {
-		return nil
-	}
-	u := UUID(v4)
+	u := UUID(uuid.NewV4())
 	return &u
 }
 
