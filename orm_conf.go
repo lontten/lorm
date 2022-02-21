@@ -322,7 +322,7 @@ func (c OrmConf) getCompAllColumnsValueList(v []reflect.Value) ([]string, [][]in
 }
 
 func (c OrmConf) getColFieldIndexLinkMap(columns []string, t reflect.Type) (ColFieldIndexLinkMap, error) {
-	if isSingleType(t) {
+	if isAtomType(t) {
 		return ColFieldIndexLinkMap{}, nil
 	}
 

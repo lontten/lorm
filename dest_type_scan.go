@@ -72,7 +72,7 @@ func (ctx *OrmContext) initScanDestOne(dest interface{}) {
 
 	is, base := baseSliceType(v.Type())
 	if is {
-		if !isSingleType(base) {
+		if !isAtomType(base) {
 			ctx.err = errors.New("scan can't be a slice ")
 			return
 		}

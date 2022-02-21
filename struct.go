@@ -66,7 +66,7 @@ type StructValidFieldValueMap map[string]interface{}
 // v0.6
 func newStruct(t reflect.Type) reflect.Value {
 	tPtr := reflect.New(t)
-	if isSingleType(t) {
+	if isAtomType(t) {
 		return tPtr
 	}
 	numField := t.NumField()

@@ -2,26 +2,24 @@ package types
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgtype"
 	"time"
 )
 
-type Time struct {
-	time.Time
-}
+type Time time.Time
 
 func NowTime() Time {
-	return Time{time.Now()}
+	return Time(time.Now())
 }
 
 func NowTimeP() *Time {
-	return &Time{time.Now()}
+	now := time.Now()
+	return (*Time)(&now)
 }
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	tune := t.Time.Format(`"15:04:05"`)
+
+	tune := time.Time(t).Format(`"15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -30,16 +28,16 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
-	*t = Time{now}
+	*t = Time(now)
 	return err
 }
 
 func (t Time) Value() (driver.Value, error) {
 	var zeroTime time.Time
-	if t.Time.UnixNano() == zeroTime.UnixNano() {
+	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return t.Time, nil
+	return t, nil
 }
 
 func (t *Time) Scan(v interface{}) error {
@@ -53,7 +51,7 @@ func (t *Time) Scan(v interface{}) error {
 	case []byte:
 		s = string(v)
 	case time.Time:
-		*t = Time{v}
+		*t = Time(v)
 	case Time:
 		*t = v
 		return nil
@@ -67,65 +65,24 @@ func (t *Time) Scan(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	*t = Time{Time: now}
+	*t = Time(now)
 	return nil
 }
 
-type TimeList []Time
-
-// gorm 自定义结构需要实现 Value Scan 两个方法
-// Value 实现方法
-func (p TimeList) Value() (driver.Value, error) {
-	var k []Time
-	k = p
-	marshal, err := json.Marshal(k)
-	if err != nil {
-		return nil, err
-	}
-	var s = string(marshal)
-	if s != "null" {
-		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
-	} else {
-		s = "{}"
-	}
-	return s, nil
-}
-
-// Scan 实现方法
-func (p *TimeList) Scan(data interface{}) error {
-	array := pgtype.TimestampArray{}
-	err := array.Scan(data)
-	if err != nil {
-		return err
-	}
-	var list []Time
-	list = make([]Time, len(array.Elements))
-	for i, element := range array.Elements {
-		list[i] = Time{element.Time}
-	}
-	marshal, err := json.Marshal(list)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(marshal, &p)
-	return err
-}
-
 //date
-type Date struct {
-	time.Time
-}
+type Date time.Time
 
 func NowDate() Date {
-	return Date{time.Now()}
+	return Date(time.Now())
 }
 
 func NowDateP() *Date {
-	return &Date{time.Now()}
+	now := time.Now()
+	return (*Date)(&now)
 }
 
 func (t Date) MarshalJSON() ([]byte, error) {
-	tune := t.Format(`"2006-01-02"`)
+	tune := time.Time(t).Format(`"2006-01-02"`)
 	return []byte(tune), nil
 }
 
@@ -134,17 +91,17 @@ func (t *Date) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"2006-01-02"`, string(data), time.Local)
-	*t = Date{Time: now}
+	*t = Date(now)
 	return err
 }
 
 // Value insert timestamp into mysql need this function.
 func (t Date) Value() (driver.Value, error) {
 	var zeroTime time.Time
-	if t.Time.UnixNano() == zeroTime.UnixNano() {
+	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return t.Time, nil
+	return time.Time(t), nil
 }
 
 // Scan valueof jstime.Time
@@ -152,7 +109,7 @@ func (t *Date) Scan(v interface{}) error {
 
 	value, ok := v.(time.Time)
 	if ok {
-		*t = Date{value}
+		*t = Date(value)
 		return nil
 	}
 
@@ -166,64 +123,23 @@ func (t *Date) Scan(v interface{}) error {
 
 }
 func (t Date) ToGoTime() time.Time {
-	return time.Unix(t.Unix(), 0)
-}
-
-type DateList []Date
-
-// gorm 自定义结构需要实现 Value Scan 两个方法
-// Value 实现方法
-func (p DateList) Value() (driver.Value, error) {
-	var k []Date
-	k = p
-	marshal, err := json.Marshal(k)
-	if err != nil {
-		return nil, err
-	}
-	var s = string(marshal)
-	if s != "null" {
-		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
-	} else {
-		s = "{}"
-	}
-	return s, nil
-}
-
-// Scan 实现方法
-func (p *DateList) Scan(data interface{}) error {
-	array := pgtype.TimestampArray{}
-	err := array.Scan(data)
-	if err != nil {
-		return err
-	}
-	var list []Date
-	list = make([]Date, len(array.Elements))
-	for i, element := range array.Elements {
-		list[i] = Date{element.Time}
-	}
-	marshal, err := json.Marshal(list)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(marshal, &p)
-	return err
+	return time.Unix(time.Time(t).Unix(), 0)
 }
 
 //datetime
-type DateTime struct {
-	time.Time
-}
+type DateTime time.Time
 
 func NowDateTime() DateTime {
-	return DateTime{time.Now()}
+	return DateTime(time.Now())
 }
 
 func NowDateTimeP() *DateTime {
-	return &DateTime{time.Now()}
+	now := time.Now()
+	return (*DateTime)(&now)
 }
 
 func (t DateTime) MarshalJSON() ([]byte, error) {
-	tune := t.Format(`"2006-01-02 15:04:05"`)
+	tune := time.Time(t).Format(`"2006-01-02 15:04:05"`)
 	return []byte(tune), nil
 }
 
@@ -232,24 +148,24 @@ func (t *DateTime) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, string(data), time.Local)
-	*t = DateTime{Time: now}
+	*t = DateTime(now)
 	return err
 }
 
 // Value insert timestamp into mysql need this function.
 func (t DateTime) Value() (driver.Value, error) {
 	var zeroTime time.Time
-	if t.Time.UnixNano() == zeroTime.UnixNano() {
+	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return t.Time, nil
+	return time.Time(t), nil
 }
 
 // Scan valueof jstime.Time
 func (t *DateTime) Scan(v interface{}) error {
 	value, ok := v.(time.Time)
 	if ok {
-		*t = DateTime{value}
+		*t = DateTime(value)
 		return nil
 	}
 
@@ -264,82 +180,19 @@ func (t *DateTime) Scan(v interface{}) error {
 }
 
 func (t DateTime) ToGoTime() time.Time {
-	return time.Unix(t.Unix(), 0)
-}
-
-type DateTimeList []DateTime
-
-// gorm 自定义结构需要实现 Value Scan 两个方法
-// Value 实现方法
-func (p DateTimeList) Value() (driver.Value, error) {
-	var k []DateTime
-	k = p
-	marshal, err := json.Marshal(k)
-	if err != nil {
-		return nil, err
-	}
-	var s = string(marshal)
-	if s != "null" {
-		s = s[:0] + "{" + s[1:len(s)-1] + "}" + s[len(s):]
-	} else {
-		s = "{}"
-	}
-	return s, nil
-}
-
-// Scan 实现方法
-func (p *DateTimeList) Scan(data interface{}) error {
-	array := pgtype.TimestampArray{}
-	err := array.Scan(data)
-	if err != nil {
-		return err
-	}
-	var list []DateTime
-	list = make([]DateTime, len(array.Elements))
-	for i, element := range array.Elements {
-		list[i] = DateTime{element.Time}
-	}
-	marshal, err := json.Marshal(list)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(marshal, &p)
-	return err
-}
-
-func (d Date) AddTime(t Time) DateTime {
-	return DateTime{time.Date(
-		d.Time.Year(),
-		d.Time.Month(),
-		d.Time.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(), 0, nil,
-	)}
-}
-
-func (t Time) AddData(d Date) DateTime {
-	return DateTime{time.Date(
-		d.Time.Year(),
-		d.Time.Month(),
-		d.Time.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(), 0, nil,
-	)}
+	return time.Unix(time.Time(t).Unix(), 0)
 }
 
 //datetime
-type AutoDateTime struct {
-	time.Time
-}
+type AutoDateTime time.Time
 
 func (t AutoDateTime) MarshalJSON() ([]byte, error) {
+	tt := time.Time(t)
 	var tune string
-	if t.Year() == 0 && t.Month() == time.January && t.Day() == 1 {
-		tune = t.Format(`"15:04:05"`)
+	if tt.Year() == 0 && tt.Month() == time.January && tt.Day() == 1 {
+		tune = tt.Format(`"15:04:05"`)
 	} else {
-		tune = t.Format(`"2006-01-02"`)
+		tune = tt.Format(`"2006-01-02"`)
 	}
 	return []byte(tune), nil
 }
@@ -349,17 +202,17 @@ func (t *AutoDateTime) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, string(data), time.Local)
-	*t = AutoDateTime{Time: now}
+	*t = AutoDateTime(now)
 	return err
 }
 
 // Value insert timestamp into mysql need this function.
 func (t AutoDateTime) Value() (driver.Value, error) {
 	var zeroTime time.Time
-	if t.Time.UnixNano() == zeroTime.UnixNano() {
+	if time.Time(t).UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
 	}
-	return t.Time, nil
+	return time.Time(t), nil
 }
 
 // Scan valueof jstime.Time
@@ -371,11 +224,11 @@ func (t *AutoDateTime) Scan(v interface{}) error {
 	case []byte:
 		s = string(v)[:8]
 	case time.Time:
-		*t = AutoDateTime{v}
+		*t = AutoDateTime(v)
 	case Time:
-		*t = AutoDateTime{v.Time}
+		*t = AutoDateTime(v)
 	case Date:
-		*t = AutoDateTime{v.Time}
+		*t = AutoDateTime(v)
 	case AutoDateTime:
 		*t = v
 		return nil
@@ -386,6 +239,6 @@ func (t *AutoDateTime) Scan(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	*t = AutoDateTime{Time: now}
+	*t = AutoDateTime(now)
 	return nil
 }

@@ -24,7 +24,7 @@ func _isBaseType(t reflect.Type) bool {
 }
 
 //------------------struct------------------
-//是否基本类型
+//是否struct类型
 func _isStructType(t reflect.Type) bool {
 	return t.Kind() == reflect.Struct
 }
@@ -42,8 +42,8 @@ func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 	return true, key
 }
 
-//-----------------single-------
-func isSingleType(t reflect.Type) bool {
+//-----------------atom-------
+func isAtomType(t reflect.Type) bool {
 	return checkAtomType(t) == Atom
 }
 
@@ -152,10 +152,10 @@ base:
 // v0.7
 //是数组类型，返回数组的基类型
 func baseSliceType(t reflect.Type) (bool, reflect.Type) {
-	typ := checkAtomType(t)
-	if typ != Invalid {
+	if isValuerType(t) {
 		return false, t
 	}
+
 	if t.Kind() == reflect.Slice {
 		return true, t.Elem()
 	}
@@ -164,15 +164,14 @@ func baseSliceType(t reflect.Type) (bool, reflect.Type) {
 
 // v0.7
 // is 是否 slice
-func baseSliceValue(v reflect.Value, canEmpty bool) (is bool, structType reflect.Value) {
-	typ := checkAtomValue(v)
-	if typ != Invalid {
+func baseSliceValue(v reflect.Value) (bool, reflect.Value) {
+	if isValuerType(v.Type()) {
 		return false, v
 	}
 
 	if v.Kind() == reflect.Slice {
 		if v.Len() == 0 {
-			return canEmpty, v
+			return false, v
 		}
 		return true, v.Index(0)
 	}
@@ -183,23 +182,19 @@ func baseSliceValue(v reflect.Value, canEmpty bool) (is bool, structType reflect
 // v0.7
 //是数组类型，返回数组的最基类型
 func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
+
 	isSlice := false
 	tmp := t
 
 	for true {
-		isBaseFlag := true //base
-
-		is, base := basePtrDeepType(tmp)
-		if is {
-			isBaseFlag = false
-		}
+		isDeepFlag := true //base
 
 		is, base = _baseSliceDeepType(base)
 		if is {
-			isBaseFlag = false
+			isDeepFlag = false
 			isSlice = true
 		}
-		if isBaseFlag {
+		if isDeepFlag {
 			if isSlice {
 				return true, base
 			}
@@ -243,9 +238,8 @@ func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	return false, v, nil
 }
 
-// v0.7
 //是数组类型，返回数组的最基类型
-func _baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
+func _baseSliceDeepType(t reflect.Type) (bool, reflect.Type) {
 	isSlice := false
 base:
 	is, t := baseSliceType(t)
@@ -272,7 +266,7 @@ base:
 		}
 	}
 
-	is, v := baseSliceValue(v, false)
+	is, v := baseSliceValue(v)
 	if is {
 		isSlice = true
 		goto base
@@ -414,7 +408,7 @@ func checkMapFieldType(t reflect.Type) bool {
 		return false
 	}
 
-	if !isSingleType(t.Elem()) {
+	if !isAtomType(t.Elem()) {
 		return false
 	}
 	return true
@@ -431,7 +425,7 @@ func checkMapFieldValue(v reflect.Value) bool {
 	//valuer
 	t := v.MapIndex(key).Type()
 
-	if !isSingleType(t) {
+	if !isAtomType(t) {
 		return false
 	}
 
