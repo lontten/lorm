@@ -1,8 +1,12 @@
 package hook
 
 import (
+	"encoding/json"
 	"github.com/jackc/pgtype"
+	"github.com/lontten/lorm"
 	"github.com/lontten/lorm/types"
+	"os/user"
+	"reflect"
 )
 
 /**
@@ -36,4 +40,28 @@ func ToPgDateArr(src []types.Date) pgtype.DateArray {
 		panic(err)
 	}
 	return arr
+}
+
+func cc(src string) user.Group {
+	var u user.Group
+	err := json.Unmarshal([]byte(src), &u)
+	if err != nil {
+		panic(err)
+	}
+	return u
+}
+
+func bind(src interface{}, name string, fun func()) {
+	value := reflect.ValueOf(fun)
+	method := value.MethodByName("")
+	method.Call([]reflect.Value{})
+}
+
+func h() {
+	lorm.DB{}.Builder().
+		Select("").
+		SelectOneModel("select * from user u where u.id = k.uid","user_info_dto")
+		SelectListModel("select * from user u where u.id = k.uid","user_info_list")
+	     Select("").
+
 }
