@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"database/sql"
+	"github.com/pkg/errors"
 )
 
 type Stmt struct {
@@ -22,22 +23,51 @@ func (s *Stmt) Exec(args ...interface{}) (int64, error) {
 	return exec.RowsAffected()
 }
 
-func (s *Stmt) Query(args ...interface{}) Prepare {
-
-	return Prepare{}
+func (s Stmt) Query(args ...interface{}) Prepare {
+	return Prepare{
+		db:   s,
+		args: args,
+	}
 }
 
 type Prepare struct {
+	db   Stmt
+	args []interface{}
 }
 
-func (p Prepare) ScanOne(v interface{}) (int64, error) {
-	return 0, nil
+func (p Prepare) ScanOne(dest interface{}) (int64, error) {
+	if err := p.db.ctx.err; err != nil {
+		return 0, err
+	}
+	p.db.ctx.initScanDestOne(dest)
+	if p.db.ctx.scanIsSlice {
+		return 0, errors.New("not support GetOne for slice")
+	}
+	p.db.ctx.checkScanDestField()
+	if err := p.db.ctx.err; err != nil {
+		return 0, err
+	}
+
+	rows, err := p.db.stmt.Query(p.args...)
+	if err != nil {
+		return 0, err
+	}
+	return p.db.ctx.ScanLn(rows)
 }
 
-func (p Prepare) ScanList(v interface{}) (int64, error) {
-	return 0, nil
-}
+func (p Prepare) ScanList(dest interface{}) (int64, error) {
+	if err := p.db.ctx.err; err != nil {
+		return 0, err
+	}
+	p.db.ctx.initScanDestList(dest)
+	p.db.ctx.checkScanDestField()
+	if err := p.db.ctx.err; err != nil {
+		return 0, err
+	}
 
-func (p Prepare) ScanFirst(v interface{}) (int64, error) {
-	return 0, nil
+	rows, err := p.db.stmt.Query(p.args...)
+	if err != nil {
+		return 0, err
+	}
+	return p.db.ctx.ScanLn(rows)
 }
