@@ -70,11 +70,11 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 				sb.WriteString(" AND ")
 			}
 			isMore := len(wt.wheres) > 1
-			if !isMore {
+			if isMore {
 				sb.WriteString("(")
 			}
 			sb.WriteString(result)
-			if !isMore {
+			if isMore {
 				sb.WriteString(")")
 			}
 		case or:
@@ -83,14 +83,14 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 				return "", errors.Wrap(err, "parse native where")
 			}
 			if isStart {
-				sb.WriteString(" AND ")
+				sb.WriteString(" OR ")
 			}
 			isMore := len(wt.wheres) > 1
-			if !isMore {
+			if isMore {
 				sb.WriteString("(")
 			}
 			sb.WriteString(result)
-			if !isMore {
+			if isMore {
 				sb.WriteString(")")
 			}
 		default:
@@ -98,7 +98,7 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 		}
 	}
 
-	return "", nil
+	return sb.String(), nil
 }
 
 //------------------------------------------
