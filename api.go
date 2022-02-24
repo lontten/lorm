@@ -20,4 +20,6 @@ type Dialect interface {
 
 	insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error)
 	insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error)
+
+	parse(c Clause) (string, error)
 }

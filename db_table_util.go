@@ -151,10 +151,14 @@ func (db *DB) initByWhere(w *WhereBuilder) {
 		return
 	}
 
-	args := w.context.args
-	wheres := w.context.wheres
+	args := w.args
 
-	db.whereTokens = append(db.whereTokens, wheres...)
+	toSql, err := w.toSql(db.dialect.parse)
+	if err != nil {
+		db.ctx.err = err
+		return
+	}
+	db.whereTokens = append(db.whereTokens, toSql)
 	db.args = append(db.args, args...)
 }
 

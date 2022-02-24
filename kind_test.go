@@ -22,4 +22,7 @@ func Test__isBaseType(t *testing.T) {
 	is = _isBaseType(reflect.TypeOf(types.NewString("fjakls")))
 	as.False(is)
 
+	is = reflect.TypeOf(12).Implements(ImpNuller)
+	as.True(is)
+
 }

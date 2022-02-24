@@ -289,34 +289,38 @@ func (b *SqlBuilder) Offset(num int64, condition ...bool) *SqlBuilder {
 	return b
 }
 
-func (b *SqlBuilder) WhereBuilder(v *WhereBuilder) *SqlBuilder {
+func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	if b.db.ctx.err != nil {
 		return b
 	}
-	if v == nil {
+	if w == nil {
 		return b
 	}
-	wheres := v.context.wheres
-	if len(wheres) == 0 {
+	sql, err := w.toSql(b.db.dialect.parse)
+	if err != nil {
+		b.db.ctx.err = err
+		return b
+	}
+
+	if sql == "" {
 		return b
 	}
 
 	b.updStatus()
-	whereStr := strings.Join(wheres, " AND ")
 
 	switch b.whereStatus {
 	case whereNone:
 		b.whereStatus = whereIng
 		b.otherQuery.WriteString(" WHERE ")
-		b.otherQuery.WriteString(whereStr)
+		b.otherQuery.WriteString(sql)
 	case whereIng:
 		b.otherQuery.WriteString(" AND ")
-		b.otherQuery.WriteString(whereStr)
+		b.otherQuery.WriteString(sql)
 	case whereDone:
 		b.db.ctx.err = errors.New("where has been done")
 	}
 
-	b.AppendArgs(v.context.args...)
+	b.AppendArgs(w.args...)
 	return b
 }
 

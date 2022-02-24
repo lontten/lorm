@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-module/carbon v1.5.5
 	github.com/jackc/pgtype v1.9.0
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/pkg/errors v0.8.1
+	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.7.0
 	gorm.io/driver/postgres v1.2.3
 )

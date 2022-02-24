@@ -60,7 +60,7 @@ func TestQuery(t *testing.T) {
 	as.Equal(v4, uid, "uuid error")
 
 	//-------------------date---------------
-	date := types.Date{time.Now()}
+	date := time.Now()
 	mock.ExpectQuery("select gen_random_uuid() ").
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}).

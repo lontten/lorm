@@ -102,7 +102,7 @@ func TestDeleteByWhere(t *testing.T) {
 
 	num, err := engine.Delete(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk").
-		Like("age", "kk"),
+		Like("age", types.NewString("kk")),
 	)
 	as.Nil(err)
 	as.Equal(int64(1), num)
