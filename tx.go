@@ -15,7 +15,6 @@ func (db DB) Begin() DB {
 	d := DB{
 		db:       db.db,
 		tx:       t,
-		isTx:     true,
 		dbConfig: db.dbConfig,
 		ctx:      db.ctx.Copy(),
 		dialect:  db.dialect.Copy(t),
@@ -32,7 +31,6 @@ func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
 	return DB{
 		db:       db.db,
 		tx:       t,
-		isTx:     true,
 		dbConfig: db.dbConfig,
 		ctx:      db.ctx.Copy(),
 		dialect:  db.dialect.Copy(t),
@@ -40,7 +38,7 @@ func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
 }
 
 func (db DB) Rollback() error {
-	if !db.isTx {
+	if db.tx == nil {
 		return errors.New("not in transaction")
 	}
 	err := db.tx.Rollback()
@@ -52,7 +50,7 @@ func (db DB) Rollback() error {
 }
 
 func (db DB) Commit() error {
-	if !db.isTx {
+	if db.tx == nil {
 		return errors.New("not in transaction")
 	}
 	err := db.tx.Commit()

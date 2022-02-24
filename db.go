@@ -3,9 +3,8 @@ package lorm
 import "database/sql"
 
 type DB struct {
-	db   *sql.DB
-	tx   *sql.Tx
-	isTx bool
+	db *sql.DB
+	tx *sql.Tx
 
 	dbConfig DbConfig
 	ctx      OrmContext

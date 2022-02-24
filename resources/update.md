@@ -19,8 +19,8 @@ db.update("t_user").                            update-in
     byPrimaryKeys(interface{})
     filterPrimaryKeys(interface{})
     byWhere(*whereBuider)
-    .err() //返回受影响的行数 err
-    .num()  //获取 num,err
+    .exec() //返回受影响的行数 err
+    .execNum()  //获取 num,err
 
 
 

@@ -8,21 +8,22 @@ type Stmt struct {
 	stmt *sql.Stmt
 }
 
-func (db DB) Prepare(query string) (s Stmt, err error) {
-	if db.isTx {
+func (db DB) Prepare(query string) (*Stmt, error) {
+	s := &Stmt{}
+	if db.tx != nil {
 		stmt, err := db.tx.Prepare(query)
 		if err != nil {
-			return s, err
+			return nil, err
 		}
 		s.stmt = stmt
 		return s, nil
 	}
 	stmt, err := db.db.Prepare(query)
 	if err != nil {
-		return
+		return nil, err
 	}
 	s.stmt = stmt
-	return
+	return s, nil
 }
 
 func (s *Stmt) Query(args ...interface{}) (int64, error) {
