@@ -134,3 +134,8 @@ func (m MysqlDialect) parse(c Clause) (string, error) {
 
 	return sb.String(), nil
 }
+
+func (m MysqlDialect) prepare(query string) (Stmt, error) {
+	stmt, err := m.db.Prepare(query)
+	return Stmt{stmt: stmt}, err
+}

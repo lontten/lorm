@@ -22,4 +22,6 @@ type Dialect interface {
 	insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error)
 
 	parse(c Clause) (string, error)
+
+	prepare(query string) (Stmt, error)
 }

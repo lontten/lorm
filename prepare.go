@@ -6,31 +6,23 @@ import (
 
 type Stmt struct {
 	stmt *sql.Stmt
+
+	ctx OrmContext
 }
 
-func (db DB) Prepare(query string) (*Stmt, error) {
-	s := &Stmt{}
-	if db.tx != nil {
-		stmt, err := db.tx.Prepare(query)
-		if err != nil {
-			return nil, err
-		}
-		s.stmt = stmt
-		return s, nil
-	}
-	stmt, err := db.db.Prepare(query)
+func (db DB) Prepare(query string) (Stmt, error) {
+	return db.dialect.prepare(query)
+}
+
+func (s *Stmt) Exec(args ...interface{}) (int64, error) {
+	exec, err := s.stmt.Exec(args...)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	s.stmt = stmt
-	return s, nil
+	return exec.RowsAffected()
 }
 
-func (s *Stmt) Query(args ...interface{}) (int64, error) {
-	return 0, nil
-}
-
-func (s *Stmt) Exec(args ...interface{}) Prepare {
+func (s *Stmt) Query(args ...interface{}) Prepare {
 
 	return Prepare{}
 }
