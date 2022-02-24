@@ -1,33 +1,146 @@
 package lorm
 
 import (
-	"bytes"
+	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 )
 
-type WhereContext struct {
-	wheres []string
-	args   []interface{}
+type whereTokenType int
+
+const (
+	and whereTokenType = iota
+	or
+	native
+)
+
+type whereToken struct {
+	Type   whereTokenType
+	wheres []whereToken
+	clause Clause
+}
+
+type Clause struct {
+	Type    clauseType
+	query   string
+	argsNum int
 }
 
 type WhereBuilder struct {
-	context WhereContext
+	wheres []whereToken
+	args   []interface{}
 }
 
-func (w *WhereBuilder) toWhereSqlOneself() ([]byte, []interface{}) {
-	wheres := w.context.wheres
-	var bb bytes.Buffer
-	bb.WriteString("WHERE ")
-	for i, where := range wheres {
-		if i == 0 {
-			bb.WriteString(" WHERE " + where)
-			continue
-		}
-		bb.WriteString(" AND " + where)
-	}
-	return bb.Bytes(), w.context.args
+func Wb() *WhereBuilder {
+	return &WhereBuilder{}
 }
+
+type parseFun func(c Clause) (string, error)
+
+func (w *WhereBuilder) toWhereToken() ([]whereToken, []interface{}) {
+	return w.wheres, w.args
+}
+
+func (w *WhereBuilder) toSql(f parseFun) (string, error) {
+	return parse(w.wheres, f)
+}
+
+func parse(wts []whereToken, f parseFun) (string, error) {
+	sb := strings.Builder{}
+	isStart := false
+	for _, wt := range wts {
+		switch wt.Type {
+		case native:
+			result, err := f(wt.clause)
+			if err != nil {
+				return "", errors.Wrap(err, "parse native where")
+			}
+			if isStart {
+				sb.WriteString(" AND ")
+			}
+			sb.WriteString(result)
+			isStart = true
+		case and:
+			result, err := parse(wt.wheres, f)
+			if err != nil {
+				return "", errors.Wrap(err, "parse native where")
+			}
+
+			if isStart {
+				sb.WriteString(" AND ")
+			}
+			isMore := len(wt.wheres) > 1
+			if !isMore {
+				sb.WriteString("(")
+			}
+			sb.WriteString(result)
+			if !isMore {
+				sb.WriteString(")")
+			}
+		case or:
+			result, err := parse(wt.wheres, f)
+			if err != nil {
+				return "", errors.Wrap(err, "parse native where")
+			}
+			if isStart {
+				sb.WriteString(" AND ")
+			}
+			isMore := len(wt.wheres) > 1
+			if !isMore {
+				sb.WriteString("(")
+			}
+			sb.WriteString(result)
+			if !isMore {
+				sb.WriteString(")")
+			}
+		default:
+			return "", errors.New("unknown where token type")
+		}
+	}
+
+	return "", nil
+}
+
+//------------------------------------------
+func (w *WhereBuilder) And(wb *WhereBuilder, condition ...bool) *WhereBuilder {
+	if wb == nil {
+		return w
+	}
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	tokens, args := wb.toWhereToken()
+
+	w.wheres = append(w.wheres, whereToken{
+		Type:   and,
+		wheres: tokens,
+	})
+	w.args = append(w.args, args...)
+	return w
+}
+
+func (w *WhereBuilder) Or(wb *WhereBuilder, condition ...bool) *WhereBuilder {
+	if wb == nil {
+		return w
+	}
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	tokens, args := wb.toWhereToken()
+
+	w.wheres = append(w.wheres, whereToken{
+		Type:   or,
+		wheres: tokens,
+	})
+	w.args = append(w.args, args...)
+	return w
+}
+
+//------------------------------------
 
 func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
@@ -39,8 +152,14 @@ func (w *WhereBuilder) Eq(query string, arg interface{}, condition ...bool) *Whe
 	if arg == nil {
 		return w
 	}
-	w.context.wheres = append(w.context.wheres, query+" = ? ")
-	w.context.args = append(w.context.args, arg)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Eq,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
 	return w
 }
 
@@ -50,18 +169,19 @@ func (w *WhereBuilder) In(query string, args ArgArray, condition ...bool) *Where
 			return w
 		}
 	}
-	if len(args) == 0 {
+	argsLen := len(args)
+	if argsLen == 0 {
 		return w
 	}
-	var queryArr []string
-	for i := 0; i < len(args); i++ {
-		queryArr = append(queryArr, "?")
-	}
-
-	var str = query + " IN (" + strings.Join(queryArr, ",") + ") "
-
-	w.context.wheres = append(w.context.wheres, str)
-	w.context.args = append(w.context.args, args...)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:    In,
+			query:   query,
+			argsNum: argsLen,
+		},
+	})
+	w.args = append(w.args, args...)
 	return w
 }
 
@@ -71,18 +191,20 @@ func (w *WhereBuilder) NotIn(query string, args ArgArray, condition ...bool) *Wh
 			return w
 		}
 	}
-	if len(args) == 0 {
+	argsLen := len(args)
+	if argsLen == 0 {
 		return w
 	}
-	var queryArr []string
-	for i := 0; i < len(args); i++ {
-		queryArr = append(queryArr, "?")
-	}
 
-	var str = query + " NOT IN (" + strings.Join(queryArr, ",") + ") "
-
-	w.context.wheres = append(w.context.wheres, str)
-	w.context.args = append(w.context.args, args...)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:    NotIn,
+			query:   query,
+			argsNum: argsLen,
+		},
+	})
+	w.args = append(w.args, args...)
 	return w
 }
 
@@ -96,8 +218,35 @@ func (w *WhereBuilder) NotEq(query string, arg interface{}, condition ...bool) *
 	if arg == nil {
 		return w
 	}
-	w.context.wheres = append(w.context.wheres, query+" != ? ")
-	w.context.args = append(w.context.args, arg)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Neq,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
+	return w
+}
+
+func (w *WhereBuilder) Contains(query string, arg interface{}, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	arg = getTargetInter(reflect.ValueOf(arg))
+	if arg == nil {
+		return w
+	}
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Contains,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
 	return w
 }
 
@@ -112,8 +261,14 @@ func (w *WhereBuilder) Less(query string, arg interface{}, condition ...bool) *W
 	if arg == nil {
 		return w
 	}
-	w.context.wheres = append(w.context.wheres, query+" < ? ")
-	w.context.args = append(w.context.args, arg)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Less,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
 	return w
 }
 
@@ -128,8 +283,14 @@ func (w *WhereBuilder) LessEq(query string, arg interface{}, condition ...bool) 
 	if arg == nil {
 		return w
 	}
-	w.context.wheres = append(w.context.wheres, query+" <= ? ")
-	w.context.args = append(w.context.args, arg)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  LessEq,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
 	return w
 }
 
@@ -144,8 +305,14 @@ func (w *WhereBuilder) Greater(query string, arg interface{}, condition ...bool)
 	if arg == nil {
 		return w
 	}
-	w.context.wheres = append(w.context.wheres, query+" > ? ")
-	w.context.args = append(w.context.args, arg)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Greater,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
 	return w
 }
 
@@ -160,8 +327,14 @@ func (w *WhereBuilder) GreaterEq(query string, arg interface{}, condition ...boo
 	if arg == nil {
 		return w
 	}
-	w.context.wheres = append(w.context.wheres, query+" >= ? ")
-	w.context.args = append(w.context.args, arg)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  GreaterEq,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
 	return w
 }
 
@@ -172,9 +345,14 @@ func (w *WhereBuilder) Between(query string, arg1, arg2 interface{}, condition .
 		}
 	}
 
-	w.context.wheres = append(w.context.wheres, query+" BETWEEN ? AND ? ")
-	w.context.args = append(w.context.args, arg1)
-	w.context.args = append(w.context.args, arg2)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Between,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg1, arg2)
 	return w
 }
 
@@ -184,12 +362,12 @@ func (w *WhereBuilder) Arg(arg interface{}, condition ...bool) *WhereBuilder {
 			return w
 		}
 	}
-	w.context.args = append(w.context.args, arg)
+	w.args = append(w.args, arg)
 	return w
 }
 
 func (w *WhereBuilder) Args(args ...interface{}) *WhereBuilder {
-	w.context.args = append(w.context.args, args...)
+	w.args = append(w.args, args...)
 	return w
 }
 
@@ -200,7 +378,13 @@ func (w *WhereBuilder) IsNull(query string, condition ...bool) *WhereBuilder {
 		}
 	}
 
-	w.context.wheres = append(w.context.wheres, query+" IS NULL ")
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  IsNull,
+			query: query,
+		},
+	})
 	return w
 }
 
@@ -211,10 +395,31 @@ func (w *WhereBuilder) IsNotNull(query string, condition ...bool) *WhereBuilder 
 		}
 	}
 
-	w.context.wheres = append(w.context.wheres, query+" IS NOT NULL ")
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  IsNotNull,
+			query: query,
+		},
+	})
 	return w
 }
 
+func (w *WhereBuilder) IsFalse(query string, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  IsFalse,
+			query: query,
+		},
+	})
+	return w
+}
 func (w *WhereBuilder) NotBetween(query string, arg1, arg2 interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
@@ -222,24 +427,18 @@ func (w *WhereBuilder) NotBetween(query string, arg1, arg2 interface{}, conditio
 		}
 	}
 
-	w.context.wheres = append(w.context.wheres, query+" NOT BETWEEN ? AND ? ")
-	w.context.args = append(w.context.args, arg1)
-	w.context.args = append(w.context.args, arg2)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  NotBetween,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg1, arg2)
 	return w
 }
 
-func (w *WhereBuilder) And(query string, condition ...bool) *WhereBuilder {
-	for _, b := range condition {
-		if !b {
-			return w
-		}
-	}
-
-	w.context.wheres = append(w.context.wheres, query)
-	return w
-}
-
-func (w *WhereBuilder) Ne(query string, arg interface{}, condition ...bool) *WhereBuilder {
+func (w *WhereBuilder) Neq(query string, arg interface{}, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
 			return w
@@ -249,64 +448,55 @@ func (w *WhereBuilder) Ne(query string, arg interface{}, condition ...bool) *Whe
 	if arg == nil {
 		return w
 	}
-	w.context.wheres = append(w.context.wheres, query+" <> ? ")
-	w.context.args = append(w.context.args, arg)
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Neq,
+			query: query,
+		},
+	})
+	w.args = append(w.args, arg)
 	return w
 }
 
-func (w *WhereBuilder) Like(query string, arg interface{}, condition ...bool) *WhereBuilder {
+func (w *WhereBuilder) Like(query string, arg *string, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
 			return w
 		}
 	}
-	arg = getTargetInter(reflect.ValueOf(arg))
 	if arg == nil {
 		return w
 	}
 
-	var key = ""
-	switch arg.(type) {
-	case string:
-		key = "%" + arg.(string) + "%"
-	case []byte:
-		key = "%" + string(arg.([]byte)) + "%"
-	case *string:
-		key = "%" + *arg.(*string) + "%"
-	case *[]byte:
-		key = "%" + string(*arg.(*[]byte)) + "%"
-	default:
-		return w
-	}
-	w.context.wheres = append(w.context.wheres, query+" LIKE ? ")
-	w.context.args = append(w.context.args, key)
-	return &WhereBuilder{context: w.context}
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  Like,
+			query: query,
+		},
+	})
+	w.args = append(w.args, *arg)
+	return w
 }
 
-func (w *WhereBuilder) NoLike(query string, arg interface{}, condition ...bool) *WhereBuilder {
+func (w *WhereBuilder) NoLike(query string, arg *string, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
-			return &WhereBuilder{context: w.context}
+			return w
 		}
 	}
-	arg = getTargetInter(reflect.ValueOf(arg))
 	if arg == nil {
 		return w
 	}
-	var key = ""
-	switch arg.(type) {
-	case string:
-		key = "%" + arg.(string) + "%"
-	case []byte:
-		key = "%" + string(arg.([]byte)) + "%"
-	case *string:
-		key = "%" + *arg.(*string) + "%"
-	case *[]byte:
-		key = "%" + string(*arg.(*[]byte)) + "%"
-	default:
-		return w
-	}
-	w.context.wheres = append(w.context.wheres, query+" NO  LIKE ? ")
-	w.context.args = append(w.context.args, key)
-	return &WhereBuilder{context: w.context}
+
+	w.wheres = append(w.wheres, whereToken{
+		Type: native,
+		clause: Clause{
+			Type:  NotLike,
+			query: query,
+		},
+	})
+	w.args = append(w.args, *arg)
+	return w
 }

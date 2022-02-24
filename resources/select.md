@@ -7,7 +7,7 @@ users,err:=db.select(user).byId(...id).getList<User>()
 
 
 
-db.select("t_user").
+db.select("t_user").                                                    sele-in
  
     byModel(user)
     byMap(map)
@@ -20,10 +20,6 @@ db.select("t_user").
     .scanList() //返回受影响的行数  num,dto,err
     .sql()  //获取sql
 
-
-
-
-pages,err:=db.select(user).byMode(model).getPage<User>(page,size)
 
 
 
