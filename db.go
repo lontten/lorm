@@ -14,7 +14,7 @@ type DB struct {
 	//where tokens
 	whereTokens []string
 
-	extraWhereSql []byte
+	extraWhereSql string
 
 	orderByTokens []string
 

@@ -179,22 +179,22 @@ func (db *DB) initExtra() {
 		db.args = append(db.args, db.ctx.conf.TenantIdValueFun())
 	}
 
-	var buf bytes.Buffer
-	buf.Write(db.extraWhereSql)
+	var sb strings.Builder
+	sb.WriteString(db.extraWhereSql)
 
 	if len(db.orderByTokens) > 0 {
-		buf.WriteString(" ORDER BY ")
-		buf.WriteString(strings.Join(db.orderByTokens, ","))
+		sb.WriteString(" ORDER BY ")
+		sb.WriteString(strings.Join(db.orderByTokens, ","))
 	}
 	if db.limit > 0 {
-		buf.WriteString(" LIMIT ? ")
+		sb.WriteString(" LIMIT ? ")
 		db.args = append(db.args, db.limit)
 	}
 	if db.offset > 0 {
-		buf.WriteString(" OFFSET ? ")
+		sb.WriteString(" OFFSET ? ")
 		db.args = append(db.args, db.offset)
 	}
-	db.extraWhereSql = buf.Bytes()
+	db.extraWhereSql = sb.String()
 
 }
 
@@ -204,7 +204,7 @@ func (db *DB) initLgDel() {
 		return
 	}
 	if db.ctx.conf.LogicDeleteYesSql != "" {
-		db.extraWhereSql = []byte(db.ctx.conf.LogicDeleteYesSql)
+		db.extraWhereSql = db.ctx.conf.LogicDeleteYesSql
 	}
 }
 
@@ -351,7 +351,7 @@ func (db DB) queryBatch(query string, args [][]interface{}) (int64, error) {
 
 //根据whereTokens生成的where sql
 func (db DB) genWhereSqlByToken() []byte {
-	if len(db.whereTokens) == 0 && db.extraWhereSql == nil {
+	if len(db.whereTokens) == 0 && db.extraWhereSql == "" {
 		return nil
 	}
 	var buf bytes.Buffer
@@ -362,6 +362,6 @@ func (db DB) genWhereSqlByToken() []byte {
 		}
 		buf.WriteString(token)
 	}
-	buf.Write(db.extraWhereSql)
+	buf.WriteString(db.extraWhereSql)
 	return buf.Bytes()
 }

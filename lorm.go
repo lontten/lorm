@@ -17,7 +17,7 @@ var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
 
 type DbConfig interface {
 	Open() (*sql.DB, error)
-	Dialect(db *sql.DB, pc *PoolConf) Dialect
+	dialect(db *sql.DB, pc *PoolConf) Dialect
 }
 
 type PoolConf struct {
@@ -37,7 +37,7 @@ type MysqlConf struct {
 	Password string
 }
 
-func (c *MysqlConf) Dialect(db *sql.DB, pc *PoolConf) Dialect {
+func (c *MysqlConf) dialect(db *sql.DB, pc *PoolConf) Dialect {
 	var logger *log.Logger
 	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -65,7 +65,7 @@ type PgConf struct {
 	Other    string
 }
 
-func (c *PgConf) Dialect(db *sql.DB, pc *PoolConf) Dialect {
+func (c *PgConf) dialect(db *sql.DB, pc *PoolConf) Dialect {
 	var logger *log.Logger
 	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -130,7 +130,7 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 		db:       db,
 		dbConfig: c,
 		ctx:      setOrmCtx(pc),
-		dialect:  c.Dialect(db, pc),
+		dialect:  c.dialect(db, pc),
 	}, nil
 }
 
@@ -147,7 +147,7 @@ func MustConnectMock(db *sql.DB, c DbConfig) *DB {
 		db:       db,
 		dbConfig: c,
 		ctx:      setOrmCtx(nil),
-		dialect:  c.Dialect(db, nil),
+		dialect:  c.dialect(db, nil),
 	}
 }
 
