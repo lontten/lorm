@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/lontten/lorm/utils"
 	"strings"
@@ -12,19 +11,15 @@ type MysqlDialect struct {
 	log Logger
 }
 
-func (m MysqlDialect) Copy(db DBer) Dialect {
-	return &MysqlDialect{
-		db:  db,
-		log: m.log,
-	}
-}
-
-func (m MysqlDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
+func (m MysqlDialect) query(query string, args ...interface{}) (string, []interface{}) {
 	m.log.Println(query, args)
-	return m.db.Query(query, args...)
+	return query, args
 }
 
-func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+func (m MysqlDialect) queryBatch(query string) string {
+	return query
+}
+func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (string, []interface{}) {
 	cs := make([]string, 0)
 	vs := make([]interface{}, 0)
 
@@ -43,52 +38,49 @@ func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, 
 	args = append(args, vs...)
 	m.log.Println(query, args)
 
-	exec, err := m.db.Exec(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	return exec.RowsAffected()
+	//exec, err := m.db.Exec(query, args...)
+	//if err != nil {
+	//	return 0, err
+	//}
+	return query, args
 }
 
-func (m MysqlDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
-	return 0, errors.New("MySQL insertOrUpdateByUnique not support, please use insertOrUpdateByPrimaryKey")
+func (m MysqlDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (string, []interface{}) {
+	//return 0, errors.New("MySQL insertOrUpdateByUnique not support, please use insertOrUpdateByPrimaryKey")
+	return "", nil
 }
 
-func (m MysqlDialect) queryBatch(query string) (*sql.Stmt, error) {
-	return m.db.Prepare(query)
-}
-
-func (m MysqlDialect) exec(query string, args ...interface{}) (int64, error) {
+func (m MysqlDialect) exec(query string, args ...interface{}) (string, []interface{}) {
 	m.log.Println(query, args)
 
-	exec, err := m.db.Exec(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	return exec.RowsAffected()
+	//exec, err := m.db.Exec(query, args...)
+	//if err != nil {
+	//	return 0, err
+	//}
+	return query, args
 }
 
-func (m MysqlDialect) execBatch(query string, args [][]interface{}) (int64, error) {
+func (m MysqlDialect) execBatch(query string, args [][]interface{}) (string, [][]interface{}) {
 	m.log.Println(query, args)
 
-	var num int64 = 0
-	stmt, err := m.db.Prepare(query)
-	if err != nil {
-		return 0, err
-	}
-	for _, arg := range args {
-		exec, err := stmt.Exec(arg...)
-		m.log.Println(query, args)
-		if err != nil {
-			return num, err
-		}
-		rowsAffected, err := exec.RowsAffected()
-		if err != nil {
-			return num, err
-		}
-		num += rowsAffected
-	}
-	return num, nil
+	//var num int64 = 0
+	//stmt, err := m.db.Prepare(query)
+	//if err != nil {
+	//	return 0, err
+	//}
+	//for _, arg := range args {
+	//	exec, err := stmt.Exec(arg...)
+	//	m.log.Println(query, args)
+	//	if err != nil {
+	//		return num, err
+	//	}
+	//	rowsAffected, err := exec.RowsAffected()
+	//	if err != nil {
+	//		return num, err
+	//	}
+	//	num += rowsAffected
+	//}
+	return query, args
 }
 
 func (m MysqlDialect) parse(c Clause) (string, error) {
@@ -137,5 +129,5 @@ func (m MysqlDialect) parse(c Clause) (string, error) {
 
 func (m MysqlDialect) prepare(query string) (Stmt, error) {
 	stmt, err := m.db.Prepare(query)
-	return Stmt{db: stmt}, err
+	return Stmt{stmt: stmt}, err
 }

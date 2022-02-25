@@ -11,17 +11,16 @@ type DBer interface {
 }
 
 type Dialect interface {
-	Copy(db DBer) Dialect
+	exec(query string, args ...interface{}) (string, []interface{})
+	execBatch(query string, args [][]interface{}) (string, [][]interface{})
 
-	exec(query string, args ...interface{}) (int64, error)
-	execBatch(query string, args [][]interface{}) (int64, error)
-	query(query string, args ...interface{}) (*sql.Rows, error)
-	queryBatch(query string) (*sql.Stmt, error)
+	query(query string, args ...interface{}) (string, []interface{})
+	queryBatch(query string) string
 
-	insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error)
-	insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error)
+	insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (string, []interface{})
+	insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (string, []interface{})
 
 	parse(c Clause) (string, error)
 
-	prepare(query string) (Stmt, error)
+	//prepare(query string) (string, error)
 }

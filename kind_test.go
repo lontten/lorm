@@ -23,6 +23,6 @@ func Test__isBaseType(t *testing.T) {
 	as.False(is)
 
 	is = reflect.TypeOf(12).Implements(ImpNuller)
-	as.True(is)
+	as.False(is)
 
 }

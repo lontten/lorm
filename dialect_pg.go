@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/lontten/lorm/utils"
 	"strconv"
@@ -13,30 +12,25 @@ type PgDialect struct {
 	log Logger
 }
 
-func (m PgDialect) Copy(db DBer) Dialect {
-	return &PgDialect{
-		db:  db,
-		log: m.log,
-	}
-}
-
-func (m PgDialect) query(query string, args ...interface{}) (*sql.Rows, error) {
+func (m PgDialect) query(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
 	m.log.Println(query, args)
-	return m.db.Query(query, args...)
+	//return m.db.Query(query, args...)
+	return query, args
 }
 
-func (m PgDialect) queryBatch(query string) (*sql.Stmt, error) {
+func (m PgDialect) queryBatch(query string) string {
 	query = toPgSql(query)
 
-	return m.db.Prepare(query)
+	//return m.db.Prepare(query)
+	return query
 }
 
-func (m PgDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+func (m PgDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...interface{}) (string, []interface{}) {
 	return m.insertOrUpdateByUnique(table, fields, columns, args...)
 }
 
-func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (int64, error) {
+func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (string, []interface{}) {
 	cs := make([]string, 0)
 	vs := make([]interface{}, 0)
 
@@ -59,49 +53,49 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 	args = append(args, vs...)
 	query = toPgSql(query)
 	m.log.Println(query, args)
-	exec, err := m.db.Exec(query, args...)
-	if err != nil {
-		if errors.As(err, &ErrNoPkOrUnique) {
-			return 0, errors.New("insertOrUpdateByUnique fields need to be unique or primary key:" + strings.Join(fields, ",") + err.Error())
-		}
-		return 0, err
-	}
-	return exec.RowsAffected()
+	//exec, err := m.db.Exec(query, args...)
+	//if err != nil {
+	//	if errors.As(err, &ErrNoPkOrUnique) {
+	//		return 0, errors.New("insertOrUpdateByUnique fields need to be unique or primary key:" + strings.Join(fields, ",") + err.Error())
+	//	}
+	//	return 0, err
+	//}
+	return query, args
 }
 
-func (m PgDialect) exec(query string, args ...interface{}) (int64, error) {
+func (m PgDialect) exec(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
 	m.log.Println(query, args)
 
-	exec, err := m.db.Exec(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	return exec.RowsAffected()
+	//exec, err := m.db.Exec(query, args...)
+	//if err != nil {
+	//	return 0, err
+	//}
+	return query, args
 }
 
-func (m PgDialect) execBatch(query string, args [][]interface{}) (int64, error) {
+func (m PgDialect) execBatch(query string, args [][]interface{}) (string, [][]interface{}) {
 	query = toPgSql(query)
-	var num int64 = 0
-	stmt, err := m.db.Prepare(query)
-	defer stmt.Close()
-	if err != nil {
-		return 0, err
-	}
-	for _, arg := range args {
-		exec, err := stmt.Exec(arg...)
-
-		m.log.Println(query, arg)
-		if err != nil {
-			return num, err
-		}
-		rowsAffected, err := exec.RowsAffected()
-		if err != nil {
-			return num, err
-		}
-		num += rowsAffected
-	}
-	return num, nil
+	//var num int64 = 0
+	//stmt, err := m.db.Prepare(query)
+	//defer stmt.Close()
+	//if err != nil {
+	//	return 0, err
+	//}
+	//for _, arg := range args {
+	//	exec, err := stmt.Exec(arg...)
+	//
+	//	m.log.Println(query, arg)
+	//	if err != nil {
+	//		return num, err
+	//	}
+	//	rowsAffected, err := exec.RowsAffected()
+	//	if err != nil {
+	//		return num, err
+	//	}
+	//	num += rowsAffected
+	//}
+	return query, args
 }
 
 func toPgSql(sql string) string {

@@ -12,7 +12,7 @@ type Stmt struct {
 }
 
 func (db DB) Prepare(query string) (Stmt, error) {
-	return db.dialect.prepare(query)
+	return db.doPrepare(query)
 }
 
 func (s *Stmt) Exec(args ...interface{}) (int64, error) {
@@ -23,11 +23,8 @@ func (s *Stmt) Exec(args ...interface{}) (int64, error) {
 	return exec.RowsAffected()
 }
 
-func (s Stmt) Query(args ...interface{}) Prepare {
-	return Prepare{
-		db:   s,
-		args: args,
-	}
+func (s Stmt) Query(args ...interface{}) (*sql.Rows, error) {
+	return nil, nil
 }
 
 type Prepare struct {

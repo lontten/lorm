@@ -5,7 +5,6 @@ import (
 	"github.com/lontten/lorm/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 type Hello struct {
@@ -60,18 +59,18 @@ func TestQuery(t *testing.T) {
 	as.Equal(v4, uid, "uuid error")
 
 	//-------------------date---------------
-	date := time.Now()
-	mock.ExpectQuery("select gen_random_uuid() ").
+	date := types.NowDate()
+	mock.ExpectQuery("select now() ").
 		WillReturnError(nil).
 		WillReturnRows(sqlmock.NewRows([]string{""}).
 			AddRow(date),
 		)
 
 	d := types.Date{}
-	num, err = engine.Query("select gen_random_uuid() ").ScanOne(&d)
+	num, err = engine.Query("select now() ").ScanOne(&d)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
-	as.Equal(date, d, "uuid error")
+	as.Equal(date, d, "date error")
 	as.NotEqual(types.Date{}, d, "date error")
 
 	//-------------------user---------------

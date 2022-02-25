@@ -25,7 +25,8 @@ func (q NativeQuery) ScanOne(dest interface{}) (rowsNum int64, err error) {
 		return 0, err
 	}
 
-	rows, err := q.base.dialect.query(q.query, q.args...)
+	rows, err := q.base.doQuery(q.query, q.args...)
+
 	if err != nil {
 		return 0, err
 	}
@@ -43,7 +44,7 @@ func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
 		return 0, err
 	}
 
-	rows, err := q.base.dialect.query(q.query, q.args...)
+	rows, err := q.base.doQuery(q.query, q.args...)
 	if err != nil {
 		return 0, err
 	}
@@ -51,5 +52,6 @@ func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
 }
 
 func (db DB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	return db.dialect.exec(query, args...)
+	query, args = db.dialect.exec(query, args...)
+	return db.doExec(query, args...)
 }

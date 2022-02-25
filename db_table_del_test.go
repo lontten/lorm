@@ -96,7 +96,7 @@ func TestDeleteByWhere(t *testing.T) {
 	engine := MustConnectMock(db, &PgConf{})
 
 	mock.ExpectExec("DELETE FROM *").
-		WithArgs("kk", "%kk%").
+		WithArgs("kk", "kk").
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 

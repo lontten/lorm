@@ -52,7 +52,8 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	}
 	var countSql = "select count(*) " + b.otherQuery.String()
 
-	rows, err := b.db.dialect.query(countSql, b.otherArgs...)
+	rows, err := b.db.doQuery(countSql, b.otherArgs...)
+
 	if err != nil {
 		return
 	}
@@ -69,8 +70,9 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 
 	var selectSql = b.query + " limit ? offset ?"
 	var offset = (current - int64(1)) * int64(size)
-	var args = append(b.args, size, offset)
-	rows, err = b.db.dialect.query(selectSql, args...)
+	args := append(b.args, size, offset)
+	rows, err = b.db.doQuery(selectSql, args...)
+
 	if err != nil {
 		return
 	}

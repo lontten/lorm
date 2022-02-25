@@ -26,7 +26,7 @@ func (db DB) doUpdate() (int64, error) {
 	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
 	bb.Write(db.genWhereSqlByToken())
 
-	return db.dialect.exec(bb.String(), append(ctx.columnValues, db.args...)...)
+	return db.doExec(bb.String(), append(ctx.columnValues, db.args...)...)
 
 }
 
@@ -37,21 +37,21 @@ func (db DB) doDel() (int64, error) {
 	}
 	var bb bytes.Buffer
 	tableName := db.ctx.tableName
-	where := db.genWhereSqlByToken()
+	w := db.genWhereSqlByToken()
 
 	if db.ctx.conf.LogicDeleteSetSql == "" {
 		bb.WriteString("DELETE FROM ")
 		bb.WriteString(tableName)
-		bb.Write(where)
+		bb.Write(w)
 	} else {
 		bb.WriteString("UPDATE ")
 		bb.WriteString(tableName)
 		bb.WriteString(" SET ")
 		bb.WriteString(db.ctx.conf.LogicDeleteSetSql)
-		bb.Write(where)
+		bb.Write(w)
 	}
 
-	return db.dialect.exec(bb.String(), db.args...)
+	return db.doExec(bb.String(), db.args...)
 }
 
 //update
@@ -95,7 +95,9 @@ func (db DB) doHas() (bool, error) {
 	bb.WriteString(tableName)
 	bb.Write(db.genWhereSqlByToken())
 	bb.WriteString("LIMIT 1")
-	rows, err := db.dialect.query(bb.String(), db.args...)
+
+	rows, err := db.doQuery(bb.String(), db.args...)
+
 	if err != nil {
 		return false, err
 	}
@@ -316,7 +318,7 @@ func getCompValueCV(v reflect.Value, c OrmConf) ([]string, []interface{}, error)
 
 //------------------------query--------------------------
 func (db DB) query(query string, args ...interface{}) (int64, error) {
-	rows, err := db.dialect.query(query, args...)
+	rows, err := db.doQuery(query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -327,7 +329,9 @@ func (db DB) query(query string, args ...interface{}) (int64, error) {
 }
 
 func (db DB) queryBatch(query string, args [][]interface{}) (int64, error) {
-	stmt, err := db.dialect.queryBatch(query)
+	query = db.dialect.queryBatch(query)
+
+	stmt, err := db.doPrepare(query)
 	if err != nil {
 		return 0, err
 	}

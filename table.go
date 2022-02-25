@@ -22,7 +22,8 @@ func (db DB) Insert(v interface{}) (num int64, err error) {
 		return db.query(sqlStr, db.ctx.columnValues...)
 	}
 
-	return db.dialect.exec(sqlStr, db.ctx.columnValues...)
+	query, args := db.dialect.exec(sqlStr, db.ctx.columnValues...)
+	return db.doExec(query, args...)
 }
 
 // InsertOrUpdate
@@ -50,7 +51,8 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 	cvs := ctx.columnValues
 	tableName := ctx.tableName
 	idNames := ctx.primaryKeyNames
-	return base.dialect.insertOrUpdateByPrimaryKey(tableName, idNames, cs, cvs...)
+	query, args := base.dialect.insertOrUpdateByPrimaryKey(tableName, idNames, cs, cvs...)
+	return base.doExec(query, args...)
 }
 
 // ByUnique
@@ -69,7 +71,8 @@ func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
 	cs := ctx.columns
 	cvs := ctx.columnValues
 	tableName := ctx.tableName
-	return base.dialect.insertOrUpdateByUnique(tableName, fs, cs, cvs...)
+	query, args := base.dialect.insertOrUpdateByUnique(tableName, fs, cs, cvs...)
+	return base.doExec(query, args...)
 }
 
 //------------------------------------Delete--------------------------------------------

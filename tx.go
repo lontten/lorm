@@ -17,7 +17,7 @@ func (db DB) Begin() DB {
 		tx:       t,
 		dbConfig: db.dbConfig,
 		ctx:      db.ctx.Copy(),
-		dialect:  db.dialect.Copy(t),
+		dialect:  db.dialect,
 	}
 	return d
 }
@@ -33,7 +33,7 @@ func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
 		tx:       t,
 		dbConfig: db.dbConfig,
 		ctx:      db.ctx.Copy(),
-		dialect:  db.dialect.Copy(t),
+		dialect:  db.dialect,
 	}
 }
 
