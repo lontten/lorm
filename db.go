@@ -51,7 +51,8 @@ func (r Result) Result() (int64, error) {
 }
 
 func (db DB) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
-	return db.Db().Query(db.dialect.query(query, args...))
+	query, args = db.dialect.query(query, args...)
+	return db.Db().Query(query, args...)
 }
 
 func (db DB) doExec(query string, args ...interface{}) (int64, error) {
