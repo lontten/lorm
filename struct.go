@@ -139,6 +139,7 @@ func checkCompField(va reflect.Value) error {
 			compValidNullerCache[typ] = va
 			return nil
 		}
+		return err
 	}
 	//map
 	if kind == reflect.Map {
