@@ -7,6 +7,8 @@ build/
 go.sum
 *.out
 .DS_Store
+log/
+test/
 
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
