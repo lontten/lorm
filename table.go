@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"github.com/pkg/errors"
+	"reflect"
 )
 
 //------------------------------------Insert--------------------------------------------
@@ -77,48 +78,60 @@ func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
 
 //------------------------------------Delete--------------------------------------------
 
-// Delete
-//delete
 func (db DB) Delete(v interface{}) OrmTableDelete {
-	db.setTargetDest2TableName(v)
+	db.typ = dDelete
+	db.baseTokens = append(db.baseTokens, baseToken{
+		typ:  tDelete,
+		dest: v,
+		v:    reflect.ValueOf(v),
+	})
 	return OrmTableDelete{base: db}
 }
 
-// ByPrimaryKey
-//[]
-//single -> 单主键
-//comp -> 复合主键
-func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) (int64, error) {
-	orm.base.initPrimaryKeyName()
-	orm.base.ctx.initPrimaryKeyValues(v)
-	orm.base.initByPrimaryKey()
-	orm.base.initExtra()
-	return orm.base.doDel()
+func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) Resulter {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tPrimaryKey,
+		pk:  v,
+	})
+	return orm.base.Do()
 }
 
-//ptr
-//comp,只能一个comp-struct
-func (orm OrmTableDelete) ByModel(v interface{}) (int64, error) {
-	orm.base.initByModel(v)
-	orm.base.initExtra()
-	return orm.base.doDel()
+func (orm OrmTableDelete) ByModel(v interface{}) Resulter {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tWhereModel,
+		v:   reflect.ValueOf(v),
+	})
+	return orm.base.Do()
 }
 
-func (orm OrmTableDelete) ByWhere(w *WhereBuilder) (int64, error) {
-	orm.base.initByWhere(w)
-	orm.base.initExtra()
-	return orm.base.doDel()
+func (orm OrmTableDelete) ByWhere(w *WhereBuilder) Resulter {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ:   tWhereBuilder,
+		where: w,
+	})
+	return orm.base.Do()
 }
 
 //------------------------------------Update--------------------------------------------
 
 func (db DB) Update(v interface{}) OrmTableUpdate {
+	db.typ = dUpdate
+	db.baseTokens = append(db.baseTokens, baseToken{
+		typ:  tUpdate,
+		dest: v,
+		v:    reflect.ValueOf(v),
+	})
+
 	db.setTargetDest(v)
 	db.initColumnsValue()
 	return OrmTableUpdate{base: db}
 }
 
 func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tPrimaryKey,
+	})
+
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initSelfPrimaryKeyValues()
 	orm.base.initByPrimaryKey()
@@ -127,12 +140,22 @@ func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
 }
 
 func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tWhereModel,
+		v:   reflect.ValueOf(v),
+	})
+
 	orm.base.initByModel(v)
 	orm.base.initExtra()
 	return orm.base.doUpdate()
 }
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ:   tWhereBuilder,
+		where: w,
+	})
+
 	orm.base.initByWhere(w)
 	orm.base.initExtra()
 	return orm.base.doUpdate()
@@ -141,6 +164,12 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 //------------------------------------Select--------------------------------------------
 
 func (db DB) Select(v interface{}) OrmTableSelect {
+	db.baseTokens = append(db.baseTokens, baseToken{
+		typ:  tSelect,
+		dest: v,
+		v:    reflect.ValueOf(v),
+	})
+
 	db.setTargetDest2TableName(v)
 	return OrmTableSelect{base: db}
 }
@@ -154,11 +183,21 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
 
 //ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tWhereModel,
+		v:   reflect.ValueOf(v),
+	})
+
 	orm.base.initByModel(v)
 	return OrmTableSelectWhere{base: orm.base}
 }
 
 func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ:   tWhereBuilder,
+		where: w,
+	})
+
 	if w == nil {
 		return OrmTableSelectWhere{base: orm.base}
 	}
@@ -167,6 +206,7 @@ func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
 }
 
 func (orm OrmTableSelectWhere) OrderBy(name string, condition ...bool) OrmTableSelectWhere {
+
 	for _, b := range condition {
 		if !b {
 			return OrmTableSelectWhere{base: orm.base}
@@ -209,6 +249,11 @@ func (orm OrmTableSelectWhere) Offset(num int64, condition ...bool) OrmTableSele
 }
 
 func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tScanFirst,
+		v:   reflect.ValueOf(v),
+	})
+
 	orm.Limit(1)
 	orm.base.ctx.initScanDestOne(v)
 	orm.base.ctx.checkScanDestField()
@@ -219,6 +264,11 @@ func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tScanOne,
+		v:   reflect.ValueOf(v),
+	})
+
 	orm.base.ctx.initScanDestOne(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
@@ -228,6 +278,11 @@ func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
 }
 
 func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tScanList,
+		v:   reflect.ValueOf(v),
+	})
+
 	orm.base.ctx.initScanDestList(v)
 	orm.base.ctx.checkScanDestField()
 	orm.base.initColumns()
@@ -239,6 +294,8 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 //------------------------------------has--------------------------------------------
 
 func (db DB) Has(v interface{}) OrmTableHas {
+	db.typ = dHas
+
 	db.setTargetDest2TableName(v)
 	return OrmTableHas{base: db}
 }
@@ -246,6 +303,11 @@ func (db DB) Has(v interface{}) OrmTableHas {
 // ByPrimaryKey
 //v0.8
 func (orm OrmTableHas) ByPrimaryKey(v ...interface{}) (bool, error) {
+	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+		typ: tPrimaryKey,
+		pk:  v,
+	})
+
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initPrimaryKeyValues(v)
 	orm.base.initByPrimaryKey()
