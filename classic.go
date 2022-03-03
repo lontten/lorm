@@ -48,13 +48,16 @@ const (
 func (b *SqlBuilder) updStatus() {
 	if b.selectStatus == selectNone {
 		b.selectStatus = selectIng
+		return
 	}
 	if b.selectStatus == selectIng {
 		b.selectStatus = selectDone
+		return
 	}
 
 	if b.whereStatus == whereIng {
 		b.whereStatus = whereDone
+		return
 	}
 }
 
