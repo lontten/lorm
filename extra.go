@@ -7,6 +7,9 @@ import (
 )
 
 func (db DB) Page(size int, current int64) *SqlBuilder {
+	if size < 1 || current < 1 {
+		db.ctx.err = errors.New("size,current must be greater than 0")
+	}
 	return &SqlBuilder{
 		db:          db,
 		selectQuery: &strings.Builder{},
@@ -70,11 +73,12 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	var selectSql = b.query + " limit ? offset ?"
 	var offset = (current - int64(1)) * int64(size)
 	var args = append(b.args, size, offset)
-	rows, err = b.db.dialect.query(selectSql, args...)
+	listRows, err := b.db.dialect.query(selectSql, args...)
 	if err != nil {
 		return
 	}
-	num, err := b.db.ctx.Scan(rows)
+	defer listRows.Close()
+	num, err := b.db.ctx.Scan(listRows)
 	if err != nil {
 		return
 	}
