@@ -3,6 +3,7 @@ package lorm
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
 
 type LnTXer interface {
@@ -12,6 +13,11 @@ type LnTXer interface {
 	getDB() *sql.DB
 	getTX() *sql.Tx
 
+	//原生调用方法
+	Query(query string, args ...interface{}) *NativeQuery
+	Exec(query string, args ...interface{}) (rowsNum int64, err error)
+
+	//lorm扩展方法
 	C()
 	R()
 	U()
@@ -37,10 +43,27 @@ func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer {
 }
 
 func (db lnDB) Rollback() error {
-	return db.rollback()
+	if db.tx == nil {
+		return errors.New("not in transaction")
+	}
+	err := db.tx.Rollback()
+	if err != nil {
+		return err
+	}
+	db.ctx.log.Println("rollback")
+	return nil
 }
+
 func (db lnDB) Commit() error {
-	return db.commit()
+	if db.tx == nil {
+		return errors.New("not in transaction")
+	}
+	err := db.tx.Commit()
+	if err != nil {
+		return err
+	}
+	db.ctx.log.Println("commit")
+	return nil
 }
 
 func (db lnDB) C() {

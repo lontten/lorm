@@ -19,6 +19,11 @@ const (
 type LnDBer interface {
 	BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer
 
+	//原生调用方法
+	Query(query string, args ...interface{}) *NativeQuery
+	Exec(query string, args ...interface{}) (rowsNum int64, err error)
+
+	//lorm扩展方法
 	C()
 	R()
 	U()
@@ -38,8 +43,8 @@ type Result struct {
 	err error
 }
 type Resulter interface {
-	Result() (int64, error)
-	Err() error
+	Result() (int64, error) //sql执行影响了多少行数时和err
+	Err() error             //当用户不在意，sql执行影响了多少行数时，可以使用这个直接获取err，不用再想之前一样还要用_接受
 }
 
 func (r Result) Err() error {

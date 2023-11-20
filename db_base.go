@@ -2,7 +2,6 @@ package lorm
 
 import (
 	"database/sql"
-	"errors"
 )
 
 type lnDB struct {
@@ -40,28 +39,4 @@ func (db lnDB) getDB() *sql.DB {
 
 func (db lnDB) getTX() *sql.Tx {
 	return db.tx
-}
-
-func (db lnDB) rollback() error {
-	if db.tx == nil {
-		return errors.New("not in transaction")
-	}
-	err := db.tx.Rollback()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("rollback")
-	return nil
-}
-
-func (db lnDB) commit() error {
-	if db.tx == nil {
-		return errors.New("not in transaction")
-	}
-	err := db.tx.Commit()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("commit")
-	return nil
 }
