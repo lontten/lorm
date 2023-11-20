@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (db DB) Builder() *SqlBuilder {
+func (db lnDB) Builder() *SqlBuilder {
 	return &SqlBuilder{
 		db:          db,
 		selectQuery: &strings.Builder{},
@@ -14,7 +14,7 @@ func (db DB) Builder() *SqlBuilder {
 }
 
 type SqlBuilder struct {
-	db    DB
+	db    lnDB
 	query string
 	args  []interface{}
 

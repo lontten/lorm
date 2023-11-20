@@ -3,12 +3,12 @@ package lorm
 import "github.com/pkg/errors"
 
 type NativeQuery struct {
-	base  DB
+	base  lnDB
 	query string
 	args  []interface{}
 }
 
-func (db DB) Query(query string, args ...interface{}) *NativeQuery {
+func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
 	return &NativeQuery{base: db, query: query, args: args}
 }
 
@@ -51,7 +51,7 @@ func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
 	return q.base.ctx.Scan(rows)
 }
 
-func (db DB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+func (db lnDB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
 	query, args = db.dialect.exec(query, args...)
 	return db.doExec(query, args...)
 }

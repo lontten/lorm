@@ -11,7 +11,7 @@ type Stmt struct {
 	ctx OrmContext
 }
 
-func (db DB) Prepare(query string) (Stmt, error) {
+func (db lnDB) Prepare(query string) (Stmt, error) {
 	return db.doPrepare(query)
 }
 

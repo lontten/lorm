@@ -5,7 +5,7 @@ import (
 )
 
 func Test_commit(t *testing.T) {
-	db := DB{}
+	db := lnDB{}
 	tx := db.BeginTx(nil, nil)
 	tx.Commit()
 

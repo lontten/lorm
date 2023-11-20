@@ -11,11 +11,14 @@ type LnTXer interface {
 
 	getDB() *sql.DB
 	getTX() *sql.Tx
-	commit() error
-	rollback() error
+
+	C()
+	R()
+	U()
+	D()
 }
 
-func (db DB) Begin() LnTXer {
+func (db lnDB) Begin() LnTXer {
 	t, err := db.db.Begin()
 	if err != nil {
 		panic(err)
@@ -24,7 +27,7 @@ func (db DB) Begin() LnTXer {
 	return db
 }
 
-func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer {
+func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer {
 	t, err := db.db.BeginTx(ctx, opts)
 	if err != nil {
 		panic(err)
@@ -33,9 +36,21 @@ func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer {
 	return db
 }
 
-func (db DB) Rollback() error {
+func (db lnDB) Rollback() error {
 	return db.rollback()
 }
-func (db DB) Commit() error {
+func (db lnDB) Commit() error {
 	return db.commit()
+}
+
+func (db lnDB) C() {
+}
+
+func (db lnDB) U() {
+}
+
+func (db lnDB) R() {
+}
+
+func (db lnDB) D() {
 }

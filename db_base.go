@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-type DB struct {
+type lnDB struct {
 	db *sql.DB
 	tx *sql.Tx
 
@@ -34,15 +34,15 @@ type DB struct {
 	baseTokens []baseToken
 }
 
-func (db DB) getDB() *sql.DB {
+func (db lnDB) getDB() *sql.DB {
 	return db.db
 }
 
-func (db DB) getTX() *sql.Tx {
+func (db lnDB) getTX() *sql.Tx {
 	return db.tx
 }
 
-func (db DB) rollback() error {
+func (db lnDB) rollback() error {
 	if db.tx == nil {
 		return errors.New("not in transaction")
 	}
@@ -54,7 +54,7 @@ func (db DB) rollback() error {
 	return nil
 }
 
-func (db DB) commit() error {
+func (db lnDB) commit() error {
 	if db.tx == nil {
 		return errors.New("not in transaction")
 	}

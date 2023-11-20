@@ -109,7 +109,7 @@ func setOrmCtx(pc *PoolConf) OrmContext {
 	}
 }
 
-func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
+func open(c DbConfig, pc *PoolConf) (dp *lnDB, err error) {
 	if c == nil {
 		fmt.Println("dbconfig canot be nil")
 		return nil, errors.New("dbconfig canot be nil")
@@ -126,7 +126,7 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
-	return &DB{
+	return &lnDB{
 		db:       db,
 		dbConfig: c,
 		ctx:      setOrmCtx(pc),
@@ -134,7 +134,7 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 	}, nil
 }
 
-func MustConnect(c DbConfig, pc *PoolConf) *DB {
+func MustConnect(c DbConfig, pc *PoolConf) LnDBer {
 	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
@@ -142,8 +142,8 @@ func MustConnect(c DbConfig, pc *PoolConf) *DB {
 	return db
 }
 
-func MustConnectMock(db *sql.DB, c DbConfig) *DB {
-	return &DB{
+func MustConnectMock(db *sql.DB, c DbConfig) LnDBer {
+	return &lnDB{
 		db:       db,
 		dbConfig: c,
 		ctx:      setOrmCtx(nil),
@@ -151,15 +151,15 @@ func MustConnectMock(db *sql.DB, c DbConfig) *DB {
 	}
 }
 
-func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
-	pool, err := open(c, pc)
+func Connect(c DbConfig, pc *PoolConf) (LnDBer, error) {
+	db, err := open(c, pc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = pool.db.Ping()
+	err = db.db.Ping()
 	if err != nil {
 		return nil, err
 	}
-	return pool, err
+	return db, err
 }

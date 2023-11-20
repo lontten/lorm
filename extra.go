@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (db DB) Page(size int, current int64) *SqlBuilder {
+func (db lnDB) Page(size int, current int64) *SqlBuilder {
 	return &SqlBuilder{
 		db:          db,
 		selectQuery: &strings.Builder{},

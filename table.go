@@ -8,9 +8,9 @@ import (
 //------------------------------------Insert--------------------------------------------
 
 // Insert
-//1.ptr
-//2.comp-struct
-func (db DB) Insert(v interface{}) (num int64, err error) {
+// 1.ptr
+// 2.comp-struct
+func (db lnDB) Insert(v interface{}) (num int64, err error) {
 	db.setTargetDest(v)
 	db.initColumnsValue()
 	if db.ctx.err != nil {
@@ -28,17 +28,17 @@ func (db DB) Insert(v interface{}) (num int64, err error) {
 }
 
 // InsertOrUpdate
-//1.ptr
-//2.comp-struct
-func (db DB) InsertOrUpdate(v interface{}) OrmTableCreate {
+// 1.ptr
+// 2.comp-struct
+func (db lnDB) InsertOrUpdate(v interface{}) OrmTableCreate {
 	db.setTargetDest(v)
 	db.initColumnsValue()
 	return OrmTableCreate{base: db}
 }
 
 // ByPrimaryKey
-//ptr
-//single / comp复合主键
+// ptr
+// single / comp复合主键
 func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 	orm.base.initPrimaryKeyName()
 	orm.base.ctx.initSelfPrimaryKeyValues()
@@ -57,7 +57,7 @@ func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
 }
 
 // ByUnique
-//ptr-comp
+// ptr-comp
 func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
 	if len(fs) == 0 {
 		return 0, errors.New("ByUnique is empty")
@@ -78,7 +78,7 @@ func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
 
 //------------------------------------Delete--------------------------------------------
 
-func (db DB) Delete(v interface{}) OrmTableDelete {
+func (db lnDB) Delete(v interface{}) OrmTableDelete {
 	db.typ = dDelete
 	db.baseTokens = append(db.baseTokens, baseToken{
 		typ:  tDelete,
@@ -114,7 +114,7 @@ func (orm OrmTableDelete) ByWhere(w *WhereBuilder) Resulter {
 
 //------------------------------------Update--------------------------------------------
 
-func (db DB) Update(v interface{}) OrmTableUpdate {
+func (db lnDB) Update(v interface{}) OrmTableUpdate {
 	db.typ = dUpdate
 	db.baseTokens = append(db.baseTokens, baseToken{
 		typ:  tUpdate,
@@ -163,7 +163,7 @@ func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 
 //------------------------------------Select--------------------------------------------
 
-func (db DB) Select(v interface{}) OrmTableSelect {
+func (db lnDB) Select(v interface{}) OrmTableSelect {
 	db.baseTokens = append(db.baseTokens, baseToken{
 		typ:  tSelect,
 		dest: v,
@@ -181,7 +181,7 @@ func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
 	return OrmTableSelectWhere{base: orm.base}
 }
 
-//ptr-comp
+// ptr-comp
 func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
 	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
 		typ: tWhereModel,
@@ -293,7 +293,7 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 
 //------------------------------------has--------------------------------------------
 
-func (db DB) Has(v interface{}) OrmTableHas {
+func (db lnDB) Has(v interface{}) OrmTableHas {
 	db.typ = dHas
 
 	db.setTargetDest2TableName(v)
@@ -301,7 +301,7 @@ func (db DB) Has(v interface{}) OrmTableHas {
 }
 
 // ByPrimaryKey
-//v0.8
+// v0.8
 func (orm OrmTableHas) ByPrimaryKey(v ...interface{}) (bool, error) {
 	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
 		typ: tPrimaryKey,
@@ -315,7 +315,7 @@ func (orm OrmTableHas) ByPrimaryKey(v ...interface{}) (bool, error) {
 	return orm.base.doHas()
 }
 
-//ptr-comp
+// ptr-comp
 func (orm OrmTableHas) ByModel(v interface{}) (bool, error) {
 	orm.base.initByModel(v)
 	orm.base.initExtra()
@@ -331,31 +331,31 @@ func (orm OrmTableHas) ByWhere(w *WhereBuilder) (bool, error) {
 //-----------------------------------------------------------
 
 type OrmTableCreate struct {
-	base DB
+	base lnDB
 }
 
 type OrmTableSelect struct {
-	base DB
+	base lnDB
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableHas struct {
-	base DB
+	base lnDB
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableSelectWhere struct {
-	base DB
+	base lnDB
 }
 
 type OrmTableUpdate struct {
-	base DB
+	base lnDB
 }
 
 type OrmTableDelete struct {
-	base DB
+	base lnDB
 }

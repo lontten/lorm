@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-//update
-func (db DB) doUpdate() (int64, error) {
+// update
+func (db lnDB) doUpdate() (int64, error) {
 	if err := db.ctx.err; err != nil {
 		return 0, err
 	}
@@ -30,8 +30,8 @@ func (db DB) doUpdate() (int64, error) {
 
 }
 
-//del
-func (db DB) doDel() (int64, error) {
+// del
+func (db lnDB) doDel() (int64, error) {
 	if err := db.ctx.err; err != nil {
 		return 0, err
 	}
@@ -54,8 +54,8 @@ func (db DB) doDel() (int64, error) {
 	return db.doExec(bb.String(), db.args...)
 }
 
-//update
-func (db DB) doSelect() (int64, error) {
+// update
+func (db lnDB) doSelect() (int64, error) {
 	if err := db.ctx.err; err != nil {
 		return 0, err
 	}
@@ -81,8 +81,8 @@ func (db DB) doSelect() (int64, error) {
 	return db.query(bb.String(), db.args...)
 }
 
-//has
-func (db DB) doHas() (bool, error) {
+// has
+func (db lnDB) doHas() (bool, error) {
 	if err := db.ctx.err; err != nil {
 		return false, err
 	}
@@ -110,8 +110,8 @@ func (db DB) doHas() (bool, error) {
 
 //-------------------------------init------------------------
 
-//根据 byModel 生成的where token
-func (db *DB) initByPrimaryKey() {
+// 根据 byModel 生成的where token
+func (db *lnDB) initByPrimaryKey() {
 	ctx := db.ctx
 	if err := ctx.err; err != nil {
 		return
@@ -124,8 +124,8 @@ func (db *DB) initByPrimaryKey() {
 	}
 }
 
-//根据 byModel 生成的where token
-func (db *DB) initByModel(v interface{}) {
+// 根据 byModel 生成的where token
+func (db *lnDB) initByModel(v interface{}) {
 	if err := db.ctx.err; err != nil {
 		return
 	}
@@ -143,8 +143,8 @@ func (db *DB) initByModel(v interface{}) {
 	db.args = append(db.args, values...)
 }
 
-//根据 byWhere 生成的where token
-func (db *DB) initByWhere(w *WhereBuilder) {
+// 根据 byWhere 生成的where token
+func (db *lnDB) initByWhere(w *WhereBuilder) {
 	if err := db.ctx.err; err != nil {
 		return
 	}
@@ -164,8 +164,8 @@ func (db *DB) initByWhere(w *WhereBuilder) {
 	db.args = append(db.args, args...)
 }
 
-//init 逻辑删除、租户
-func (db *DB) initExtra() {
+// init 逻辑删除、租户
+func (db *lnDB) initExtra() {
 	if err := db.ctx.err; err != nil {
 		return
 	}
@@ -198,8 +198,8 @@ func (db *DB) initExtra() {
 
 }
 
-//初始化逻辑删除
-func (db *DB) initLgDel() {
+// 初始化逻辑删除
+func (db *lnDB) initLgDel() {
 	if err := db.ctx.err; err != nil {
 		return
 	}
@@ -210,9 +210,9 @@ func (db *DB) initLgDel() {
 
 //-------------------------------target------------------------
 
-//*.comp
-//target scanDest 一个comp-struct
-func (db *DB) setTargetDest(v interface{}) {
+// *.comp
+// target scanDest 一个comp-struct
+func (db *lnDB) setTargetDest(v interface{}) {
 	if db.ctx.err != nil {
 		return
 	}
@@ -221,7 +221,7 @@ func (db *DB) setTargetDest(v interface{}) {
 	db.initTableName()
 }
 
-func (db *DB) setTargetDest2TableName(v interface{}) {
+func (db *lnDB) setTargetDest2TableName(v interface{}) {
 	if db.ctx.err != nil {
 		return
 	}
@@ -229,16 +229,16 @@ func (db *DB) setTargetDest2TableName(v interface{}) {
 	db.initTableName()
 }
 
-//初始化主键
-func (db *DB) initPrimaryKeyName() {
+// 初始化主键
+func (db *lnDB) initPrimaryKeyName() {
 	if db.ctx.err != nil {
 		return
 	}
 	db.ctx.primaryKeyNames = db.ctx.conf.primaryKeys(db.ctx.tableName)
 }
 
-//初始化 表名
-func (db *DB) initTableName() {
+// 初始化 表名
+func (db *lnDB) initTableName() {
 	if db.ctx.err != nil {
 		return
 	}
@@ -253,9 +253,9 @@ func (db *DB) initTableName() {
 	db.ctx.tableName = tableName
 }
 
-//获取struct对应的字段名 和 其值，
-//slice为全部，一个为非nil字段。
-func (db *DB) initColumnsValue() {
+// 获取struct对应的字段名 和 其值，
+// slice为全部，一个为非nil字段。
+func (db *lnDB) initColumnsValue() {
 	if db.ctx.err != nil {
 		return
 	}
@@ -269,8 +269,8 @@ func (db *DB) initColumnsValue() {
 	return
 }
 
-//获取struct对应的字段名 有效部分
-func (db *DB) initColumns() {
+// 获取struct对应的字段名 有效部分
+func (db *lnDB) initColumns() {
 	if db.ctx.err != nil {
 		return
 	}
@@ -283,9 +283,9 @@ func (db *DB) initColumns() {
 	db.ctx.columns = columns
 }
 
-//-------------------------utils------------------------
-//获取comp 的 cv
-//排除 nil 字段
+// -------------------------utils------------------------
+// 获取comp 的 cv
+// 排除 nil 字段
 func getCompCV(v interface{}, c OrmConf) ([]string, []interface{}, error) {
 	value := reflect.ValueOf(v)
 	_, value, err := basePtrDeepValue(value)
@@ -296,7 +296,7 @@ func getCompCV(v interface{}, c OrmConf) ([]string, []interface{}, error) {
 	return getCompValueCV(value, c)
 }
 
-//排除 nil 字段
+// 排除 nil 字段
 func getCompValueCV(v reflect.Value, c OrmConf) ([]string, []interface{}, error) {
 	if !isCompType(v.Type()) {
 		return nil, nil, errors.New("getvcv not comp")
@@ -316,8 +316,8 @@ func getCompValueCV(v reflect.Value, c OrmConf) ([]string, []interface{}, error)
 	return columns, values, nil
 }
 
-//------------------------query--------------------------
-func (db DB) query(query string, args ...interface{}) (int64, error) {
+// ------------------------query--------------------------
+func (db lnDB) query(query string, args ...interface{}) (int64, error) {
 	rows, err := db.doQuery(query, args...)
 	if err != nil {
 		return 0, err
@@ -328,7 +328,7 @@ func (db DB) query(query string, args ...interface{}) (int64, error) {
 	return db.ctx.ScanLn(rows)
 }
 
-func (db DB) queryBatch(query string, args [][]interface{}) (int64, error) {
+func (db lnDB) queryBatch(query string, args [][]interface{}) (int64, error) {
 	query = db.dialect.queryBatch(query)
 
 	stmt, err := db.doPrepare(query)
@@ -349,8 +349,8 @@ func (db DB) queryBatch(query string, args [][]interface{}) (int64, error) {
 
 //------------------------gen-sql---------------------------
 
-//根据whereTokens生成的where sql
-func (db DB) genWhereSqlByToken() []byte {
+// 根据whereTokens生成的where sql
+func (db lnDB) genWhereSqlByToken() []byte {
 	if len(db.whereTokens) == 0 && db.extraWhereSql == "" {
 		return nil
 	}

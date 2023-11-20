@@ -18,9 +18,14 @@ const (
 
 type LnDBer interface {
 	BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer
+
+	C()
+	R()
+	U()
+	D()
 }
 
-func (db DB) OrmConf(c *OrmConf) DB {
+func (db lnDB) OrmConf(c *OrmConf) lnDB {
 	if c == nil {
 		return db
 	}
@@ -44,12 +49,12 @@ func (r Result) Result() (int64, error) {
 	return r.num, r.err
 }
 
-func (db DB) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
+func (db lnDB) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
 	query, args = db.dialect.query(query, args...)
 	return db.Db().Query(query, args...)
 }
 
-func (db DB) doExec(query string, args ...interface{}) (int64, error) {
+func (db lnDB) doExec(query string, args ...interface{}) (int64, error) {
 	exec, err := db.Db().Exec(query, args...)
 	if err != nil {
 		return 0, err
@@ -57,12 +62,12 @@ func (db DB) doExec(query string, args ...interface{}) (int64, error) {
 	return exec.RowsAffected()
 }
 
-func (db DB) doPrepare(query string) (Stmt, error) {
+func (db lnDB) doPrepare(query string) (Stmt, error) {
 	stmt, err := db.Db().Prepare(query)
 	return Stmt{stmt: stmt}, err
 }
 
-func (db DB) Db() DBer {
+func (db lnDB) Db() DBer {
 	if db.tx != nil {
 		return db.tx
 	} else {
@@ -70,7 +75,7 @@ func (db DB) Db() DBer {
 	}
 }
 
-func (db *DB) Do() Resulter {
+func (db *lnDB) Do() Resulter {
 	switch db.typ {
 	case dInsert:
 		return db.DoInsert()
@@ -88,15 +93,15 @@ func (db *DB) Do() Resulter {
 	return nil
 }
 
-func (db *DB) DoInsert() Resulter {
+func (db *lnDB) DoInsert() Resulter {
 	return nil
 }
 
-func (db *DB) DoUpdate() Resulter {
+func (db *lnDB) DoUpdate() Resulter {
 	return nil
 }
 
-func (db *DB) DoDelete() Resulter {
+func (db *lnDB) DoDelete() Resulter {
 	for _, token := range db.baseTokens {
 		switch token.typ {
 		case tDelete:
@@ -113,35 +118,35 @@ func (db *DB) DoDelete() Resulter {
 	return Result{num: num, err: err}
 }
 
-func (db *DB) DoHas() Resulter {
+func (db *lnDB) DoHas() Resulter {
 	return nil
 }
 
-func (db *DB) DoSelect() Resulter {
+func (db *lnDB) DoSelect() Resulter {
 	return nil
 }
 
-func (db *DB) DoCount() Resulter {
+func (db *lnDB) DoCount() Resulter {
 	return nil
 }
 
-func (db *DB) tDelete(t baseToken) {
+func (db *lnDB) tDelete(t baseToken) {
 	db.setTargetDest2TableName(t.dest)
 }
 
-func (db *DB) tPrimaryKey(t baseToken) {
+func (db *lnDB) tPrimaryKey(t baseToken) {
 	db.initPrimaryKeyName()
 	db.ctx.initPrimaryKeyValues(t.pk)
 	db.initByPrimaryKey()
 	db.initExtra()
 }
 
-func (db *DB) tWhereModel(t baseToken) {
+func (db *lnDB) tWhereModel(t baseToken) {
 	db.initByModel(t.dest)
 	db.initExtra()
 }
 
-func (db *DB) tWhereBuilder(t baseToken) {
+func (db *lnDB) tWhereBuilder(t baseToken) {
 	db.initByWhere(t.where)
 	db.initExtra()
 }
