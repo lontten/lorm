@@ -1,6 +1,9 @@
 package lorm
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
 type tableSqlType int
 
@@ -13,33 +16,8 @@ const (
 	dCount
 )
 
-type DB struct {
-	db *sql.DB
-	tx *sql.Tx
-
-	dbConfig DbConfig
-	ctx      OrmContext
-
-	dialect Dialect
-
-	//where tokens
-	whereTokens []string
-
-	extraWhereSql string
-
-	orderByTokens []string
-
-	limit  int64
-	offset int64
-
-	//where values
-	args      []interface{}
-	batchArgs [][]interface{}
-
-	// insert
-	typ tableSqlType
-
-	baseTokens []baseToken
+type LnDBer interface {
+	BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer
 }
 
 func (db DB) OrmConf(c *OrmConf) DB {

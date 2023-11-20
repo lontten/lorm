@@ -3,16 +3,13 @@ package hook
 import (
 	"encoding/json"
 	"github.com/jackc/pgtype"
-	"github.com/lontten/lorm"
 	"github.com/lontten/lorm/types"
 	"os/user"
 	"reflect"
 )
 
-/**
-
-
-
+/*
+*
  */
 func StringEn(v string) interface{} {
 
@@ -58,14 +55,10 @@ func bind(src interface{}, name string, fun func()) {
 }
 
 func h() {
-	lorm.DB{}.Builder().
-		Select("").
-		SelectOneModel("select * from user u where u.id = k.uid","user_info_dto")
-		SelectListModel("select * from user u where u.id = k.uid","user_info_list")
-	     Select("").
-
-
-
-
+	//lorm.DB{}.Builder().
+	//	Select("").
+	//	SelectOneModel("select * from user u where u.id = k.uid","user_info_dto")
+	//	SelectListModel("select * from user u where u.id = k.uid","user_info_list")
+	//     Select("").
 
 }

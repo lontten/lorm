@@ -10,10 +10,10 @@ db.update("t_user").                            update-in
     setModel(user).                             
     setMap(map).
     setNull("name").
-    setCurrentDate("create_time").
     setGreeterSelf("num",-1).
-    setCurrentTime("create_time").
-    setCurrentDateTime("create_time").
+    setNowDate("create_time").
+    setNowTime("create_time").
+    setNowDateTime("create_time").
     byModel(user)                                update-by-in  
     byMap(map)
     byPrimaryKeys(interface{})

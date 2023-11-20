@@ -23,7 +23,7 @@ func TestDeleteByPrimaryKey(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := engine.Delete(User{}).ByPrimaryKey(1)
+	num, err := engine.Delete(User{}).ByPrimaryKey(1).Result()
 	as.Nil(err)
 	as.Equal(int64(1), num)
 
@@ -41,7 +41,7 @@ func TestDeleteByPrimaryKeys(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 3))
 
-	num, err := engine.Delete(User{}).ByPrimaryKey(1, 2, 3)
+	num, err := engine.Delete(User{}).ByPrimaryKey(1, 2, 3).Result()
 	as.Nil(err)
 	as.Equal(int64(3), num, "num error")
 
@@ -74,7 +74,7 @@ func TestDeleteByModel(t *testing.T) {
 		Name: types.NewString("kk"),
 		Age:  nil,
 		Uid:  nil,
-	})
+	}).Result()
 	as.Nil(err)
 	as.Equal(int64(1), num)
 
@@ -82,7 +82,7 @@ func TestDeleteByModel(t *testing.T) {
 		Name: types.NewString("kk"),
 		Age:  types.NewInt(233),
 		Uid:  nil,
-	})
+	}).Result()
 	as.Nil(err)
 	as.Equal(int64(1), num)
 
@@ -103,7 +103,7 @@ func TestDeleteByWhere(t *testing.T) {
 	num, err := engine.Delete(User{}).ByWhere(new(WhereBuilder).
 		Eq("name", "kk").
 		Like("age", types.NewString("kk")),
-	)
+	).Result()
 	as.Nil(err)
 	as.Equal(int64(1), num)
 

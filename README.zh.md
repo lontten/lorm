@@ -51,9 +51,40 @@ db.update("t_user").
     .sql()  //获取sql
     .prepare() //返回*sql.Stmt
 
-db.update(user)
-db.update().set("name",age)
 
 
 
+
+```
+
+
+### create
+```go
+db.Insert(user).set...by....exec()
+```
+
+### create
+```go
+db.InsertOrUpdate(user).set...by....exec()
+num, err := db.InsertOrUpdate(&user)
+            .Set("name","tome")
+            .ByUnique("name","age")
+```
+
+
+### update
+```go
+db.update(user).set...by....exec()
+```
+
+### delete
+```go
+db.delete(user).by....
+```
+
+### select
+```go
+db.getOne(User{}).by...
+db.getAll(User{}).by...
+db.has(User{}).by....
 ```
