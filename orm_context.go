@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type OrmContext struct {
+type ormContext struct {
 	conf OrmConf
 
 	isLgDel bool
@@ -57,15 +57,15 @@ type OrmContext struct {
 	log Logger
 }
 
-func (ctx OrmContext) Copy() OrmContext {
-	return OrmContext{
+func (ctx ormContext) Copy() ormContext {
+	return ormContext{
 		conf: ctx.conf,
 		log:  ctx.log,
 	}
 }
 
-//select 生成
-func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
+// select 生成
+func (ctx *ormContext) selectArgsArr2SqlStr(args []string) {
 	query := ctx.query
 	if ctx.started {
 		for _, name := range args {
@@ -87,7 +87,7 @@ func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
 }
 
 // create 生成
-func (ctx *OrmContext) tableInsertGen() string {
+func (ctx *ormContext) tableInsertGen() string {
 	args := ctx.columns
 	var sb strings.Builder
 
@@ -116,7 +116,7 @@ func (ctx *OrmContext) tableInsertGen() string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) createSqlGenera(args []string) string {
+func (ctx *ormContext) createSqlGenera(args []string) string {
 	var sb strings.Builder
 	sb.WriteString(" ( ")
 	for i, v := range args {
@@ -141,7 +141,7 @@ func (ctx *OrmContext) createSqlGenera(args []string) string {
 }
 
 // upd 生成
-func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
+func (ctx *ormContext) tableUpdateArgs2SqlStr(args []string) string {
 	var sb strings.Builder
 	l := len(args)
 	for i, v := range args {
@@ -154,7 +154,7 @@ func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
+func (ctx *ormContext) initPrimaryKeyValues(v []interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -219,7 +219,7 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 	ctx.primaryKeyValues = idValuess
 }
 
-func (ctx *OrmContext) initSelfPrimaryKeyValues() {
+func (ctx *ormContext) initSelfPrimaryKeyValues() {
 	if ctx.err != nil {
 		return
 	}
@@ -253,8 +253,8 @@ func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 	ctx.primaryKeyValues = append(ctx.primaryKeyValues, idValues)
 }
 
-//生成select sql
-func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
+// 生成select sql
+func (ctx *ormContext) genSelectByPrimaryKey() []byte {
 	tableName := ctx.tableName
 	columns := ctx.columns
 	selSql := ctx.conf.genSelectSqlCommon(tableName, columns)
@@ -262,23 +262,23 @@ func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
 	return append(selSql, where...)
 }
 
-//生成del sql
-func (ctx *OrmContext) genDelByPrimaryKey() []byte {
+// 生成del sql
+func (ctx *ormContext) genDelByPrimaryKey() []byte {
 	return ctx.conf.genDelSqlCommon(ctx.tableName, ctx.primaryKeyNames)
 }
 
-//生成del sql
-func (ctx *OrmContext) genDelByKeys(keys []string) []byte {
+// 生成del sql
+func (ctx *ormContext) genDelByKeys(keys []string) []byte {
 	return ctx.conf.genDelSqlCommon(ctx.tableName, keys)
 }
 
-//生成del sql
-func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
+// 生成del sql
+func (ctx *ormContext) genDelByWhere(where []byte) []byte {
 	return ctx.conf.genDelSqlByWhere(ctx.tableName, where)
 }
 
-//生成where sql
-func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
+// 生成where sql
+func (ctx *ormContext) genWhereByPrimaryKey() []byte {
 	keys := ctx.primaryKeyNames
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
@@ -286,16 +286,16 @@ func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
 	return ctx.conf.GenWhere(keys, hasTen)
 }
 
-//生成where sql
-func (ctx *OrmContext) genWhere(keys []string) []byte {
+// 生成where sql
+func (ctx *ormContext) genWhere(keys []string) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
 	hasTen := ctx.conf.TenantIdFieldName != "" && !ctx.conf.TenantIgnoreTableFun(tableName)
 	return ctx.conf.GenWhere(keys, hasTen)
 }
 
-//为where语句附加上，租户，逻辑删除等。。。
-func (ctx *OrmContext) whereExtra(where []byte) []byte {
+// 为where语句附加上，租户，逻辑删除等。。。
+func (ctx *ormContext) whereExtra(where []byte) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
 	hasTen := ctx.conf.TenantIdFieldName != "" && !ctx.conf.TenantIgnoreTableFun(tableName)

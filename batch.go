@@ -1,8 +1,8 @@
 package lorm
 
-//批量操作
+// 批量操作
 type EngineBatch struct {
-	dialect Dialect
+	dialect Dialecter
 
-	context OrmContext
+	context ormContext
 }

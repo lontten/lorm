@@ -6,7 +6,7 @@ import (
 
 // ptr
 // 检查数据类型 comp-struct
-func (ctx *OrmContext) initTargetDest(dest interface{}) {
+func (ctx *ormContext) initTargetDest(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -34,10 +34,11 @@ func (ctx *OrmContext) initTargetDest(dest interface{}) {
 	ctx.scanDestBaseType = base.Type()
 }
 
-// * struct
-//  struct
+//   - struct
+//     struct
+//
 // comp-struct 获取 destBaseValue
-func (ctx *OrmContext) initTargetDest2TableName(dest interface{}) {
+func (ctx *ormContext) initTargetDest2TableName(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -51,8 +52,8 @@ func (ctx *OrmContext) initTargetDest2TableName(dest interface{}) {
 
 }
 
-//检查sturct的filed是否合法，valuer，nuller
-func (ctx *OrmContext) checkTargetDestField() {
+// 检查sturct的filed是否合法，valuer，nuller
+func (ctx *ormContext) checkTargetDestField() {
 	if ctx.err != nil {
 		return
 	}

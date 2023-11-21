@@ -3,77 +3,52 @@ package lorm
 import (
 	"context"
 	"database/sql"
-	"errors"
 )
 
-type LnTXer interface {
-	Commit() error
-	Rollback() error
-
-	getDB() *sql.DB
-	getTX() *sql.Tx
-
-	//原生调用方法
-	Query(query string, args ...interface{}) *NativeQuery
-	Exec(query string, args ...interface{}) (rowsNum int64, err error)
-
-	//lorm扩展方法
-	C()
-	R()
-	U()
-	D()
+type coreTx struct {
+	tx      *sql.Tx
+	dialect Dialecter
 }
 
-func (db lnDB) Begin() LnTXer {
-	t, err := db.db.Begin()
-	if err != nil {
-		panic(err)
-	}
-	db.tx = t
-	return db
-}
-
-func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer {
-	t, err := db.db.BeginTx(ctx, opts)
-	if err != nil {
-		panic(err)
-	}
-	db.tx = t
-	return db
-}
-
-func (db lnDB) Rollback() error {
-	if db.tx == nil {
-		return errors.New("not in transaction")
-	}
-	err := db.tx.Rollback()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("rollback")
+func (tx coreTx) getDB() *sql.DB {
 	return nil
 }
 
-func (db lnDB) Commit() error {
-	if db.tx == nil {
-		return errors.New("not in transaction")
-	}
-	err := db.tx.Commit()
+func (tx coreTx) rollback() error {
+	err := tx.tx.Rollback()
 	if err != nil {
 		return err
 	}
-	db.ctx.log.Println("commit")
+	//db.ctx.log.Println("rollback")
 	return nil
 }
 
-func (db lnDB) C() {
+func (tx coreTx) commit() error {
+	err := tx.tx.Commit()
+	if err != nil {
+		return err
+	}
+	//db.ctx.log.Println("commit")
+	return nil
 }
-
-func (db lnDB) U() {
+func (tx coreTx) beginTx(ctx context.Context, opts *sql.TxOptions) corer {
+	panic("tx err again beginTX")
+	return nil
 }
-
-func (db lnDB) R() {
+func (tx coreTx) c() {
 }
-
-func (db lnDB) D() {
+func (tx coreTx) r() {
+}
+func (tx coreTx) u() {
+}
+func (tx coreTx) d() {
+}
+func (tx coreTx) query(query string, args ...interface{}) *NativeQuery {
+	//return &NativeQuery{base: db, query: query, args: args}
+	return nil
+}
+func (tx coreTx) exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	query, args = tx.dialect.exec(query, args...)
+	//return tx.doExec(query, args...)
+	return 0, nil
 }

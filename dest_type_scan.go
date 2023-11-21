@@ -6,7 +6,7 @@ import (
 )
 
 // ptr slice
-func (ctx *OrmContext) initScanDestList(dest interface{}) {
+func (ctx *ormContext) initScanDestList(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -50,7 +50,7 @@ func (ctx *OrmContext) initScanDestList(dest interface{}) {
 }
 
 // ptr slice
-func (ctx *OrmContext) initScanDestOne(dest interface{}) {
+func (ctx *ormContext) initScanDestOne(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}

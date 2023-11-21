@@ -9,10 +9,10 @@ import (
 )
 
 // ScanLn
-//接收一行结果
+// 接收一行结果
 // 1.ptr single/comp
 // 2.slice- single
-func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
+func (ctx ormContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 	defer func(rows *sql.Rows) {
 		utils.PanicErr(rows.Close())
 	}(rows)
@@ -47,10 +47,10 @@ func (ctx OrmContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 }
 
 // ScanBatch
-//批量
+// 批量
 // 1.ptr single/comp
 // 2.slice- single
-func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
+func (ctx ormContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 	var nums int64 = 0
 	arr := ctx.destValue
 	t := ctx.scanDestBaseType
@@ -90,10 +90,10 @@ func (ctx OrmContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 	return nums, nil
 }
 
-//Scan
-//接收多行结果
-//1.[]- *
-func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
+// Scan
+// 接收多行结果
+// 1.[]- *
+func (ctx ormContext) Scan(rows *sql.Rows) (int64, error) {
 	defer func(rows *sql.Rows) {
 		utils.PanicErr(rows.Close())
 	}(rows)
@@ -129,8 +129,8 @@ func (ctx OrmContext) Scan(rows *sql.Rows) (int64, error) {
 	return num, nil
 }
 
-//检查sturct的filed是否合法，valuer，nuller
-func (ctx *OrmContext) checkScanDestField() {
+// 检查sturct的filed是否合法，valuer，nuller
+func (ctx *ormContext) checkScanDestField() {
 	if ctx.err != nil {
 		return
 	}

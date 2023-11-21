@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
@@ -15,11 +16,6 @@ import (
 var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
 var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
 
-type DbConfig interface {
-	Open() (*sql.DB, error)
-	dialect(db *sql.DB, pc *PoolConf) Dialect
-}
-
 type PoolConf struct {
 	MaxIdleCount int           // zero means defaultMaxIdleConns; negative means 0
 	MaxOpen      int           // <= 0 means unlimited
@@ -29,15 +25,7 @@ type PoolConf struct {
 	Logger *log.Logger
 }
 
-type MysqlConf struct {
-	Host     string
-	Port     string
-	DbName   string
-	User     string
-	Password string
-}
-
-func (c *MysqlConf) dialect(db *sql.DB, pc *PoolConf) Dialect {
+func setOrmCtx(pc *PoolConf) ormContext {
 	var logger *log.Logger
 	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -45,60 +33,7 @@ func (c *MysqlConf) dialect(db *sql.DB, pc *PoolConf) Dialect {
 	} else {
 		logger = pc.Logger
 	}
-	return &PgDialect{db: db, log: Logger{log: logger}}
-}
-
-func (c *MysqlConf) Open() (*sql.DB, error) {
-	dsn := c.User + ":" + c.Password +
-		"@tcp(" + c.Host +
-		":" + c.Port +
-		")/" + c.DbName
-	return sql.Open("mysql", dsn)
-}
-
-type PgConf struct {
-	Host     string
-	Port     string
-	DbName   string
-	User     string
-	Password string
-	Other    string
-}
-
-func (c *PgConf) dialect(db *sql.DB, pc *PoolConf) Dialect {
-	var logger *log.Logger
-	if pc == nil || pc.Logger == nil {
-		logger = log.New(os.Stdout, "", log.LstdFlags)
-		log.SetFlags(log.LstdFlags | log.Llongfile)
-	} else {
-		logger = pc.Logger
-	}
-	return &PgDialect{db: db, log: Logger{log: logger}}
-}
-
-func (c *PgConf) Open() (*sql.DB, error) {
-	dsn := "user=" + c.User +
-		" password=" + c.Password +
-		" dbname=" + c.DbName +
-		" host=" + c.Host +
-		" port= " + c.Port +
-		" "
-	if c.Other == "" {
-		dsn += "sslmode=disable TimeZone=Asia/Shanghai"
-	}
-	dsn += c.Other
-	return sql.Open("pgx", dsn)
-}
-
-func setOrmCtx(pc *PoolConf) OrmContext {
-	var logger *log.Logger
-	if pc == nil || pc.Logger == nil {
-		logger = log.New(os.Stdout, "", log.LstdFlags)
-		log.SetFlags(log.LstdFlags | log.Llongfile)
-	} else {
-		logger = pc.Logger
-	}
-	return OrmContext{
+	return ormContext{
 		log: Logger{log: logger},
 		conf: OrmConf{
 			PoDir:           "src/model/po",
@@ -126,15 +61,17 @@ func open(c DbConfig, pc *PoolConf) (dp *lnDB, err error) {
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
+	ctx := setOrmCtx(nil)
 	return &lnDB{
-		db:       db,
+		core: coreDb{
+			db:      db,
+			dialect: c.dialect(&ctx, pc),
+		},
 		dbConfig: c,
-		ctx:      setOrmCtx(pc),
-		dialect:  c.dialect(db, pc),
 	}, nil
 }
 
-func MustConnect(c DbConfig, pc *PoolConf) LnDBer {
+func MustConnect(c DbConfig, pc *PoolConf) DBer {
 	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
@@ -142,24 +79,79 @@ func MustConnect(c DbConfig, pc *PoolConf) LnDBer {
 	return db
 }
 
-func MustConnectMock(db *sql.DB, c DbConfig) LnDBer {
-	return &lnDB{
-		db:       db,
+func MustConnectMock(db *sql.DB, c DbConfig) DBer {
+	ctx := setOrmCtx(nil)
+	l := lnDB{
+		core: coreDb{
+			db:      db,
+			dialect: c.dialect(&ctx, nil),
+		},
 		dbConfig: c,
-		ctx:      setOrmCtx(nil),
-		dialect:  c.dialect(db, nil),
+		ctx:      &ctx,
 	}
+	return l
 }
 
-func Connect(c DbConfig, pc *PoolConf) (LnDBer, error) {
+func Connect(c DbConfig, pc *PoolConf) (DBer, error) {
 	db, err := open(c, pc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = db.db.Ping()
+	err = db.core.getDB().Ping()
 	if err != nil {
 		return nil, err
 	}
 	return db, err
+}
+
+type lnDB struct {
+	core corer
+
+	dbConfig DbConfig
+	ctx      *ormContext
+}
+
+func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
+	tx := db.core.beginTx(ctx, opts)
+	return lnDB{
+		core:     tx,
+		dbConfig: db.dbConfig,
+		ctx:      db.ctx,
+	}
+}
+
+func (db lnDB) Rollback() error {
+	err := db.core.rollback()
+	if err != nil {
+		return err
+	}
+	db.ctx.log.Println("rollback")
+	return nil
+}
+
+func (db lnDB) Commit() error {
+	err := db.core.commit()
+	if err != nil {
+		return err
+	}
+	db.ctx.log.Println("commit")
+	return nil
+}
+func (db lnDB) C() {
+}
+func (db lnDB) R() {
+}
+
+func (db lnDB) U() {
+}
+func (db lnDB) D() {
+}
+func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
+	return db.core.query(query, args...)
+}
+func (db lnDB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	//query, args = db.dialect.exec(query, args...)
+	//return tx.doExec(query, args...)
+	return 0, nil
 }

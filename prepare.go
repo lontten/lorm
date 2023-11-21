@@ -8,7 +8,7 @@ import (
 type Stmt struct {
 	stmt *sql.Stmt
 
-	ctx OrmContext
+	ctx ormContext
 }
 
 func (db lnDB) Prepare(query string) (Stmt, error) {

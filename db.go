@@ -3,6 +3,7 @@ package lorm
 import (
 	"context"
 	"database/sql"
+	"github.com/pkg/errors"
 )
 
 type tableSqlType int
@@ -16,19 +17,54 @@ const (
 	dCount
 )
 
-type LnDBer interface {
-	BeginTx(ctx context.Context, opts *sql.TxOptions) LnTXer
+// ----------LnDB-------------
 
-	//原生调用方法
-	Query(query string, args ...interface{}) *NativeQuery
-	Exec(query string, args ...interface{}) (rowsNum int64, err error)
-
-	//lorm扩展方法
-	C()
-	R()
-	U()
-	D()
+type coreDb struct {
+	db      *sql.DB
+	dialect Dialecter
 }
+
+func (db coreDb) getDB() *sql.DB {
+	return db.db
+}
+
+func (db coreDb) beginTx(ctx context.Context, opts *sql.TxOptions) corer {
+	tx, err := db.db.BeginTx(ctx, opts)
+	if err != nil {
+		panic(err)
+	}
+	return coreTx{tx: tx}
+}
+
+func (db coreDb) rollback() error {
+	return errors.New("this not tx")
+}
+
+func (db coreDb) commit() error {
+	return errors.New("this not tx")
+}
+
+func (db coreDb) c() {
+}
+func (db coreDb) r() {
+}
+func (db coreDb) u() {
+}
+func (db coreDb) d() {
+}
+
+func (db coreDb) query(query string, args ...interface{}) *NativeQuery {
+	rows, err := db.db.Query()
+	return &NativeQuery{core: db, query: query, args: args}
+}
+
+func (db coreDb) exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	query, args = db.dialect.exec(query, args...)
+	//return db.doExec(query, args...)
+	return 0, nil
+}
+
+//----------LnDB-------------
 
 func (db lnDB) OrmConf(c *OrmConf) lnDB {
 	if c == nil {
@@ -55,29 +91,24 @@ func (r Result) Result() (int64, error) {
 }
 
 func (db lnDB) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
-	query, args = db.dialect.query(query, args...)
-	return db.Db().Query(query, args...)
+	//query, args = db.dialect.query(query, args...)
+	//return db.Db().Query(query, args...)
+	return nil, nil
 }
 
 func (db lnDB) doExec(query string, args ...interface{}) (int64, error) {
-	exec, err := db.Db().Exec(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	return exec.RowsAffected()
+	//exec, err := db.Db().Exec(query, args...)
+	//if err != nil {
+	//	return 0, err
+	//}
+	//return exec.RowsAffected()
+	return 0, nil
 }
 
 func (db lnDB) doPrepare(query string) (Stmt, error) {
-	stmt, err := db.Db().Prepare(query)
-	return Stmt{stmt: stmt}, err
-}
-
-func (db lnDB) Db() DBer {
-	if db.tx != nil {
-		return db.tx
-	} else {
-		return db.db
-	}
+	//stmt, err := db.Db().Prepare(query)
+	//return Stmt{stmt: stmt}, err
+	return Stmt{}, nil
 }
 
 func (db *lnDB) Do() Resulter {

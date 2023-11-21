@@ -7,7 +7,7 @@ import (
 )
 
 type MysqlDialect struct {
-	db  DBer
+	ctx *ormContext
 	log Logger
 }
 

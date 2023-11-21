@@ -8,7 +8,7 @@ import (
 )
 
 type PgDialect struct {
-	db  DBer
+	ctx *ormContext
 	log Logger
 }
 

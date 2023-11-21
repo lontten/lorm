@@ -3,17 +3,17 @@ package lorm
 import "github.com/pkg/errors"
 
 type NativeQuery struct {
-	base  lnDB
+	core  corer
 	query string
 	args  []interface{}
 }
 
-func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
+func (db dbCore) Query(query string, args ...interface{}) *NativeQuery {
 	return &NativeQuery{base: db, query: query, args: args}
 }
 
 func (q NativeQuery) ScanOne(dest interface{}) (rowsNum int64, err error) {
-	if err = q.base.ctx.err; err != nil {
+	if err = q.core.ctx.err; err != nil {
 		return 0, err
 	}
 	q.base.ctx.initScanDestOne(dest)
@@ -25,6 +25,10 @@ func (q NativeQuery) ScanOne(dest interface{}) (rowsNum int64, err error) {
 		return 0, err
 	}
 
+	rows, err := q.core.query(q.query, q.args...)
+
+	query := q.core.query(q.query, q.args...)
+	rows, err := q.core.db.Query(query, args...)
 	rows, err := q.base.doQuery(q.query, q.args...)
 
 	if err != nil {
@@ -51,7 +55,7 @@ func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
 	return q.base.ctx.Scan(rows)
 }
 
-func (db lnDB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+func (db dbCore) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
 	query, args = db.dialect.exec(query, args...)
 	return db.doExec(query, args...)
 }
