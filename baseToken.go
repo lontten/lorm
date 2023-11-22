@@ -2,7 +2,7 @@ package lorm
 
 import "reflect"
 
-//todo 下面未重构--------------
+// todo 下面未重构--------------
 type baseTokenType int
 
 const (
