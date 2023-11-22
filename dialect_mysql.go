@@ -9,7 +9,11 @@ import (
 )
 
 type MysqlDialect struct {
-	ctx ormContext
+	ctx *ormContext
+}
+
+func (m MysqlDialect) getCtx() *ormContext {
+	return m.ctx
 }
 
 func (m MysqlDialect) query(query string, args ...interface{}) (string, []interface{}) {

@@ -9,43 +9,35 @@ type NativeQuery struct {
 	args  []interface{}
 }
 
-func (db dbCore) Query(query string, args ...interface{}) *NativeQuery {
-	return &NativeQuery{base: db, query: query, args: args}
-}
-
 func (q NativeQuery) ScanOne(dest interface{}) (rowsNum int64, err error) {
-	if err = q.core.ctx.err; err != nil {
+	if err = q.core.getCtx().err; err != nil {
 		return 0, err
 	}
-	q.base.ctx.initScanDestOne(dest)
-	if q.base.ctx.scanIsSlice {
+	q.core.getCtx().initScanDestOne(dest)
+	if q.core.getCtx().scanIsSlice {
 		return 0, errors.New("not support GetOne for slice")
 	}
-	q.base.ctx.checkScanDestField()
-	if err = q.base.ctx.err; err != nil {
+	q.core.getCtx().checkScanDestField()
+	if err = q.core.getCtx().err; err != nil {
 		return 0, err
 	}
 
-	rows, err := q.core.query(q.query, q.args...)
-
-	query := q.core.query(q.query, q.args...)
-	rows, err := q.core.db.Query(query, args...)
-	rows, err := q.base.doQuery(q.query, q.args...)
+	rows, err := q.core.doQuery(q.query, q.args...)
 
 	if err != nil {
 		return 0, err
 	}
-	return q.base.ctx.ScanLn(rows)
+	return q.core.getCtx().ScanLn(rows)
 }
 
 func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
-	if err = q.base.ctx.err; err != nil {
+	if err = q.core.getCtx().err; err != nil {
 		return 0, err
 	}
-	q.base.ctx.initScanDestList(dest)
-	q.base.ctx.checkScanDestField()
+	q.core.getCtx().initScanDestList(dest)
+	q.core.getCtx().checkScanDestField()
 
-	if err = q.base.ctx.err; err != nil {
+	if err = q.core.getCtx().err; err != nil {
 		return 0, err
 	}
 
@@ -53,10 +45,13 @@ func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return q.base.ctx.Scan(rows)
+	return q.core.getCtx().Scan(rows)
 }
 
-func (db dbCore) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	query, args = db.dialect.exec(query, args...)
-	return db.doExec(query, args...)
-}
+//func (db dbCore) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+//	query, args = db.dialect.exec(query, args...)
+//	return db.doExec(query, args...)
+//}
+//func (db dbCore) Query(query string, args ...interface{}) *NativeQuery {
+//	return &NativeQuery{base: db, query: query, args: args}
+//}

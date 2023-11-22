@@ -11,6 +11,10 @@ type coreDb struct {
 	dialect Dialecter
 }
 
+func (db coreDb) getCtx() *ormContext {
+	return db.dialect.getCtx()
+}
+
 func (db coreDb) getDB() *sql.DB {
 	return db.db
 }

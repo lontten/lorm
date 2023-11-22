@@ -10,9 +10,12 @@ import (
 )
 
 type PgDialect struct {
-	ctx ormContext
+	ctx *ormContext
 }
 
+func (m PgDialect) getCtx() *ormContext {
+	return m.ctx
+}
 func (m PgDialect) query(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
 	m.ctx.log.Println(query, args)

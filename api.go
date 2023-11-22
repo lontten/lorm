@@ -40,6 +40,7 @@ type TXer interface {
 }
 
 type corer interface {
+	getCtx() *ormContext
 	getDB() *sql.DB
 	//getTX() *sql.Tx
 
@@ -59,6 +60,8 @@ type corer interface {
 }
 
 type Dialecter interface {
+	getCtx() *ormContext
+
 	exec(query string, args ...interface{}) (string, []interface{})
 	execBatch(query string, args [][]interface{}) (string, [][]interface{})
 

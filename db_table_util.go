@@ -12,12 +12,12 @@ import (
 // todo 下面未重构--------------
 // update
 func (db lnDB) doUpdate() (int64, error) {
-	if err := db.ctx.err; err != nil {
+	if err := db.core.getCtx().err; err != nil {
 		return 0, err
 	}
 	var bb bytes.Buffer
 
-	ctx := db.ctx
+	ctx := db.core.getCtx()
 	tableName := ctx.tableName
 	cs := ctx.columns
 
@@ -27,7 +27,7 @@ func (db lnDB) doUpdate() (int64, error) {
 	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
 	bb.Write(db.genWhereSqlByToken())
 
-	return db.doExec(bb.String(), append(ctx.columnValues, db.args...)...)
+	return db.core.doExec(bb.String(), append(ctx.columnValues, db.args...)...)
 
 }
 

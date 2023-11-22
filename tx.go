@@ -10,6 +10,9 @@ type coreTx struct {
 	dialect Dialecter
 }
 
+func (db coreTx) getCtx() ormContext {
+	return db.dialect.getCtx()
+}
 func (tx coreTx) getDB() *sql.DB {
 	panic("tx no db")
 	return nil
