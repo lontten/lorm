@@ -39,7 +39,7 @@ func (db lnDB) doDel() (int64, error) {
 	tableName := db.ctx.tableName
 	w := db.genWhereSqlByToken()
 
-	if db.ctx.conf.LogicDeleteSetSql == "" {
+	if db.ctx.ormConf.LogicDeleteSetSql == "" {
 		bb.WriteString("DELETE FROM ")
 		bb.WriteString(tableName)
 		bb.Write(w)
@@ -47,7 +47,7 @@ func (db lnDB) doDel() (int64, error) {
 		bb.WriteString("UPDATE ")
 		bb.WriteString(tableName)
 		bb.WriteString(" SET ")
-		bb.WriteString(db.ctx.conf.LogicDeleteSetSql)
+		bb.WriteString(db.ctx.ormConf.LogicDeleteSetSql)
 		bb.Write(w)
 	}
 
@@ -134,7 +134,7 @@ func (db *lnDB) initByModel(v interface{}) {
 		return
 	}
 
-	columns, values, err := getCompCV(v, db.ctx.conf)
+	columns, values, err := getCompCV(v, db.ctx.ormConf)
 	if err != nil {
 		db.ctx.err = err
 		return
@@ -170,13 +170,13 @@ func (db *lnDB) initExtra() {
 		return
 	}
 
-	if db.ctx.conf.LogicDeleteYesSql != "" {
-		db.whereTokens = append(db.whereTokens, db.ctx.conf.LogicDeleteYesSql)
+	if db.ctx.ormConf.LogicDeleteYesSql != "" {
+		db.whereTokens = append(db.whereTokens, db.ctx.ormConf.LogicDeleteYesSql)
 	}
 
-	if db.ctx.conf.TenantIdFieldName != "" {
-		db.whereTokens = append(db.whereTokens, db.ctx.conf.TenantIdFieldName)
-		db.args = append(db.args, db.ctx.conf.TenantIdValueFun())
+	if db.ctx.ormConf.TenantIdFieldName != "" {
+		db.whereTokens = append(db.whereTokens, db.ctx.ormConf.TenantIdFieldName)
+		db.args = append(db.args, db.ctx.ormConf.TenantIdValueFun())
 	}
 
 	var sb strings.Builder
@@ -203,8 +203,8 @@ func (db *lnDB) initLgDel() {
 	if err := db.ctx.err; err != nil {
 		return
 	}
-	if db.ctx.conf.LogicDeleteYesSql != "" {
-		db.extraWhereSql = db.ctx.conf.LogicDeleteYesSql
+	if db.ctx.ormConf.LogicDeleteYesSql != "" {
+		db.extraWhereSql = db.ctx.ormConf.LogicDeleteYesSql
 	}
 }
 
@@ -234,7 +234,7 @@ func (db *lnDB) initPrimaryKeyName() {
 	if db.ctx.err != nil {
 		return
 	}
-	db.ctx.primaryKeyNames = db.ctx.conf.primaryKeys(db.ctx.tableName)
+	db.ctx.primaryKeyNames = db.ctx.ormConf.primaryKeys(db.ctx.tableName)
 }
 
 // 初始化 表名
@@ -245,7 +245,7 @@ func (db *lnDB) initTableName() {
 	if db.ctx.tableName != "" {
 		return
 	}
-	tableName, err := db.ctx.conf.tableName(db.ctx.destBaseType)
+	tableName, err := db.ctx.ormConf.tableName(db.ctx.destBaseType)
 	if err != nil {
 		db.ctx.err = err
 		return
@@ -259,7 +259,7 @@ func (db *lnDB) initColumnsValue() {
 	if db.ctx.err != nil {
 		return
 	}
-	columns, valuess, err := db.ctx.conf.getCompColumnsValueNoNil(db.ctx.destValue)
+	columns, valuess, err := db.ctx.ormConf.getCompColumnsValueNoNil(db.ctx.destValue)
 	if err != nil {
 		db.ctx.err = err
 		return
@@ -275,7 +275,7 @@ func (db *lnDB) initColumns() {
 		return
 	}
 
-	columns, err := db.ctx.conf.initColumns(db.ctx.scanDestBaseType)
+	columns, err := db.ctx.ormConf.initColumns(db.ctx.scanDestBaseType)
 	if err != nil {
 		db.ctx.err = err
 		return

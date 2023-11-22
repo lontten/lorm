@@ -1,6 +1,8 @@
 package lorm
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"github.com/lontten/lorm/utils"
 	"strconv"
@@ -8,13 +10,55 @@ import (
 )
 
 type PgDialect struct {
-	ctx *ormContext
-	log Logger
+	ctx ormContext
+}
+
+func (m PgDialect) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
+	tx := m.core.beginTx(ctx, opts)
+	return lnDB{
+		core: tx,
+		ctx:  db.ctx,
+	}
+}
+
+func (m PgDialect) Rollback() error {
+	err := m.core.rollback()
+	if err != nil {
+		return err
+	}
+	db.ctx.log.Println("rollback")
+	return nil
+}
+
+func (m PgDialect) Commit() error {
+	err := m.core.commit()
+	if err != nil {
+		return err
+	}
+	m.ctx.log.Println("commit")
+	return nil
+}
+func (m PgDialect) C() {
+}
+func (m PgDialect) R() {
+}
+
+func (m PgDialect) U() {
+}
+func (m PgDialect) D() {
+}
+func (m PgDialect) Query(query string, args ...interface{}) *NativeQuery {
+	return m.core.query(query, args...)
+}
+func (m PgDialect) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	//query, args = db.dialect.exec(query, args...)
+	//return tx.doExec(query, args...)
+	return 0, nil
 }
 
 func (m PgDialect) query(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
-	m.log.Println(query, args)
+	m.ctx.log.Println(query, args)
 	//return m.db.Query(query, args...)
 	return query, args
 }
@@ -52,7 +96,7 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 	}
 	args = append(args, vs...)
 	query = toPgSql(query)
-	m.log.Println(query, args)
+	m.ctx.log.Println(query, args)
 	//exec, err := m.db.Exec(query, args...)
 	//if err != nil {
 	//	if errors.As(err, &ErrNoPkOrUnique) {
@@ -65,7 +109,7 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 
 func (m PgDialect) exec(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
-	m.log.Println(query, args)
+	m.ctx.log.Println(query, args)
 
 	//exec, err := m.db.Exec(query, args...)
 	//if err != nil {

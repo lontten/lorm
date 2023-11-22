@@ -2,8 +2,6 @@ package lorm
 
 import (
 	"database/sql"
-	"log"
-	"os"
 )
 
 type PgConf struct {
@@ -15,18 +13,11 @@ type PgConf struct {
 	Other    string
 }
 
-func (c *PgConf) dialect(ctx *ormContext, pc *PoolConf) Dialecter {
-	var logger *log.Logger
-	if pc == nil || pc.Logger == nil {
-		logger = log.New(os.Stdout, "", log.LstdFlags)
-		log.SetFlags(log.LstdFlags | log.Llongfile)
-	} else {
-		logger = pc.Logger
-	}
-	return &PgDialect{ctx: ctx, log: Logger{log: logger}}
+func (c *PgConf) dialect(ctx ormContext) Dialecter {
+	return &PgDialect{ctx: ctx}
 }
 
-func (c *PgConf) Open() (*sql.DB, error) {
+func (c *PgConf) open() (*sql.DB, error) {
 	dsn := "user=" + c.User +
 		" password=" + c.Password +
 		" dbname=" + c.DbName +

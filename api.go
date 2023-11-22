@@ -6,8 +6,8 @@ import (
 )
 
 type DbConfig interface {
-	Open() (*sql.DB, error)
-	dialect(ctx *ormContext, pc *PoolConf) Dialecter
+	open() (*sql.DB, error)
+	dialect(ctx ormContext) Dialecter
 }
 
 type DBer interface {
@@ -44,7 +44,7 @@ type corer interface {
 	//getTX() *sql.Tx
 
 	//原生调用方法
-	query(query string, args ...interface{}) (*sql.Rows, error)
+	query(query string, args ...interface{}) *NativeQuery
 	exec(query string, args ...interface{}) (rowsNum int64, err error)
 
 	//lorm扩展方法
@@ -53,7 +53,7 @@ type corer interface {
 	u()
 	d()
 
-	beginTx(ctx context.Context, opts *sql.TxOptions) corer
+	beginTx(ctx context.Context, opts *sql.TxOptions) coreTx
 	commit() error
 	rollback() error
 }

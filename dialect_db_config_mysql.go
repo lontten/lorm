@@ -2,8 +2,6 @@ package lorm
 
 import (
 	"database/sql"
-	"log"
-	"os"
 )
 
 type MysqlConf struct {
@@ -14,18 +12,11 @@ type MysqlConf struct {
 	Password string
 }
 
-func (c *MysqlConf) dialect(ctx *ormContext, pc *PoolConf) Dialecter {
-	var logger *log.Logger
-	if pc == nil || pc.Logger == nil {
-		logger = log.New(os.Stdout, "", log.LstdFlags)
-		log.SetFlags(log.LstdFlags | log.Llongfile)
-	} else {
-		logger = pc.Logger
-	}
-	return &PgDialect{ctx: ctx, log: Logger{log: logger}}
+func (c *MysqlConf) dialect(ctx ormContext) Dialecter {
+	return &MysqlDialect{ctx: ctx}
 }
 
-func (c *MysqlConf) Open() (*sql.DB, error) {
+func (c *MysqlConf) open() (*sql.DB, error) {
 	dsn := c.User + ":" + c.Password +
 		"@tcp(" + c.Host +
 		":" + c.Port +

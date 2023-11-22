@@ -35,7 +35,7 @@ func setOrmCtx(pc *PoolConf) ormContext {
 	}
 	return ormContext{
 		log: Logger{log: logger},
-		conf: OrmConf{
+		ormConf: OrmConf{
 			PoDir:           "src/model/po",
 			Author:          "lontten",
 			IdType:          0,
@@ -46,11 +46,11 @@ func setOrmCtx(pc *PoolConf) ormContext {
 
 func open(c DbConfig, pc *PoolConf) (dp *lnDB, err error) {
 	if c == nil {
-		fmt.Println("dbconfig canot be nil")
-		return nil, errors.New("dbconfig canot be nil")
+		fmt.Println("dbconfig cannot be nil")
+		return nil, errors.New("dbconfig cannot be nil")
 	}
 
-	db, err := c.Open()
+	db, err := c.open()
 	if err != nil {
 		return nil, err
 	}
@@ -61,13 +61,12 @@ func open(c DbConfig, pc *PoolConf) (dp *lnDB, err error) {
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
-	ctx := setOrmCtx(nil)
+	ctx := setOrmCtx(pc)
 	return &lnDB{
 		core: coreDb{
 			db:      db,
-			dialect: c.dialect(&ctx, pc),
+			dialect: c.dialect(ctx),
 		},
-		dbConfig: c,
 	}, nil
 }
 
@@ -84,10 +83,8 @@ func MustConnectMock(db *sql.DB, c DbConfig) DBer {
 	l := lnDB{
 		core: coreDb{
 			db:      db,
-			dialect: c.dialect(&ctx, nil),
+			dialect: c.dialect(ctx),
 		},
-		dbConfig: c,
-		ctx:      &ctx,
 	}
 	return l
 }
@@ -107,17 +104,12 @@ func Connect(c DbConfig, pc *PoolConf) (DBer, error) {
 
 type lnDB struct {
 	core corer
-
-	dbConfig DbConfig
-	ctx      *ormContext
 }
 
 func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
 	tx := db.core.beginTx(ctx, opts)
 	return lnDB{
-		core:     tx,
-		dbConfig: db.dbConfig,
-		ctx:      db.ctx,
+		core: tx,
 	}
 }
 

@@ -28,7 +28,7 @@ func (db coreDb) getDB() *sql.DB {
 	return db.db
 }
 
-func (db coreDb) beginTx(ctx context.Context, opts *sql.TxOptions) corer {
+func (db coreDb) beginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
 	tx, err := db.db.BeginTx(ctx, opts)
 	if err != nil {
 		panic(err)
@@ -70,7 +70,7 @@ func (db lnDB) OrmConf(c *OrmConf) lnDB {
 	if c == nil {
 		return db
 	}
-	db.ctx.conf = *c
+	db.ctx.ormConf = *c
 	return db
 }
 

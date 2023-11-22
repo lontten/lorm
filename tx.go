@@ -31,9 +31,9 @@ func (tx coreTx) commit() error {
 	//db.ctx.log.Println("commit")
 	return nil
 }
-func (tx coreTx) beginTx(ctx context.Context, opts *sql.TxOptions) corer {
+func (tx coreTx) beginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
 	panic("tx err again beginTX")
-	return nil
+	return tx
 }
 func (tx coreTx) c() {
 }

@@ -130,7 +130,7 @@ func (b *SqlBuilder) SelectModel(v interface{}) *SqlBuilder {
 	}
 
 	b.db.ctx.initScanDestOne(v)
-	columns, err := b.db.ctx.conf.initColumns(b.db.ctx.scanDestBaseType)
+	columns, err := b.db.ctx.ormConf.initColumns(b.db.ctx.scanDestBaseType)
 	if err != nil {
 		b.db.ctx.err = err
 		return b

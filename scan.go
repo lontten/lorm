@@ -25,7 +25,7 @@ func (ctx ormContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 	if err != nil {
 		return
 	}
-	cfm, err := ctx.conf.getColFieldIndexLinkMap(columns, t)
+	cfm, err := ctx.ormConf.getColFieldIndexLinkMap(columns, t)
 	if err != nil {
 		return
 	}
@@ -66,7 +66,7 @@ func (ctx ormContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		cfm, err := ctx.conf.getColFieldIndexLinkMap(columns, t)
+		cfm, err := ctx.ormConf.getColFieldIndexLinkMap(columns, t)
 		if err != nil {
 			return 0, err
 		}
@@ -106,7 +106,7 @@ func (ctx ormContext) Scan(rows *sql.Rows) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	cfm, err := ctx.conf.getColFieldIndexLinkMap(columns, t)
+	cfm, err := ctx.ormConf.getColFieldIndexLinkMap(columns, t)
 	if err != nil {
 		return 0, err
 	}
