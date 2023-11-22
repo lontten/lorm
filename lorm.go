@@ -120,7 +120,7 @@ func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
 func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
 	return db.core.query(query, args...)
 }
-func (db lnDB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+func (db lnDB) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return db.core.exec(query, args...)
 }
 
