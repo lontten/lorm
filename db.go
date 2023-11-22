@@ -41,14 +41,12 @@ func (db coreDb) d() {
 }
 
 func (db coreDb) query(query string, args ...interface{}) *NativeQuery {
-	rows, err := db.db.Query()
 	return &NativeQuery{core: db, query: query, args: args}
 }
 
-func (db coreDb) exec(query string, args ...interface{}) (rowsNum int64, err error) {
+func (db coreDb) exec(query string, args ...interface{}) (sql.Result, error) {
 	query, args = db.dialect.exec(query, args...)
-	//return db.doExec(query, args...)
-	return 0, nil
+	return db.db.Exec(query, args...)
 }
 
 //todo 下面未重构--------------

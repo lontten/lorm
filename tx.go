@@ -45,13 +45,11 @@ func (tx coreTx) u() {
 func (tx coreTx) d() {
 }
 func (tx coreTx) query(query string, args ...interface{}) *NativeQuery {
-	//return &NativeQuery{base: db, query: query, args: args}
-	return nil
+	return &NativeQuery{core: tx, query: query, args: args}
 }
-func (tx coreTx) exec(query string, args ...interface{}) (rowsNum int64, err error) {
+func (tx coreTx) exec(query string, args ...interface{}) (sql.Result, error) {
 	query, args = tx.dialect.exec(query, args...)
-	//return tx.doExec(query, args...)
-	return 0, nil
+	return tx.tx.Exec(query, args...)
 }
 
 //todo 下面未重构--------------

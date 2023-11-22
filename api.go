@@ -45,7 +45,7 @@ type corer interface {
 
 	//原生调用方法
 	query(query string, args ...interface{}) *NativeQuery
-	exec(query string, args ...interface{}) (rowsNum int64, err error)
+	exec(query string, args ...interface{}) (sql.Result, error)
 
 	//lorm扩展方法
 	c()
