@@ -12,49 +12,6 @@ type MysqlDialect struct {
 	ctx ormContext
 }
 
-func (m MysqlDialect) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
-	tx := m.core.beginTx(ctx, opts)
-	return lnDB{
-		core: tx,
-		ctx:  db.ctx,
-	}
-}
-
-func (m MysqlDialect) Rollback() error {
-	err := m.core.rollback()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("rollback")
-	return nil
-}
-
-func (m MysqlDialect) Commit() error {
-	err := m.core.commit()
-	if err != nil {
-		return err
-	}
-	m.ctx.log.Println("commit")
-	return nil
-}
-func (m MysqlDialect) C() {
-}
-func (m MysqlDialect) R() {
-}
-
-func (m MysqlDialect) U() {
-}
-func (m MysqlDialect) D() {
-}
-func (m MysqlDialect) Query(query string, args ...interface{}) *NativeQuery {
-	return m.core.query(query, args...)
-}
-func (m MysqlDialect) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	//query, args = db.dialect.exec(query, args...)
-	//return tx.doExec(query, args...)
-	return 0, nil
-}
-
 func (m MysqlDialect) query(query string, args ...interface{}) (string, []interface{}) {
 	m.ctx.log.Println(query, args)
 	return query, args
@@ -175,4 +132,49 @@ func (m MysqlDialect) prepare(query string) (Stmt, error) {
 
 	stmt, err := m.db.Prepare(query)
 	return Stmt{stmt: stmt}, err
+}
+
+//todo 下面未重构--------------
+
+func (m MysqlDialect) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
+	tx := m.core.beginTx(ctx, opts)
+	return lnDB{
+		core: tx,
+		ctx:  db.ctx,
+	}
+}
+
+func (m MysqlDialect) Rollback() error {
+	err := m.core.rollback()
+	if err != nil {
+		return err
+	}
+	db.ctx.log.Println("rollback")
+	return nil
+}
+
+func (m MysqlDialect) Commit() error {
+	err := m.core.commit()
+	if err != nil {
+		return err
+	}
+	m.ctx.log.Println("commit")
+	return nil
+}
+func (m MysqlDialect) C() {
+}
+func (m MysqlDialect) R() {
+}
+
+func (m MysqlDialect) U() {
+}
+func (m MysqlDialect) D() {
+}
+func (m MysqlDialect) Query(query string, args ...interface{}) *NativeQuery {
+	return m.core.query(query, args...)
+}
+func (m MysqlDialect) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	//query, args = db.dialect.exec(query, args...)
+	//return tx.doExec(query, args...)
+	return 0, nil
 }

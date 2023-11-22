@@ -2,6 +2,7 @@ package lorm
 
 import "github.com/pkg/errors"
 
+// todo 下面未重构--------------
 type NativeQuery struct {
 	core  corer
 	query string

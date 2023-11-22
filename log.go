@@ -11,6 +11,7 @@ type Logger struct {
 	log *log.Logger
 }
 
+// todo 下面未重构--------------
 func (l *Logger) Fatalln(msg string, v ...interface{}) {
 	arr := make([]interface{}, 0)
 	arr = append(arr, msg)

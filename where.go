@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// todo 下面未重构--------------
 type whereTokenType int
 
 const (
@@ -101,7 +102,7 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 	return sb.String(), nil
 }
 
-//------------------------------------------
+// ------------------------------------------
 func (w *WhereBuilder) And(wb *WhereBuilder, condition ...bool) *WhereBuilder {
 	if wb == nil {
 		return w

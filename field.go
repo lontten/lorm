@@ -6,8 +6,9 @@ import (
 	"reflect"
 )
 
-//校验struct 的 field 是否合法
-//1. check single
+// todo 下面未重构--------------
+// 校验struct 的 field 是否合法
+// 1. check single
 func checkField(t reflect.Type) error {
 	_, base := checkPackType(t)
 
@@ -18,9 +19,9 @@ func checkField(t reflect.Type) error {
 	return nil
 }
 
-//校验struct 的 field 是否合法
-//1. check single
-//3. nuller
+// 校验struct 的 field 是否合法
+// 1. check single
+// 3. nuller
 func checkFieldNuller(t reflect.Type) error {
 	isNuller := false
 	typ, base := checkPackType(t)
@@ -41,7 +42,7 @@ func checkFieldNuller(t reflect.Type) error {
 	return errors.New("field  no imp nuller:: " + t.String())
 }
 
-//获取field的值 interface类型
+// 获取field的值 interface类型
 func getFieldInter(v reflect.Value) interface{} {
 	_, v, err := basePtrDeepValue(v)
 	if err != nil {
@@ -63,7 +64,7 @@ func getFieldInter(v reflect.Value) interface{} {
 	return v.Interface()
 }
 
-//获取  interface类型
+// 获取  interface类型
 func getTargetInter(v reflect.Value) interface{} {
 	_, v, err := basePtrDeepValue(v)
 	if err != nil {

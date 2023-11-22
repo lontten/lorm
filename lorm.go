@@ -13,9 +13,6 @@ import (
 	"time"
 )
 
-var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
-var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
-
 type PoolConf struct {
 	MaxIdleCount int           // zero means defaultMaxIdleConns; negative means 0
 	MaxOpen      int           // <= 0 means unlimited
@@ -25,7 +22,7 @@ type PoolConf struct {
 	Logger *log.Logger
 }
 
-func setOrmCtx(pc *PoolConf) ormContext {
+func genOrmCtx(pc *PoolConf) ormContext {
 	var logger *log.Logger
 	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -61,7 +58,7 @@ func open(c DbConfig, pc *PoolConf) (dp *lnDB, err error) {
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
-	ctx := setOrmCtx(pc)
+	ctx := genOrmCtx(pc)
 	return &lnDB{
 		core: coreDb{
 			db:      db,
@@ -79,7 +76,7 @@ func MustConnect(c DbConfig, pc *PoolConf) DBer {
 }
 
 func MustConnectMock(db *sql.DB, c DbConfig) DBer {
-	ctx := setOrmCtx(nil)
+	ctx := genOrmCtx(nil)
 	l := lnDB{
 		core: coreDb{
 			db:      db,
@@ -106,30 +103,33 @@ type lnDB struct {
 	core corer
 }
 
+func (db lnDB) Rollback() error {
+	return db.core.rollback()
+}
+
+func (db lnDB) Commit() error {
+	return db.core.commit()
+}
+
 func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
 	tx := db.core.beginTx(ctx, opts)
 	return lnDB{
 		core: tx,
 	}
 }
-
-func (db lnDB) Rollback() error {
-	err := db.core.rollback()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("rollback")
-	return nil
+func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
+	return db.core.query(query, args...)
+}
+func (db lnDB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	return db.core.exec(query, args...)
 }
 
-func (db lnDB) Commit() error {
-	err := db.core.commit()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("commit")
-	return nil
-}
+//todo 下面未重构--------------
+
+var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+
+var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
+
 func (db lnDB) C() {
 }
 func (db lnDB) R() {
@@ -138,12 +138,4 @@ func (db lnDB) R() {
 func (db lnDB) U() {
 }
 func (db lnDB) D() {
-}
-func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
-	return db.core.query(query, args...)
-}
-func (db lnDB) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	//query, args = db.dialect.exec(query, args...)
-	//return tx.doExec(query, args...)
-	return 0, nil
 }

@@ -9,7 +9,8 @@ import (
 	"unicode"
 )
 
-//set
+// todo 下面未重构--------------
+// set
 var structFieldsMapCache = make(map[reflect.Type]fieldMap)
 
 type fieldMap map[string]int
@@ -62,7 +63,7 @@ func getFieldMap(typ reflect.Type, fieldNamePrefix string) (fieldMap, error) {
 
 type StructValidFieldValueMap map[string]interface{}
 
-//---------------struct-new-----------------
+// ---------------struct-new-----------------
 // v0.6
 func newStruct(t reflect.Type) reflect.Value {
 	tPtr := reflect.New(t)
@@ -80,7 +81,7 @@ func newStruct(t reflect.Type) reflect.Value {
 	return tPtr
 }
 
-//--------------------comp-field-valuer---------
+// --------------------comp-field-valuer---------
 // v0.6 检查一个 struct 是否合法
 var compValidCache = make(map[reflect.Type]struct{})
 var mutexCompValidCache sync.Mutex
@@ -115,7 +116,7 @@ func checkCompFieldScan(typ reflect.Type) error {
 	return errors.New("need a struct or map-scan")
 }
 
-//--------------------comp-field-valuer-nuller---------
+// --------------------comp-field-valuer-nuller---------
 // v0.7 检查一个 comp 是否合法
 var compValidNullerCache = make(map[reflect.Type]reflect.Value)
 var mutexCompValidNullerCache sync.Mutex

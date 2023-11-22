@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// todo 下面未重构--------------
 // update
 func (db lnDB) doUpdate() (int64, error) {
 	if err := db.ctx.err; err != nil {

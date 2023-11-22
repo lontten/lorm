@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// todo 下面未重构--------------
 func (db lnDB) Page(size int, current int64) *SqlBuilder {
 	return &SqlBuilder{
 		db:          db,

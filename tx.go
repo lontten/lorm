@@ -11,6 +11,7 @@ type coreTx struct {
 }
 
 func (tx coreTx) getDB() *sql.DB {
+	panic("tx no db")
 	return nil
 }
 
@@ -52,3 +53,5 @@ func (tx coreTx) exec(query string, args ...interface{}) (rowsNum int64, err err
 	//return tx.doExec(query, args...)
 	return 0, nil
 }
+
+//todo 下面未重构--------------

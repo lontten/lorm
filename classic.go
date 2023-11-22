@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// todo 下面未重构--------------
 func (db lnDB) Builder() *SqlBuilder {
 	return &SqlBuilder{
 		db:          db,

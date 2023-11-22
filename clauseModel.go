@@ -1,5 +1,6 @@
 package lorm
 
+// todo 下面未重构--------------
 type clauseType int
 
 const (
