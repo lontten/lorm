@@ -4,6 +4,7 @@ import (
 	"reflect"
 )
 
+// todo 下面未重构--------------
 // ptr
 // 检查数据类型 comp-struct
 func (ctx *ormContext) initTargetDest(dest interface{}) {

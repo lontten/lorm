@@ -56,6 +56,8 @@ type ormContext struct {
 	err     error
 }
 
+//todo 下面未重构--------------
+
 func (ctx ormContext) Copy() ormContext {
 	return ormContext{
 		ormConf: ctx.ormConf,

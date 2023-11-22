@@ -8,6 +8,7 @@ import (
 	"reflect"
 )
 
+// todo 下面未重构--------------
 // ScanLn
 // 接收一行结果
 // 1.ptr single/comp

@@ -13,49 +13,6 @@ type PgDialect struct {
 	ctx ormContext
 }
 
-func (m PgDialect) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
-	tx := m.core.beginTx(ctx, opts)
-	return lnDB{
-		core: tx,
-		ctx:  db.ctx,
-	}
-}
-
-func (m PgDialect) Rollback() error {
-	err := m.core.rollback()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("rollback")
-	return nil
-}
-
-func (m PgDialect) Commit() error {
-	err := m.core.commit()
-	if err != nil {
-		return err
-	}
-	m.ctx.log.Println("commit")
-	return nil
-}
-func (m PgDialect) C() {
-}
-func (m PgDialect) R() {
-}
-
-func (m PgDialect) U() {
-}
-func (m PgDialect) D() {
-}
-func (m PgDialect) Query(query string, args ...interface{}) *NativeQuery {
-	return m.core.query(query, args...)
-}
-func (m PgDialect) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-	//query, args = db.dialect.exec(query, args...)
-	//return tx.doExec(query, args...)
-	return 0, nil
-}
-
 func (m PgDialect) query(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
 	m.ctx.log.Println(query, args)
@@ -203,4 +160,49 @@ func (m PgDialect) prepare(query string) (Stmt, error) {
 	query = toPgSql(query)
 	stmt, err := m.db.Prepare(query)
 	return Stmt{stmt: stmt}, err
+}
+
+//todo 下面未重构--------------
+
+func (m PgDialect) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
+	tx := m.core.beginTx(ctx, opts)
+	return lnDB{
+		core: tx,
+		ctx:  db.ctx,
+	}
+}
+
+func (m PgDialect) Rollback() error {
+	err := m.core.rollback()
+	if err != nil {
+		return err
+	}
+	db.ctx.log.Println("rollback")
+	return nil
+}
+
+func (m PgDialect) Commit() error {
+	err := m.core.commit()
+	if err != nil {
+		return err
+	}
+	m.ctx.log.Println("commit")
+	return nil
+}
+func (m PgDialect) C() {
+}
+func (m PgDialect) R() {
+}
+
+func (m PgDialect) U() {
+}
+func (m PgDialect) D() {
+}
+func (m PgDialect) Query(query string, args ...interface{}) *NativeQuery {
+	return m.core.query(query, args...)
+}
+func (m PgDialect) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
+	//query, args = db.dialect.exec(query, args...)
+	//return tx.doExec(query, args...)
+	return 0, nil
 }

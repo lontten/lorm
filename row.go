@@ -4,7 +4,8 @@ import (
 	"reflect"
 )
 
-//创建用来存放row中值得 引用
+// todo 下面未重构--------------
+// 创建用来存放row中值得 引用
 func createColBox(base reflect.Type, cfLink ColFieldIndexLinkMap) (box []interface{}, vp, v reflect.Value) {
 	vp = newStruct(base)
 	v = reflect.Indirect(vp)

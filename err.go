@@ -2,6 +2,7 @@ package lorm
 
 import "github.com/pkg/errors"
 
+// todo 下面未重构--------------
 var (
 	ErrNil          = errors.New("nil")
 	ErrContainEmpty = errors.New("slice empty")

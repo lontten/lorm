@@ -6,19 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type tableSqlType int
-
-const (
-	dInsert tableSqlType = iota
-	dUpdate
-	dDelete
-	dSelect
-	dHas
-	dCount
-)
-
-// ----------LnDB-------------
-
 type coreDb struct {
 	db      *sql.DB
 	dialect Dialecter
@@ -63,6 +50,19 @@ func (db coreDb) exec(query string, args ...interface{}) (rowsNum int64, err err
 	//return db.doExec(query, args...)
 	return 0, nil
 }
+
+//todo 下面未重构--------------
+
+type tableSqlType int
+
+const (
+	dInsert tableSqlType = iota
+	dUpdate
+	dDelete
+	dSelect
+	dHas
+	dCount
+)
 
 //----------LnDB-------------
 

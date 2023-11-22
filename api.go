@@ -58,12 +58,6 @@ type corer interface {
 	rollback() error
 }
 
-type DBer3 interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Prepare(query string) (*sql.Stmt, error)
-}
-
 type Dialecter interface {
 	exec(query string, args ...interface{}) (string, []interface{})
 	execBatch(query string, args [][]interface{}) (string, [][]interface{})
@@ -77,4 +71,12 @@ type Dialecter interface {
 	parse(c Clause) (string, error)
 
 	//prepare(query string) (string, error)
+}
+
+//todo 下面未重构--------------
+
+type DBer3 interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
 }

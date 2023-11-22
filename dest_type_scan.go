@@ -5,6 +5,7 @@ import (
 	"reflect"
 )
 
+// todo 下面未重构--------------
 // ptr slice
 func (ctx *ormContext) initScanDestList(dest interface{}) {
 	if ctx.err != nil {

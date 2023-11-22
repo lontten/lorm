@@ -23,3 +23,5 @@ func (c *MysqlConf) open() (*sql.DB, error) {
 		")/" + c.DbName
 	return sql.Open("mysql", dsn)
 }
+
+//todo 下面未重构--------------

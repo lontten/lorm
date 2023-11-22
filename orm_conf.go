@@ -50,7 +50,7 @@ type OrmConf struct {
 	TenantIgnoreTableFun func(tableName string) bool
 }
 
-// v0.7
+// ---下面未重构--------------
 func (c OrmConf) tableName(t reflect.Type) (string, error) {
 
 	// fun
@@ -110,7 +110,7 @@ func (c OrmConf) primaryKeys(tableName string) []string {
 	return []string{"id"}
 }
 
-//v0.7
+// v0.7
 func (c OrmConf) initColumns(t reflect.Type) (columns []string, err error) {
 
 	cMap := make(map[string]int)
@@ -175,8 +175,8 @@ func (c OrmConf) initColumns(t reflect.Type) (columns []string, err error) {
 	return arr, nil
 }
 
-//v0.6
-//获取struct对应的字段名 有效部分
+// v0.6
+// 获取struct对应的字段名 有效部分
 func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error) {
 	cMap := make(map[string]int)
 
@@ -235,8 +235,8 @@ func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error)
 	return cMap, nil
 }
 
-//0.6
-//获取comp 对应的字段名 和 其值   排除 nil部分
+// 0.6
+// 获取comp 对应的字段名 和 其值   排除 nil部分
 func (c OrmConf) getCompColumnsValueNoNil(v reflect.Value) (columns []string, values []interface{}, err error) {
 	columns = make([]string, 0)
 	values = make([]interface{}, 0)
@@ -265,8 +265,8 @@ func (c OrmConf) getCompColumnsValueNoNil(v reflect.Value) (columns []string, va
 	return
 }
 
-//0.6
-//获取comp 对应的字段名 和 其值   不排除 nil部分
+// 0.6
+// 获取comp 对应的字段名 和 其值   不排除 nil部分
 func (c OrmConf) getCompAllColumnsValue(v reflect.Value) (columns []string, values []interface{}, err error) {
 	columns = make([]string, 0)
 	values = make([]interface{}, 0)
@@ -286,8 +286,8 @@ func (c OrmConf) getCompAllColumnsValue(v reflect.Value) (columns []string, valu
 	return
 }
 
-//0.6
-//获取comp 对应的字段名 和 其值   不排除 nil部分
+// 0.6
+// 获取comp 对应的字段名 和 其值   不排除 nil部分
 func (c OrmConf) getCompAllColumnsValueList(v []reflect.Value) ([]string, [][]interface{}, error) {
 	columns := make([]string, 0)
 	values := make([][]interface{}, 0)
@@ -350,9 +350,9 @@ func (c OrmConf) getColFieldIndexLinkMap(columns []string, t reflect.Type) (ColF
 	return cfm, nil
 }
 
-//tableName表名
-//keys
-//hasTen true开启多租户
+// tableName表名
+// keys
+// hasTen true开启多租户
 func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
 	var bb bytes.Buffer
 
@@ -377,9 +377,9 @@ func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
 	return bb.Bytes()
 }
 
-//tableName表名
-//keys
-//hasTen true开启多租户
+// tableName表名
+// keys
+// hasTen true开启多租户
 func (c OrmConf) genDelSqlByWhere(tableName string, where []byte) []byte {
 	hasTen := c.TenantIdFieldName != "" && !c.TenantIgnoreTableFun(tableName)
 
@@ -406,7 +406,7 @@ func (c OrmConf) genDelSqlByWhere(tableName string, where []byte) []byte {
 	return bb.Bytes()
 }
 
-//有tenantid功能
+// 有tenantid功能
 func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 	if hasTen {
 		keys = append(keys, c.TenantIdFieldName)
@@ -429,7 +429,7 @@ func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 	return bb.Bytes()
 }
 
-//有tenantid功能
+// 有tenantid功能
 func (c OrmConf) whereExtra(where []byte, hasTen bool) []byte {
 	var bb bytes.Buffer
 	bb.Write(where)
@@ -450,8 +450,8 @@ func (c OrmConf) whereExtra(where []byte, hasTen bool) []byte {
 	return bb.Bytes()
 }
 
-//tableName表名
-//columns
+// tableName表名
+// columns
 func (c OrmConf) genSelectSqlCommon(tableName string, columns []string) []byte {
 
 	var bb bytes.Buffer

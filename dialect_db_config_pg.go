@@ -30,3 +30,5 @@ func (c *PgConf) open() (*sql.DB, error) {
 	dsn += c.Other
 	return sql.Open("pgx", dsn)
 }
+
+//---下面未重构--------------

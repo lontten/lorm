@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// todo 下面未重构--------------
 type Stmt struct {
 	stmt *sql.Stmt
 
