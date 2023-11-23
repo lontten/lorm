@@ -6,10 +6,26 @@ import (
 	"strings"
 )
 
+type tableSqlType int
+
+// d前缀是单表的意思，tableSqlType 只用于单表操作
+const (
+	dInsert tableSqlType = iota
+	dInsertOrUpdate
+	dUpdate
+	dDelete
+	dSelect
+	dGetOrInsert
+	dHas
+	dCount
+)
+
 type ormContext struct {
 	ormConf  OrmConf
 	dbConfig DbConfig
 	log      Logger
+
+	tableSqlType tableSqlType
 
 	baseTokens []baseToken
 

@@ -80,29 +80,32 @@ func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
 //------------------------------------Delete--------------------------------------------
 
 func (db lnDB) Delete(v interface{}) OrmTableDelete {
-	db.typ = dDelete
-	db.baseTokens = append(db.baseTokens, baseToken{
-		typ:  tDelete,
-		dest: v,
-		v:    reflect.ValueOf(v),
+	core := db.core
+	core.getCtx().tableSqlType = dDelete
+
+	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
+		typ: tableName,
+		t:   reflect.TypeOf(v),
 	})
-	return OrmTableDelete{base: db}
+	return OrmTableDelete{base: core}
 }
 
-func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) Resulter {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) OrmTableDelete {
+	core := orm.base
+	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
 		typ: tPrimaryKey,
 		pk:  v,
 	})
-	return orm.base.Do()
+	return orm
 }
 
-func (orm OrmTableDelete) ByModel(v interface{}) Resulter {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableDelete) ByModel(v interface{}) OrmTableDelete {
+	core := orm.base
+	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
 		typ: tWhereModel,
 		v:   reflect.ValueOf(v),
 	})
-	return orm.base.Do()
+	return orm
 }
 
 func (orm OrmTableDelete) ByWhere(w *WhereBuilder) Resulter {

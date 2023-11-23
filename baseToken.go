@@ -2,7 +2,6 @@ package lorm
 
 import "reflect"
 
-// todo 下面未重构--------------
 type baseTokenType int
 
 const (
@@ -16,19 +15,30 @@ const (
 	tWhereModel
 	tInsertOrUpdate
 	tInsertIgnore
-	tPrimaryKey
 
 	tScanOne
 	tScanFirst
 	tScanList
+
+	//	--------------------
+	// 对应数据 t reflect.Type
+	tableName
+	// 对应数据 pk 主键值列表
+	tPrimaryKey
+
+	// 对应数据 v dest
+	tableNameDestValue
 )
 
 type baseToken struct {
 	typ  baseTokenType
 	dest interface{}
 	v    reflect.Value
+	t    reflect.Type
 
 	pk []interface{}
 
 	where *WhereBuilder
 }
+
+// todo 下面未重构--------------

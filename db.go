@@ -59,17 +59,6 @@ func (db coreDb) prepare(query string) (*sql.Stmt, error) {
 
 //todo 下面未重构--------------
 
-type tableSqlType int
-
-const (
-	dInsert tableSqlType = iota
-	dUpdate
-	dDelete
-	dSelect
-	dHas
-	dCount
-)
-
 //----------LnDB-------------
 
 type Result struct {

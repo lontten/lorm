@@ -9,7 +9,7 @@ import (
 // todo 下面未重构--------------
 func (db lnDB) Page(size int, current int64) *SqlBuilder {
 	return &SqlBuilder{
-		db:          db.core,
+		core:        db.core,
 		selectQuery: &strings.Builder{},
 		otherQuery:  &strings.Builder{},
 		other: PageCnfig{
@@ -34,7 +34,7 @@ type Page struct {
 
 // PageSelect 查询分页
 func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err error) {
-	if err = b.db.getCtx().err; err != nil {
+	if err = b.core.getCtx().err; err != nil {
 		return
 	}
 	if b.other == nil {
@@ -46,14 +46,14 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	var current = b.other.(PageCnfig).current
 
 	b.initSelectSql()
-	b.db.getCtx().initScanDestList(dest)
-	b.db.getCtx().checkScanDestField()
-	if err = b.db.getCtx().err; err != nil {
+	b.core.getCtx().initScanDestList(dest)
+	b.core.getCtx().checkScanDestField()
+	if err = b.core.getCtx().err; err != nil {
 		return
 	}
 	var countSql = "select count(*) " + b.otherQuery.String()
 
-	rows, err := b.db.doQuery(countSql, b.otherArgs...)
+	rows, err := b.core.doQuery(countSql, b.otherArgs...)
 
 	if err != nil {
 		return
@@ -72,12 +72,12 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	var selectSql = b.query + " limit ? offset ?"
 	var offset = (current - int64(1)) * int64(size)
 	args := append(b.args, size, offset)
-	rows, err = b.db.doQuery(selectSql, args...)
+	rows, err = b.core.doQuery(selectSql, args...)
 
 	if err != nil {
 		return
 	}
-	num, err := b.db.getCtx().Scan(rows)
+	num, err := b.core.getCtx().Scan(rows)
 	if err != nil {
 		return
 	}
