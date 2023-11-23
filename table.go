@@ -108,12 +108,17 @@ func (orm OrmTableDelete) ByModel(v interface{}) OrmTableDelete {
 	return orm
 }
 
-func (orm OrmTableDelete) ByWhere(w *WhereBuilder) Resulter {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
-		typ:   tWhereBuilder,
-		where: w,
+func (orm OrmTableDelete) ByWhere(wb *WhereBuilder) OrmTableDelete {
+	core := orm.base
+	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
+		typ: tWhereBuilder,
+		wb:  wb,
 	})
-	return orm.base.Do()
+	return orm
+}
+
+func (orm OrmTableDelete) Exec(w *WhereBuilder) Resulter {
+	return orm.base.getCtx()
 }
 
 //------------------------------------Update--------------------------------------------
@@ -156,8 +161,8 @@ func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
 
 func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
 	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
-		typ:   tWhereBuilder,
-		where: w,
+		typ: tWhereBuilder,
+		wb:  w,
 	})
 
 	orm.base.initByWhere(w)
@@ -198,8 +203,8 @@ func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
 
 func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
 	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
-		typ:   tWhereBuilder,
-		where: w,
+		typ: tWhereBuilder,
+		wb:  w,
 	})
 
 	if w == nil {

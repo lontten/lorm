@@ -11,7 +11,6 @@ const (
 	tSelect
 	tCount
 	tExist
-	tWhereBuilder
 	tWhereModel
 	tInsertOrUpdate
 	tInsertIgnore
@@ -25,6 +24,8 @@ const (
 	tableName
 	// 对应数据 pk 主键值列表
 	tPrimaryKey
+	// 对应数据 wb
+	tWhereBuilder
 
 	// 对应数据 v dest
 	tableNameDestValue
@@ -38,7 +39,7 @@ type baseToken struct {
 
 	pk []interface{}
 
-	where *WhereBuilder
+	wb *WhereBuilder
 }
 
 // todo 下面未重构--------------

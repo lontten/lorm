@@ -124,7 +124,7 @@ func (db *lnDB) DoUpdate() Resulter {
 }
 
 func (db *coreDb) DoDelete() Resulter {
-	for _, token := range baseTokens {
+	for _, token := range db.getCtx().baseTokens {
 		switch token.typ {
 		case tDelete:
 			db.tDelete(token)
@@ -169,6 +169,6 @@ func (db *lnDB) tWhereModel(t baseToken) {
 }
 
 func (db *lnDB) tWhereBuilder(t baseToken) {
-	db.initByWhere(t.where)
+	db.initByWhere(t.wb)
 	db.initExtra()
 }
