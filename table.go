@@ -332,31 +332,31 @@ func (orm OrmTableHas) ByWhere(w *WhereBuilder) (bool, error) {
 //-----------------------------------------------------------
 
 type OrmTableCreate struct {
-	base lnDB
+	base corer
 }
 
 type OrmTableSelect struct {
-	base lnDB
+	base corer
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableHas struct {
-	base lnDB
+	base corer
 
 	query string
 	args  []interface{}
 }
 
 type OrmTableSelectWhere struct {
-	base lnDB
+	base corer
 }
 
 type OrmTableUpdate struct {
-	base lnDB
+	base corer
 }
 
 type OrmTableDelete struct {
-	base lnDB
+	base corer
 }

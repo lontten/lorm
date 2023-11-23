@@ -1,6 +1,6 @@
 ```js
 
-db.delete("t_user").                      del-in
+db.delete("t_user").                      OrmDel  == by ;Exec(返回行数+err);  Err(返回err)
    
     byModel(user)
     byMap(map)

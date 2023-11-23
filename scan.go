@@ -8,7 +8,6 @@ import (
 	"reflect"
 )
 
-// todo 下面未重构--------------
 // ScanLn
 // 接收一行结果
 // 1.ptr single/comp
@@ -140,3 +139,5 @@ func (ctx *ormContext) checkScanDestField() {
 	}
 	ctx.err = checkCompFieldScan(ctx.scanDestBaseType)
 }
+
+// todo 下面未重构--------------

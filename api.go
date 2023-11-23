@@ -6,11 +6,14 @@ import (
 )
 
 type DbConfig interface {
+	//根据db配置，打开db链接
 	open() (*sql.DB, error)
+	//根据 ctx生成dialecter，每种数据库类型各一种实现
 	dialect(ctx ormContext) Dialecter
 }
 
 type DBer interface {
+	//用db开启tx事务
 	BeginTx(ctx context.Context, opts *sql.TxOptions) TXer
 
 	//原生调用方法
@@ -40,6 +43,7 @@ type TXer interface {
 }
 
 type corer interface {
+	// 获取 corer 下面的dialecter的coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
 	getDB() *sql.DB
 	//getTX() *sql.Tx
@@ -47,6 +51,7 @@ type corer interface {
 	//原生调用方法
 	query(query string, args ...interface{}) *NativeQuery
 	exec(query string, args ...interface{}) (sql.Result, error)
+	prepare(query string) (*sql.Stmt, error)
 
 	//lorm扩展方法
 	c()
@@ -60,8 +65,10 @@ type corer interface {
 }
 
 type Dialecter interface {
+	// 获取coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
 
+	//对执行语句进行方言处理
 	exec(query string, args ...interface{}) (string, []interface{})
 	execBatch(query string, args [][]interface{}) (string, [][]interface{})
 

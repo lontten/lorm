@@ -2,7 +2,6 @@ package lorm
 
 import "strings"
 
-// todo 下面未重构--------------
 func gen(num int) string {
 	var queryArr []string
 	for i := 0; i < num; i++ {
@@ -10,3 +9,5 @@ func gen(num int) string {
 	}
 	return strings.Join(queryArr, ",")
 }
+
+// todo 下面未重构--------------

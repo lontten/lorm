@@ -9,7 +9,7 @@ import (
 // todo 下面未重构--------------
 func (db lnDB) Page(size int, current int64) *SqlBuilder {
 	return &SqlBuilder{
-		db:          db,
+		db:          db.core,
 		selectQuery: &strings.Builder{},
 		otherQuery:  &strings.Builder{},
 		other: PageCnfig{
@@ -34,7 +34,7 @@ type Page struct {
 
 // PageSelect 查询分页
 func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err error) {
-	if err = b.db.ctx.err; err != nil {
+	if err = b.db.getCtx().err; err != nil {
 		return
 	}
 	if b.other == nil {
@@ -46,9 +46,9 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	var current = b.other.(PageCnfig).current
 
 	b.initSelectSql()
-	b.db.ctx.initScanDestList(dest)
-	b.db.ctx.checkScanDestField()
-	if err = b.db.ctx.err; err != nil {
+	b.db.getCtx().initScanDestList(dest)
+	b.db.getCtx().checkScanDestField()
+	if err = b.db.getCtx().err; err != nil {
 		return
 	}
 	var countSql = "select count(*) " + b.otherQuery.String()
@@ -77,7 +77,7 @@ func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err er
 	if err != nil {
 		return
 	}
-	num, err := b.db.ctx.Scan(rows)
+	num, err := b.db.getCtx().Scan(rows)
 	if err != nil {
 		return
 	}

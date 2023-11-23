@@ -53,6 +53,10 @@ func (db coreDb) exec(query string, args ...interface{}) (sql.Result, error) {
 	return db.db.Exec(query, args...)
 }
 
+func (db coreDb) prepare(query string) (*sql.Stmt, error) {
+	return db.db.Prepare(query)
+}
+
 //todo 下面未重构--------------
 
 type tableSqlType int
@@ -67,14 +71,6 @@ const (
 )
 
 //----------LnDB-------------
-
-func (db lnDB) OrmConf(c *OrmConf) lnDB {
-	if c == nil {
-		return db
-	}
-	db.ctx.ormConf = *c
-	return db
-}
 
 type Result struct {
 	num int64
@@ -92,10 +88,9 @@ func (r Result) Result() (int64, error) {
 	return r.num, r.err
 }
 
-func (db lnDB) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
-	//query, args = db.dialect.query(query, args...)
-	//return db.Db().Query(query, args...)
-	return nil, nil
+func (db coreDb) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
+	query, args = db.dialect.query(query, args...)
+	return db.db.Query(query, args...)
 }
 
 func (db lnDB) doExec(query string, args ...interface{}) (int64, error) {
@@ -139,8 +134,8 @@ func (db *lnDB) DoUpdate() Resulter {
 	return nil
 }
 
-func (db *lnDB) DoDelete() Resulter {
-	for _, token := range db.baseTokens {
+func (db *coreDb) DoDelete() Resulter {
+	for _, token := range baseTokens {
 		switch token.typ {
 		case tDelete:
 			db.tDelete(token)

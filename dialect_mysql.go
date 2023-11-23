@@ -182,3 +182,9 @@ func (m MysqlDialect) Exec(query string, args ...interface{}) (rowsNum int64, er
 	//return tx.doExec(query, args...)
 	return 0, nil
 }
+
+func (m MysqlDialect) Prepare(query string) (*sql.Stmt, error) {
+	//query, args = db.dialect.exec(query, args...)
+	//return tx.doExec(query, args...)
+	return 0, nil
+}

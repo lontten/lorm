@@ -13,6 +13,7 @@ db.insert(users)
 //通过prepare添加，并返回插入的数据的所有null值得字段
 db.insertFast(users)
 
+# 上面后续方法： Exec Err 两种
 
 通过遍历
 //如果存在则更新，不存在则插入
@@ -25,18 +26,9 @@ db.insertOrUpdate(user).byWhere(where)
 //如果存在则更新，不存在则插入，
 db.insertOrUpdate(&user)
 
-
+# 上面后续方法：byid byUni byModel byWhere
 
 通过遍历，list
-//根据id查找，若没有就添加user
-db.getOrInsert(user).byId(id)
-
-db.getOrInsert(user).byModel(model)
-
-db.getOrInsert(user).byWhere(where)
-
-
-
 
 
 ```

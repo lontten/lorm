@@ -11,6 +11,8 @@ type ormContext struct {
 	dbConfig DbConfig
 	log      Logger
 
+	baseTokens []baseToken
+
 	isLgDel bool
 	isTen   bool
 

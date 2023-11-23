@@ -10,8 +10,8 @@ type coreTx struct {
 	dialect Dialecter
 }
 
-func (db coreTx) getCtx() ormContext {
-	return db.dialect.getCtx()
+func (tx coreTx) getCtx() *ormContext {
+	return tx.dialect.getCtx()
 }
 func (tx coreTx) getDB() *sql.DB {
 	panic("tx no db")
@@ -23,7 +23,6 @@ func (tx coreTx) rollback() error {
 	if err != nil {
 		return err
 	}
-	//db.ctx.log.Println("rollback")
 	return nil
 }
 
@@ -32,7 +31,6 @@ func (tx coreTx) commit() error {
 	if err != nil {
 		return err
 	}
-	//db.ctx.log.Println("commit")
 	return nil
 }
 func (tx coreTx) beginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
@@ -53,6 +51,9 @@ func (tx coreTx) query(query string, args ...interface{}) *NativeQuery {
 func (tx coreTx) exec(query string, args ...interface{}) (sql.Result, error) {
 	query, args = tx.dialect.exec(query, args...)
 	return tx.tx.Exec(query, args...)
+}
+func (tx coreTx) prepare(query string) (*sql.Stmt, error) {
+	return tx.tx.Prepare(query)
 }
 
 //todo 下面未重构--------------
