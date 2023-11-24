@@ -161,10 +161,4 @@ func (m PgDialect) parse(c Clause) (string, error) {
 	return sb.String(), nil
 }
 
-func (m PgDialect) prepare(query string) (Stmt, error) {
-	query = toPgSql(query)
-	stmt, err := m.db.Prepare(query)
-	return Stmt{stmt: stmt}, err
-}
-
 //todo 下面未重构--------------

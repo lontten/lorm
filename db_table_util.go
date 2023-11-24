@@ -2,11 +2,8 @@ package lorm
 
 import (
 	"bytes"
-	"database/sql"
-	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
-	"strings"
 )
 
 // todo 下面未重构--------------
@@ -27,31 +24,32 @@ func (db lnDB) doUpdate() (int64, error) {
 	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
 	bb.Write(db.genWhereSqlByToken())
 
-	return db.core.doExec(bb.String(), append(ctx.columnValues, db.args...)...)
+	//return db.core.doExec(bb.String(), append(ctx.columnValues, db.args...)...)
+	return 0, nil
 }
 
 // del
 func (db coreDb) doDel() (int64, error) {
-	if err := db.getCtx().err; err != nil {
-		return 0, err
-	}
-	var bb bytes.Buffer
-	tableName := db.getCtx().tableName
-	w := db.genWhereSqlByToken()
-
-	if db.getCtx().ormConf.LogicDeleteSetSql == "" {
-		bb.WriteString("DELETE FROM ")
-		bb.WriteString(tableName)
-		bb.Write(w)
-	} else {
-		bb.WriteString("UPDATE ")
-		bb.WriteString(tableName)
-		bb.WriteString(" SET ")
-		bb.WriteString(db.getCtx().ormConf.LogicDeleteSetSql)
-		bb.Write(w)
-	}
-
-	return db.doExec(bb.String(), db.args...)
+	//if err := db.getCtx().err; err != nil {
+	//	return 0, err
+	//}
+	//var bb bytes.Buffer
+	//tableName := db.getCtx().tableName
+	//w := db.genWhereSqlByToken()
+	//
+	//if db.getCtx().ormConf.LogicDeleteSetSql == "" {
+	//	bb.WriteString("DELETE FROM ")
+	//	bb.WriteString(tableName)
+	//	bb.Write(w)
+	//} else {
+	//	bb.WriteString("UPDATE ")
+	//	bb.WriteString(tableName)
+	//	bb.WriteString(" SET ")
+	//	bb.WriteString(db.getCtx().ormConf.LogicDeleteSetSql)
+	//	bb.Write(w)
+	//}
+	//return db.doExec(bb.String(), db.args...)
+	return 0, nil
 }
 
 // update
@@ -76,35 +74,36 @@ func (db coreDb) doSelect() (int64, error) {
 	}
 	bb.WriteString(" FROM ")
 	bb.WriteString(tableName)
-	bb.Write(db.genWhereSqlByToken())
-
-	return db.query(bb.String(), db.args...)
+	//bb.Write(db.genWhereSqlByToken())
+	//
+	//return db.query(bb.String(), db.args...)
+	return 0, nil
 }
 
 // has
 func (db coreDb) doHas() (bool, error) {
-	if err := db.getCtx().err; err != nil {
-		return false, err
-	}
-	var bb bytes.Buffer
-
-	ctx := db.getCtx()
-	tableName := ctx.tableName
-
-	bb.WriteString("SELECT 1 FROM ")
-	bb.WriteString(tableName)
-	bb.Write(db.genWhereSqlByToken())
-	bb.WriteString("LIMIT 1")
-
-	rows, err := db.doQuery(bb.String(), db.args...)
-
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-	if rows.Next() {
-		return true, nil
-	}
+	//if err := db.getCtx().err; err != nil {
+	//	return false, err
+	//}
+	//var bb bytes.Buffer
+	//
+	//ctx := db.getCtx()
+	//tableName := ctx.tableName
+	//
+	//bb.WriteString("SELECT 1 FROM ")
+	//bb.WriteString(tableName)
+	//bb.Write(db.genWhereSqlByToken())
+	//bb.WriteString("LIMIT 1")
+	//
+	//rows, err := db.doQuery(bb.String(), db.args...)
+	//
+	//if err != nil {
+	//	return false, err
+	//}
+	//defer rows.Close()
+	//if rows.Next() {
+	//	return true, nil
+	//}
 	return false, nil
 }
 
@@ -112,100 +111,100 @@ func (db coreDb) doHas() (bool, error) {
 
 // 根据 byModel 生成的where token
 func (db *MysqlDialect) initByPrimaryKey() {
-	ctx := db.ctx
-	if err := ctx.err; err != nil {
-		return
-	}
-	pkNum := len(ctx.primaryKeyValues)
-	db.whereTokens = append(db.whereTokens, utils.GenwhereTokenOfBatch(ctx.primaryKeyNames, pkNum))
-
-	for _, value := range ctx.primaryKeyValues {
-		db.args = append(db.args, value...)
-	}
+	//ctx := db.ctx
+	//if err := ctx.err; err != nil {
+	//	return
+	//}
+	//pkNum := len(ctx.primaryKeyValues)
+	//db.whereTokens = append(db.whereTokens, utils.GenwhereTokenOfBatch(ctx.primaryKeyNames, pkNum))
+	//
+	//for _, value := range ctx.primaryKeyValues {
+	//	db.args = append(db.args, value...)
+	//}
 }
 
 // 根据 byModel 生成的where token
 func (db *MysqlDialect) initByModel(v interface{}) {
-	if err := db.ctx.err; err != nil {
-		return
-	}
-	if v == nil {
-		db.ctx.err = errors.New("model is nil")
-		return
-	}
-
-	columns, values, err := getCompCV(v, db.ctx.ormConf)
-	if err != nil {
-		db.ctx.err = err
-		return
-	}
-	db.whereTokens = append(db.whereTokens, utils.GenwhereToken(columns)...)
-	db.args = append(db.args, values...)
+	//if err := db.ctx.err; err != nil {
+	//	return
+	//}
+	//if v == nil {
+	//	db.ctx.err = errors.New("model is nil")
+	//	return
+	//}
+	//
+	//columns, values, err := getCompCV(v, db.ctx.ormConf)
+	//if err != nil {
+	//	db.ctx.err = err
+	//	return
+	//}
+	//db.whereTokens = append(db.whereTokens, utils.GenwhereToken(columns)...)
+	//db.args = append(db.args, values...)
 }
 
 // 根据 byWhere 生成的where token
 func (db *MysqlDialect) initByWhere(w *WhereBuilder) {
-	if err := db.ctx.err; err != nil {
-		return
-	}
-	if w == nil {
-		db.ctx.err = errors.New("ByWhere is nil")
-		return
-	}
-
-	args := w.args
-
-	toSql, err := w.toSql(db.dialect.parse)
-	if err != nil {
-		db.ctx.err = err
-		return
-	}
-	db.whereTokens = append(db.whereTokens, toSql)
-	db.args = append(db.args, args...)
+	//if err := db.ctx.err; err != nil {
+	//	return
+	//}
+	//if w == nil {
+	//	db.ctx.err = errors.New("ByWhere is nil")
+	//	return
+	//}
+	//
+	//args := w.args
+	//
+	//toSql, err := w.toSql(db.dialect.parse)
+	//if err != nil {
+	//	db.ctx.err = err
+	//	return
+	//}
+	//db.whereTokens = append(db.whereTokens, toSql)
+	//db.args = append(db.args, args...)
 }
 
 // init 逻辑删除、租户
 func (db *MysqlDialect) initExtra() {
-	if err := db.ctx.err; err != nil {
-		return
-	}
-
-	if db.ctx.ormConf.LogicDeleteYesSql != "" {
-		db.whereTokens = append(db.whereTokens, db.ctx.ormConf.LogicDeleteYesSql)
-	}
-
-	if db.ctx.ormConf.TenantIdFieldName != "" {
-		db.whereTokens = append(db.whereTokens, db.ctx.ormConf.TenantIdFieldName)
-		db.args = append(db.args, db.ctx.ormConf.TenantIdValueFun())
-	}
-
-	var sb strings.Builder
-	sb.WriteString(db.extraWhereSql)
-
-	if len(db.orderByTokens) > 0 {
-		sb.WriteString(" ORDER BY ")
-		sb.WriteString(strings.Join(db.orderByTokens, ","))
-	}
-	if db.limit > 0 {
-		sb.WriteString(" LIMIT ? ")
-		db.args = append(db.args, db.limit)
-	}
-	if db.offset > 0 {
-		sb.WriteString(" OFFSET ? ")
-		db.args = append(db.args, db.offset)
-	}
-	db.extraWhereSql = sb.String()
+	//if err := db.ctx.err; err != nil {
+	//	return
+	//}
+	//
+	//if db.ctx.ormConf.LogicDeleteYesSql != "" {
+	//	db.whereTokens = append(db.whereTokens, db.ctx.ormConf.LogicDeleteYesSql)
+	//}
+	//
+	//if db.ctx.ormConf.TenantIdFieldName != "" {
+	//	db.whereTokens = append(db.whereTokens, db.ctx.ormConf.TenantIdFieldName)
+	//	db.args = append(db.args, db.ctx.ormConf.TenantIdValueFun())
+	//}
+	//
+	//var sb strings.Builder
+	//sb.WriteString(db.extraWhereSql)
+	//
+	//if len(db.orderByTokens) > 0 {
+	//	sb.WriteString(" ORDER BY ")
+	//	sb.WriteString(strings.Join(db.orderByTokens, ","))
+	//}
+	//if db.limit > 0 {
+	//	sb.WriteString(" LIMIT ? ")
+	//	db.args = append(db.args, db.limit)
+	//}
+	//if db.offset > 0 {
+	//	sb.WriteString(" OFFSET ? ")
+	//	db.args = append(db.args, db.offset)
+	//}
+	//db.extraWhereSql = sb.String()
 
 }
 
 // 初始化逻辑删除
 func (db *lnDB) initLgDel() {
-	if err := db.ctx.err; err != nil {
-		return
-	}
-	if db.ctx.ormConf.LogicDeleteYesSql != "" {
-		db.extraWhereSql = db.ctx.ormConf.LogicDeleteYesSql
-	}
+	//if err := db.ctx.err; err != nil {
+	//	return
+	//}
+	//if db.ctx.ormConf.LogicDeleteYesSql != "" {
+	//	db.extraWhereSql = db.ctx.ormConf.LogicDeleteYesSql
+	//}
 }
 
 //-------------------------------target------------------------
@@ -213,20 +212,20 @@ func (db *lnDB) initLgDel() {
 // *.comp
 // target scanDest 一个comp-struct
 func (db *lnDB) setTargetDest(v interface{}) {
-	if db.ctx.err != nil {
-		return
-	}
-	db.ctx.initTargetDest(v)
-	db.ctx.checkTargetDestField()
-	db.initTableName()
+	//if db.ctx.err != nil {
+	//	return
+	//}
+	//db.ctx.initTargetDest(v)
+	//db.ctx.checkTargetDestField()
+	//db.initTableName()
 }
 
 func (db *lnDB) setTargetDest2TableName(v interface{}) {
-	if db.ctx.err != nil {
-		return
-	}
-	db.ctx.initTargetDest2TableName(v)
-	db.initTableName()
+	//if db.ctx.err != nil {
+	//	return
+	//}
+	//db.ctx.initTargetDest2TableName(v)
+	//db.initTableName()
 }
 
 // 初始化主键
@@ -318,50 +317,53 @@ func getCompValueCV(v reflect.Value, c OrmConf) ([]string, []interface{}, error)
 
 // ------------------------query--------------------------
 func (db lnDB) query(query string, args ...interface{}) (int64, error) {
-	rows, err := db.doQuery(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	if db.ctx.scanIsSlice {
-		return db.ctx.Scan(rows)
-	}
-	return db.ctx.ScanLn(rows)
+	//rows, err := db.doQuery(query, args...)
+	//if err != nil {
+	//	return 0, err
+	//}
+	//if db.ctx.scanIsSlice {
+	//	return db.ctx.Scan(rows)
+	//}
+	//return db.ctx.ScanLn(rows)
+	return 0, nil
 }
 
 func (db lnDB) queryBatch(query string, args [][]interface{}) (int64, error) {
-	query = db.dialect.queryBatch(query)
-
-	stmt, err := db.doPrepare(query)
-	if err != nil {
-		return 0, err
-	}
-
-	rowss := make([]*sql.Rows, 0)
-	for _, arg := range args {
-		rows, err := stmt.Query(arg...)
-		if err != nil {
-			return 0, err
-		}
-		rowss = append(rowss, rows)
-	}
-	return db.ctx.ScanBatch(rowss)
+	//query = db.dialect.queryBatch(query)
+	//
+	//stmt, err := db.doPrepare(query)
+	//if err != nil {
+	//	return 0, err
+	//}
+	//
+	//rowss := make([]*sql.Rows, 0)
+	//for _, arg := range args {
+	//	rows, err := stmt.Query(arg...)
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//	rowss = append(rowss, rows)
+	//}
+	//return db.ctx.ScanBatch(rowss)
+	return 0, nil
 }
 
 //------------------------gen-sql---------------------------
 
 // 根据whereTokens生成的where sql
 func (db lnDB) genWhereSqlByToken() []byte {
-	if len(db.whereTokens) == 0 && db.extraWhereSql == "" {
-		return nil
-	}
-	var buf bytes.Buffer
-	buf.WriteString(" WHERE ")
-	for i, token := range db.whereTokens {
-		if i > 0 {
-			buf.WriteString(" AND ")
-		}
-		buf.WriteString(token)
-	}
-	buf.WriteString(db.extraWhereSql)
-	return buf.Bytes()
+	//if len(db.whereTokens) == 0 && db.extraWhereSql == "" {
+	//	return nil
+	//}
+	//var buf bytes.Buffer
+	//buf.WriteString(" WHERE ")
+	//for i, token := range db.whereTokens {
+	//	if i > 0 {
+	//		buf.WriteString(" AND ")
+	//	}
+	//	buf.WriteString(token)
+	//}
+	//buf.WriteString(db.extraWhereSql)
+	//return buf.Bytes()
+	return nil
 }

@@ -110,8 +110,6 @@ type Dialecter interface {
 	insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (string, []interface{})
 
 	parse(c Clause) (string, error)
-
-	//prepare(query string) (string, error)
 }
 
 //todo 下面未重构--------------

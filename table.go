@@ -1,7 +1,6 @@
 package lorm
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
 )
 
@@ -13,19 +12,19 @@ import (
 // 2.comp-struct
 func (db lnDB) Insert(v interface{}) (num int64, err error) {
 	db.setTargetDest(v)
-	db.initColumnsValue()
-	if db.ctx.err != nil {
-		return 0, db.ctx.err
+	//db.initColumnsValue()
+	if db.core.getCtx().err != nil {
+		return 0, db.core.getCtx().err
 	}
-	sqlStr := db.ctx.tableInsertGen()
 
-	if db.ctx.destIsPtr {
+	sqlStr := db.core.getCtx().tableInsertGen()
+
+	if db.core.getCtx().destIsPtr {
 		sqlStr += " RETURNING id"
-		return db.query(sqlStr, db.ctx.columnValues...)
+		return db.query(sqlStr, db.core.getCtx().columnValues...)
 	}
 
-	query, args := db.dialect.exec(sqlStr, db.ctx.columnValues...)
-	return db.doExec(query, args...)
+	return db.doExec(sqlStr, db.core.getCtx().columnValues...)
 }
 
 // InsertOrUpdate
@@ -33,48 +32,50 @@ func (db lnDB) Insert(v interface{}) (num int64, err error) {
 // 2.comp-struct
 func (db lnDB) InsertOrUpdate(v interface{}) OrmTableCreate {
 	db.setTargetDest(v)
-	db.initColumnsValue()
-	return OrmTableCreate{base: db}
+	//db.initColumnsValue()
+	return OrmTableCreate{base: db.core}
 }
 
 // ByPrimaryKey
 // ptr
 // single / comp复合主键
 func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
-	orm.base.initPrimaryKeyName()
-	orm.base.ctx.initSelfPrimaryKeyValues()
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-
-	cs := ctx.columns
-	cvs := ctx.columnValues
-	tableName := ctx.tableName
-	idNames := ctx.primaryKeyNames
-	query, args := base.dialect.insertOrUpdateByPrimaryKey(tableName, idNames, cs, cvs...)
-	return base.doExec(query, args...)
+	//orm.base.initPrimaryKeyName()
+	//orm.base.ctx.initSelfPrimaryKeyValues()
+	//base := orm.base
+	//ctx := base.ctx
+	//if err := ctx.err; err != nil {
+	//	return 0, err
+	//}
+	//
+	//cs := ctx.columns
+	//cvs := ctx.columnValues
+	//tableName := ctx.tableName
+	//idNames := ctx.primaryKeyNames
+	//query, args := base.dialect.insertOrUpdateByPrimaryKey(tableName, idNames, cs, cvs...)
+	//return base.doExec(query, args...)
+	return 0, nil
 }
 
 // ByUnique
 // ptr-comp
 func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
-	if len(fs) == 0 {
-		return 0, errors.New("ByUnique is empty")
-	}
-
-	base := orm.base
-	ctx := base.ctx
-	if err := ctx.err; err != nil {
-		return 0, err
-	}
-
-	cs := ctx.columns
-	cvs := ctx.columnValues
-	tableName := ctx.tableName
-	query, args := base.dialect.insertOrUpdateByUnique(tableName, fs, cs, cvs...)
-	return base.doExec(query, args...)
+	//if len(fs) == 0 {
+	//	return 0, errors.New("ByUnique is empty")
+	//}
+	//
+	//base := orm.base
+	//ctx := base.ctx
+	//if err := ctx.err; err != nil {
+	//	return 0, err
+	//}
+	//
+	//cs := ctx.columns
+	//cvs := ctx.columnValues
+	//tableName := ctx.tableName
+	//query, args := base.dialect.insertOrUpdateByUnique(tableName, fs, cs, cvs...)
+	//return base.doExec(query, args...)
+	return 0, nil
 }
 
 //------------------------------------Delete--------------------------------------------
@@ -114,7 +115,8 @@ func (orm OrmTableDelete) ByWhere(wb *WhereBuilder) OrmTableDelete {
 }
 
 func (orm OrmTableDelete) Exec(w *WhereBuilder) Resulter {
-	return orm.base.getCtx()
+	//return orm.base.getCtx()
+	return nil
 }
 
 //------------------------------------Update--------------------------------------------
@@ -230,7 +232,7 @@ func (orm OrmTableSelectWhere) OrderBy(name string, condition ...bool) OrmTableS
 		}
 	}
 
-	orm.base.orderByTokens = append(orm.base.orderByTokens, name)
+	//orm.base.orderByTokens = append(orm.base.orderByTokens, name)
 	return OrmTableSelectWhere{base: orm.base}
 }
 
@@ -241,7 +243,7 @@ func (orm OrmTableSelectWhere) OrderDescBy(name string, condition ...bool) OrmTa
 		}
 	}
 
-	orm.base.orderByTokens = append(orm.base.orderByTokens, name+" desc")
+	//orm.base.orderByTokens = append(orm.base.orderByTokens, name+" desc")
 	return OrmTableSelectWhere{base: orm.base}
 }
 
@@ -251,7 +253,7 @@ func (orm OrmTableSelectWhere) Limit(num int64, condition ...bool) OrmTableSelec
 			return OrmTableSelectWhere{base: orm.base}
 		}
 	}
-	orm.base.limit = num
+	//orm.base.limit = num
 	return OrmTableSelectWhere{base: orm.base}
 }
 
@@ -261,7 +263,7 @@ func (orm OrmTableSelectWhere) Offset(num int64, condition ...bool) OrmTableSele
 			return OrmTableSelectWhere{base: orm.base}
 		}
 	}
-	orm.base.offset = num
+	//orm.base.offset = num
 	return OrmTableSelectWhere{base: orm.base}
 }
 
@@ -277,7 +279,8 @@ func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
 	//orm.base.initColumns()
 	//
 	//orm.base.initExtra()
-	return orm.base.doSelect()
+	//return orm.base.doSelect()
+	return 0, nil
 }
 
 func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
@@ -291,7 +294,8 @@ func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
 	//orm.base.initColumns()
 	//
 	//orm.base.initExtra()
-	return orm.base.doSelect()
+	//return orm.base.doSelect()
+	return 0, nil
 }
 
 func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
@@ -305,7 +309,8 @@ func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
 	//orm.base.initColumns()
 	//
 	//orm.base.initExtra()
-	return orm.base.doSelect()
+	//return orm.base.doSelect()
+	return 0, nil
 }
 
 //------------------------------------has--------------------------------------------
