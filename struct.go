@@ -9,7 +9,6 @@ import (
 	"unicode"
 )
 
-// todo 下面未重构--------------
 // set
 var structFieldsMapCache = make(map[reflect.Type]fieldMap)
 
@@ -152,3 +151,5 @@ func checkCompField(va reflect.Value) error {
 	}
 	return errors.New("checkCompField err;need a struct or map")
 }
+
+// todo 下面未重构--------------
