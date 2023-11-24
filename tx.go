@@ -22,7 +22,7 @@ func (tx coreTx) getDB() *sql.DB {
 	return nil
 }
 
-func (tx coreTx) rollback() error {
+func (tx coreTx) doRollback() error {
 	err := tx.tx.Rollback()
 	if err != nil {
 		return err
@@ -30,14 +30,14 @@ func (tx coreTx) rollback() error {
 	return nil
 }
 
-func (tx coreTx) commit() error {
+func (tx coreTx) doCommit() error {
 	err := tx.tx.Commit()
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (tx coreTx) beginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
+func (tx coreTx) doBeginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
 	panic("tx err again beginTX")
 	return tx
 }
@@ -52,11 +52,11 @@ func (tx coreTx) d() {
 func (tx coreTx) query(query string, args ...interface{}) *NativeQuery {
 	return &NativeQuery{core: tx, query: query, args: args}
 }
-func (tx coreTx) exec(query string, args ...interface{}) (sql.Result, error) {
+func (tx coreTx) doExec(query string, args ...interface{}) (sql.Result, error) {
 	query, args = tx.dialect.exec(query, args...)
 	return tx.tx.Exec(query, args...)
 }
-func (tx coreTx) prepare(query string) (*sql.Stmt, error) {
+func (tx coreTx) doPrepare(query string) (*sql.Stmt, error) {
 	return tx.tx.Prepare(query)
 }
 

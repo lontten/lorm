@@ -2,7 +2,6 @@ package lorm
 
 import "github.com/pkg/errors"
 
-// todo 下面未重构--------------
 type NativeQuery struct {
 	core  corer
 	query string
@@ -41,17 +40,11 @@ func (q NativeQuery) ScanList(dest interface{}) (rowsNum int64, err error) {
 		return 0, err
 	}
 
-	rows, err := q.base.doQuery(q.query, q.args...)
+	rows, err := q.core.doQuery(q.query, q.args...)
 	if err != nil {
 		return 0, err
 	}
 	return q.core.getCtx().Scan(rows)
 }
 
-//func (db dbCore) Exec(query string, args ...interface{}) (rowsNum int64, err error) {
-//	query, args = db.dialect.exec(query, args...)
-//	return db.doExec(query, args...)
-//}
-//func (db dbCore) Query(query string, args ...interface{}) *NativeQuery {
-//	return &NativeQuery{base: db, query: query, args: args}
-//}
+// todo 下面未重构--------------

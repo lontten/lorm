@@ -36,17 +36,28 @@ type TXer interface {
 	Delete(v interface{}) OrmTableDelete
 }
 
+/*
+*
+直属lnDb
+
+Dialecter 的实现有两种
+
+	coreDb
+	coreTx
+
+内部属性为
+
+	db      *sql.DB
+	dialect Dialecter
+*/
 type corer interface {
 	// 获取 corer 下面的dialecter的coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
 	appendBaseToken(token baseToken)
 	getDB() *sql.DB
-	//getTX() *sql.Tx
 
 	//原生调用方法
 	query(query string, args ...interface{}) *NativeQuery
-	exec(query string, args ...interface{}) (sql.Result, error)
-	prepare(query string) (*sql.Stmt, error)
 
 	//lorm扩展方法
 	c()
@@ -54,11 +65,35 @@ type corer interface {
 	u()
 	d()
 
-	beginTx(ctx context.Context, opts *sql.TxOptions) coreTx
-	commit() error
-	rollback() error
+	//--------------具体执行-------------------------
+	//具体执行 创建事务
+	doBeginTx(ctx context.Context, opts *sql.TxOptions) coreTx
+	//具体执行 创建提交事务
+	doCommit() error
+	//具体执行 事务回滚
+	doRollback() error
+	//具体执行 query，返回 *sql.Rows
+	doQuery(query string, args ...interface{}) (*sql.Rows, error)
+	//具体执行 exec，返回 sql.Result
+	doExec(query string, args ...interface{}) (sql.Result, error)
+	//具体执行 预处理 返回 *sql.Stmt
+	doPrepare(query string) (*sql.Stmt, error)
 }
 
+/*
+*
+
+	Dialecter 的实现有两种
+
+MysqlDialect
+PgDialect
+
+内部属性为 	ctx *ormContext
+有	ormConf  OrmConf
+
+	dbConfig DbConfig
+	baseTokens []baseToken
+*/
 type Dialecter interface {
 	// 获取coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext

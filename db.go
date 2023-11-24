@@ -22,7 +22,7 @@ func (db coreDb) getDB() *sql.DB {
 	return db.db
 }
 
-func (db coreDb) beginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
+func (db coreDb) doBeginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
 	tx, err := db.db.BeginTx(ctx, opts)
 	if err != nil {
 		panic(err)
@@ -30,11 +30,11 @@ func (db coreDb) beginTx(ctx context.Context, opts *sql.TxOptions) coreTx {
 	return coreTx{tx: tx}
 }
 
-func (db coreDb) rollback() error {
+func (db coreDb) doRollback() error {
 	return errors.New("this not tx")
 }
 
-func (db coreDb) commit() error {
+func (db coreDb) doCommit() error {
 	return errors.New("this not tx")
 }
 
@@ -51,12 +51,12 @@ func (db coreDb) query(query string, args ...interface{}) *NativeQuery {
 	return &NativeQuery{core: db, query: query, args: args}
 }
 
-func (db coreDb) exec(query string, args ...interface{}) (sql.Result, error) {
+func (db coreDb) doExec(query string, args ...interface{}) (sql.Result, error) {
 	query, args = db.dialect.exec(query, args...)
 	return db.db.Exec(query, args...)
 }
 
-func (db coreDb) prepare(query string) (*sql.Stmt, error) {
+func (db coreDb) doPrepare(query string) (*sql.Stmt, error) {
 	return db.db.Prepare(query)
 }
 
@@ -85,6 +85,11 @@ func (db coreDb) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.db.Query(query, args...)
 }
 
+func (tx coreTx) doQuery(query string, args ...interface{}) (*sql.Rows, error) {
+	query, args = tx.dialect.query(query, args...)
+	return tx.tx.Query(query, args...)
+}
+
 func (db lnDB) doExec(query string, args ...interface{}) (int64, error) {
 	//exec, err := db.Db().Exec(query, args...)
 	//if err != nil {
@@ -101,20 +106,20 @@ func (db lnDB) doPrepare(query string) (Stmt, error) {
 }
 
 func (db *lnDB) Do() Resulter {
-	switch db.typ {
-	case dInsert:
-		return db.DoInsert()
-	case dUpdate:
-		return db.DoUpdate()
-	case dDelete:
-		return db.DoDelete()
-	case dSelect:
-		return db.DoSelect()
-	case dHas:
-		return db.DoHas()
-	case dCount:
-		return db.DoCount()
-	}
+	//switch db.typ {
+	//case dInsert:
+	//	return db.DoInsert()
+	//case dUpdate:
+	//	return db.DoUpdate()
+	//case dDelete:
+	//	return db.DoDelete()
+	//case dSelect:
+	//	return db.DoSelect()
+	//case dHas:
+	//	return db.DoHas()
+	//case dCount:
+	//	return db.DoCount()
+	//}
 	return nil
 }
 
@@ -127,20 +132,21 @@ func (db *lnDB) DoUpdate() Resulter {
 }
 
 func (db *coreDb) DoDelete() Resulter {
-	for _, token := range db.getCtx().baseTokens {
-		switch token.typ {
-		case tDelete:
-			db.tDelete(token)
-		case tPrimaryKey:
-			db.tPrimaryKey(token)
-		case tWhereModel:
-			db.tPrimaryKey(token)
-		case tWhereBuilder:
-			db.tWhereBuilder(token)
-		}
-	}
-	num, err := db.doDel()
-	return Result{num: num, err: err}
+	//for _, token := range db.getCtx().baseTokens {
+	//	switch token.typ {
+	//	case tDelete:
+	//		db.tDelete(token)
+	//	case tPrimaryKey:
+	//		db.tPrimaryKey(token)
+	//	case tWhereModel:
+	//		db.tPrimaryKey(token)
+	//	case tWhereBuilder:
+	//		db.tWhereBuilder(token)
+	//	}
+	//}
+	//num, err := db.doDel()
+	//return Result{num: num, err: err}
+	return nil
 }
 
 func (db *lnDB) DoHas() Resulter {
@@ -159,19 +165,19 @@ func (db *lnDB) tDelete(t baseToken) {
 	db.setTargetDest2TableName(t.dest)
 }
 
-func (db *lnDB) tPrimaryKey(t baseToken) {
-	db.initPrimaryKeyName()
-	db.ctx.initPrimaryKeyValues(t.pk)
-	db.initByPrimaryKey()
-	db.initExtra()
+func (d *MysqlDialect) tPrimaryKey(t baseToken) {
+	d.initPrimaryKeyName()
+	d.ctx.initPrimaryKeyValues(t.pk)
+	d.initByPrimaryKey()
+	d.initExtra()
 }
 
-func (db *lnDB) tWhereModel(t baseToken) {
+func (db *MysqlDialect) tWhereModel(t baseToken) {
 	db.initByModel(t.dest)
 	db.initExtra()
 }
 
-func (db *lnDB) tWhereBuilder(t baseToken) {
+func (db *MysqlDialect) tWhereBuilder(t baseToken) {
 	db.initByWhere(t.wb)
 	db.initExtra()
 }

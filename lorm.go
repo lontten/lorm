@@ -104,15 +104,15 @@ type lnDB struct {
 }
 
 func (db lnDB) Rollback() error {
-	return db.core.rollback()
+	return db.core.doRollback()
 }
 
 func (db lnDB) Commit() error {
-	return db.core.commit()
+	return db.core.doCommit()
 }
 
 func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
-	tx := db.core.beginTx(ctx, opts)
+	tx := db.core.doBeginTx(ctx, opts)
 	return lnDB{
 		core: tx,
 	}
@@ -122,7 +122,7 @@ func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
 	return db.core.query(query, args...)
 }
 func (db lnDB) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return db.core.exec(query, args...)
+	return db.core.doExec(query, args...)
 }
 
 //todo 下面未重构--------------

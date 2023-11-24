@@ -28,19 +28,18 @@ func (db lnDB) doUpdate() (int64, error) {
 	bb.Write(db.genWhereSqlByToken())
 
 	return db.core.doExec(bb.String(), append(ctx.columnValues, db.args...)...)
-
 }
 
 // del
-func (db lnDB) doDel() (int64, error) {
-	if err := db.ctx.err; err != nil {
+func (db coreDb) doDel() (int64, error) {
+	if err := db.getCtx().err; err != nil {
 		return 0, err
 	}
 	var bb bytes.Buffer
-	tableName := db.ctx.tableName
+	tableName := db.getCtx().tableName
 	w := db.genWhereSqlByToken()
 
-	if db.ctx.ormConf.LogicDeleteSetSql == "" {
+	if db.getCtx().ormConf.LogicDeleteSetSql == "" {
 		bb.WriteString("DELETE FROM ")
 		bb.WriteString(tableName)
 		bb.Write(w)
@@ -48,7 +47,7 @@ func (db lnDB) doDel() (int64, error) {
 		bb.WriteString("UPDATE ")
 		bb.WriteString(tableName)
 		bb.WriteString(" SET ")
-		bb.WriteString(db.ctx.ormConf.LogicDeleteSetSql)
+		bb.WriteString(db.getCtx().ormConf.LogicDeleteSetSql)
 		bb.Write(w)
 	}
 
@@ -56,13 +55,13 @@ func (db lnDB) doDel() (int64, error) {
 }
 
 // update
-func (db lnDB) doSelect() (int64, error) {
-	if err := db.ctx.err; err != nil {
+func (db coreDb) doSelect() (int64, error) {
+	if err := db.getCtx().err; err != nil {
 		return 0, err
 	}
 	var bb bytes.Buffer
 
-	ctx := db.ctx
+	ctx := db.getCtx()
 	tableName := ctx.tableName
 	columns := ctx.columns
 
@@ -83,13 +82,13 @@ func (db lnDB) doSelect() (int64, error) {
 }
 
 // has
-func (db lnDB) doHas() (bool, error) {
-	if err := db.ctx.err; err != nil {
+func (db coreDb) doHas() (bool, error) {
+	if err := db.getCtx().err; err != nil {
 		return false, err
 	}
 	var bb bytes.Buffer
 
-	ctx := db.ctx
+	ctx := db.getCtx()
 	tableName := ctx.tableName
 
 	bb.WriteString("SELECT 1 FROM ")
@@ -112,7 +111,7 @@ func (db lnDB) doHas() (bool, error) {
 //-------------------------------init------------------------
 
 // 根据 byModel 生成的where token
-func (db *lnDB) initByPrimaryKey() {
+func (db *MysqlDialect) initByPrimaryKey() {
 	ctx := db.ctx
 	if err := ctx.err; err != nil {
 		return
@@ -126,7 +125,7 @@ func (db *lnDB) initByPrimaryKey() {
 }
 
 // 根据 byModel 生成的where token
-func (db *lnDB) initByModel(v interface{}) {
+func (db *MysqlDialect) initByModel(v interface{}) {
 	if err := db.ctx.err; err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (db *lnDB) initByModel(v interface{}) {
 }
 
 // 根据 byWhere 生成的where token
-func (db *lnDB) initByWhere(w *WhereBuilder) {
+func (db *MysqlDialect) initByWhere(w *WhereBuilder) {
 	if err := db.ctx.err; err != nil {
 		return
 	}
@@ -166,7 +165,7 @@ func (db *lnDB) initByWhere(w *WhereBuilder) {
 }
 
 // init 逻辑删除、租户
-func (db *lnDB) initExtra() {
+func (db *MysqlDialect) initExtra() {
 	if err := db.ctx.err; err != nil {
 		return
 	}
@@ -231,32 +230,32 @@ func (db *lnDB) setTargetDest2TableName(v interface{}) {
 }
 
 // 初始化主键
-func (db *lnDB) initPrimaryKeyName() {
-	if db.ctx.err != nil {
+func (d *MysqlDialect) initPrimaryKeyName() {
+	if d.ctx.err != nil {
 		return
 	}
-	db.ctx.primaryKeyNames = db.ctx.ormConf.primaryKeys(db.ctx.tableName)
+	d.ctx.primaryKeyNames = d.ctx.ormConf.primaryKeys(d.ctx.tableName)
 }
 
 // 初始化 表名
-func (db *lnDB) initTableName() {
-	if db.ctx.err != nil {
+func (d *MysqlDialect) initTableName() {
+	if d.ctx.err != nil {
 		return
 	}
-	if db.ctx.tableName != "" {
+	if d.ctx.tableName != "" {
 		return
 	}
-	tableName, err := db.ctx.ormConf.tableName(db.ctx.destBaseType)
+	tableName, err := d.ctx.ormConf.tableName(d.ctx.destBaseType)
 	if err != nil {
-		db.ctx.err = err
+		d.ctx.err = err
 		return
 	}
-	db.ctx.tableName = tableName
+	d.ctx.tableName = tableName
 }
 
 // 获取struct对应的字段名 和 其值，
 // slice为全部，一个为非nil字段。
-func (db *lnDB) initColumnsValue() {
+func (db *MysqlDialect) initColumnsValue() {
 	if db.ctx.err != nil {
 		return
 	}
@@ -271,7 +270,7 @@ func (db *lnDB) initColumnsValue() {
 }
 
 // 获取struct对应的字段名 有效部分
-func (db *lnDB) initColumns() {
+func (db *MysqlDialect) initColumns() {
 	if db.ctx.err != nil {
 		return
 	}

@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"database/sql"
 	"errors"
 	"strings"
 )
@@ -299,15 +300,14 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	if w == nil {
 		return b
 	}
-	sql, err := w.toSql(b.core.dialect.parse)
-	if err != nil {
-		b.core.getCtx().err = err
-		return b
-	}
-
-	if sql == "" {
-		return b
-	}
+	//sql, err := w.toSql(b.core.dialect.parse)
+	//if err != nil {
+	//	b.core.getCtx().err = err
+	//	return b
+	//}
+	//if sql == "" {
+	//	return b
+	//}
 
 	b.updStatus()
 
@@ -315,10 +315,10 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	case whereNone:
 		b.whereStatus = whereIng
 		b.otherQuery.WriteString(" WHERE ")
-		b.otherQuery.WriteString(sql)
+		//b.otherQuery.WriteString(sql)
 	case whereIng:
 		b.otherQuery.WriteString(" AND ")
-		b.otherQuery.WriteString(sql)
+		//b.otherQuery.WriteString(sql)
 	case whereDone:
 		b.core.getCtx().err = errors.New("where has been done")
 	}
@@ -396,12 +396,11 @@ func (b *SqlBuilder) ScanList(dest interface{}) (rowsNum int64, err error) {
 	return b.core.getCtx().Scan(rows)
 }
 
-func (b *SqlBuilder) Exec() (rowsNum int64, err error) {
+func (b *SqlBuilder) Exec() (sql.Result, error) {
 	b.updStatus()
-	if err = b.core.getCtx().err; err != nil {
-		return 0, err
+	if err := b.core.getCtx().err; err != nil {
+		return nil, err
 	}
 	b.initSelectSql()
-	query, args := b.core.dialect.exec(b.query, b.args...)
-	return b.core.doExec(query, args...)
+	return b.core.doExec(b.query, b.args...)
 }
