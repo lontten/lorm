@@ -120,94 +120,106 @@ func (orm OrmTableDelete) Exec(w *WhereBuilder) Resulter {
 //------------------------------------Update--------------------------------------------
 
 func (db lnDB) Update(v interface{}) OrmTableUpdate {
-	db.typ = dUpdate
-	db.baseTokens = append(db.baseTokens, baseToken{
-		typ:  tUpdate,
+	core := db.core
+	core.getCtx().tableSqlType = dUpdate
+	core.appendBaseToken(baseToken{
+		typ:  tableNameDestValue,
+		t:    reflect.TypeOf(v),
 		dest: v,
 		v:    reflect.ValueOf(v),
 	})
 
-	db.setTargetDest(v)
-	db.initColumnsValue()
-	return OrmTableUpdate{base: db}
+	//db.setTargetDest(v)
+	//db.initColumnsValue()
+
+	return OrmTableUpdate{base: core}
 }
 
-func (orm OrmTableUpdate) ByPrimaryKey() (int64, error) {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableUpdate) ByPrimaryKey(v ...interface{}) OrmTableUpdate {
+	orm.base.appendBaseToken(baseToken{
 		typ: tPrimaryKey,
+		pk:  v,
 	})
 
-	orm.base.initPrimaryKeyName()
-	orm.base.ctx.initSelfPrimaryKeyValues()
-	orm.base.initByPrimaryKey()
-	orm.base.initExtra()
-	return orm.base.doUpdate()
+	//orm.base.initPrimaryKeyName()
+	//orm.base.ctx.initSelfPrimaryKeyValues()
+	//orm.base.initByPrimaryKey()
+	//orm.base.initExtra()
+
+	return orm
 }
 
-func (orm OrmTableUpdate) ByModel(v interface{}) (int64, error) {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableUpdate) ByModel(v interface{}) OrmTableUpdate {
+	orm.base.appendBaseToken(baseToken{
 		typ: tWhereModel,
 		v:   reflect.ValueOf(v),
 	})
 
-	orm.base.initByModel(v)
-	orm.base.initExtra()
-	return orm.base.doUpdate()
+	//orm.base.initByModel(v)
+	//orm.base.initExtra()
+	return orm
 }
 
-func (orm OrmTableUpdate) ByWhere(w *WhereBuilder) (int64, error) {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableUpdate) ByWhere(wb *WhereBuilder) OrmTableUpdate {
+	orm.base.appendBaseToken(baseToken{
 		typ: tWhereBuilder,
-		wb:  w,
+		wb:  wb,
 	})
 
-	orm.base.initByWhere(w)
-	orm.base.initExtra()
-	return orm.base.doUpdate()
+	//orm.base.initByWhere(w)
+	//orm.base.initExtra()
+
+	return orm
 }
 
 //------------------------------------Select--------------------------------------------
 
 func (db lnDB) Select(v interface{}) OrmTableSelect {
-	db.baseTokens = append(db.baseTokens, baseToken{
-		typ:  tSelect,
+	core := db.core
+	core.getCtx().tableSqlType = dSelect
+	core.appendBaseToken(baseToken{
+		typ:  tableNameDestValue,
+		t:    reflect.TypeOf(v),
 		dest: v,
 		v:    reflect.ValueOf(v),
 	})
 
-	db.setTargetDest2TableName(v)
-	return OrmTableSelect{base: db}
+	//db.setTargetDest2TableName(v)
+	return OrmTableSelect{base: core}
 }
 
-func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelectWhere {
-	orm.base.initPrimaryKeyName()
-	orm.base.ctx.initPrimaryKeyValues(v)
-	orm.base.initByPrimaryKey()
-	return OrmTableSelectWhere{base: orm.base}
+func (orm OrmTableSelect) ByPrimaryKey(v ...interface{}) OrmTableSelect {
+	orm.base.appendBaseToken(baseToken{
+		typ: tPrimaryKey,
+		pk:  v,
+	})
+	//orm.base.initPrimaryKeyName()
+	//orm.base.ctx.initPrimaryKeyValues(v)
+	//orm.base.initByPrimaryKey()
+	return orm
 }
 
 // ptr-comp
-func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelectWhere {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableSelect) ByModel(v interface{}) OrmTableSelect {
+	orm.base.appendBaseToken(baseToken{
 		typ: tWhereModel,
 		v:   reflect.ValueOf(v),
 	})
-
-	orm.base.initByModel(v)
-	return OrmTableSelectWhere{base: orm.base}
+	//orm.base.initByModel(v)
+	return orm
 }
 
-func (orm OrmTableSelect) ByWhere(w *WhereBuilder) OrmTableSelectWhere {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableSelect) ByWhere(wb *WhereBuilder) OrmTableSelect {
+	orm.base.appendBaseToken(baseToken{
 		typ: tWhereBuilder,
-		wb:  w,
+		wb:  wb,
 	})
 
-	if w == nil {
-		return OrmTableSelectWhere{base: orm.base}
-	}
-	orm.base.initByWhere(w)
-	return OrmTableSelectWhere{base: orm.base}
+	//if w == nil {
+	//	return OrmTableSelectWhere{base: orm.base}
+	//}
+	//orm.base.initByWhere(w)
+	return orm
 }
 
 func (orm OrmTableSelectWhere) OrderBy(name string, condition ...bool) OrmTableSelectWhere {
@@ -254,83 +266,100 @@ func (orm OrmTableSelectWhere) Offset(num int64, condition ...bool) OrmTableSele
 }
 
 func (orm OrmTableSelectWhere) ScanFirst(v interface{}) (int64, error) {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+	orm.base.appendBaseToken(baseToken{
 		typ: tScanFirst,
 		v:   reflect.ValueOf(v),
 	})
 
-	orm.Limit(1)
-	orm.base.ctx.initScanDestOne(v)
-	orm.base.ctx.checkScanDestField()
-	orm.base.initColumns()
-
-	orm.base.initExtra()
+	//orm.Limit(1)
+	//orm.base.ctx.initScanDestOne(v)
+	//orm.base.ctx.checkScanDestField()
+	//orm.base.initColumns()
+	//
+	//orm.base.initExtra()
 	return orm.base.doSelect()
 }
 
 func (orm OrmTableSelectWhere) ScanOne(v interface{}) (int64, error) {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+	orm.base.appendBaseToken(baseToken{
 		typ: tScanOne,
 		v:   reflect.ValueOf(v),
 	})
 
-	orm.base.ctx.initScanDestOne(v)
-	orm.base.ctx.checkScanDestField()
-	orm.base.initColumns()
-
-	orm.base.initExtra()
+	//orm.base.ctx.initScanDestOne(v)
+	//orm.base.ctx.checkScanDestField()
+	//orm.base.initColumns()
+	//
+	//orm.base.initExtra()
 	return orm.base.doSelect()
 }
 
 func (orm OrmTableSelectWhere) ScanList(v interface{}) (int64, error) {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+	orm.base.appendBaseToken(baseToken{
 		typ: tScanList,
 		v:   reflect.ValueOf(v),
 	})
 
-	orm.base.ctx.initScanDestList(v)
-	orm.base.ctx.checkScanDestField()
-	orm.base.initColumns()
-
-	orm.base.initExtra()
+	//orm.base.ctx.initScanDestList(v)
+	//orm.base.ctx.checkScanDestField()
+	//orm.base.initColumns()
+	//
+	//orm.base.initExtra()
 	return orm.base.doSelect()
 }
 
 //------------------------------------has--------------------------------------------
 
 func (db lnDB) Has(v interface{}) OrmTableHas {
-	db.typ = dHas
+	core := db.core
+	core.getCtx().tableSqlType = dHas
+	core.appendBaseToken(baseToken{
+		typ:  tableNameDestValue,
+		t:    reflect.TypeOf(v),
+		dest: v,
+		v:    reflect.ValueOf(v),
+	})
 
-	db.setTargetDest2TableName(v)
-	return OrmTableHas{base: db}
+	//db.setTargetDest2TableName(v)
+	return OrmTableHas{base: core}
 }
 
 // ByPrimaryKey
 // v0.8
-func (orm OrmTableHas) ByPrimaryKey(v ...interface{}) (bool, error) {
-	orm.base.baseTokens = append(orm.base.baseTokens, baseToken{
+func (orm OrmTableHas) ByPrimaryKey(v ...interface{}) OrmTableHas {
+	orm.base.appendBaseToken(baseToken{
 		typ: tPrimaryKey,
 		pk:  v,
 	})
 
-	orm.base.initPrimaryKeyName()
-	orm.base.ctx.initPrimaryKeyValues(v)
-	orm.base.initByPrimaryKey()
-	orm.base.initExtra()
-	return orm.base.doHas()
+	//orm.base.initPrimaryKeyName()
+	//orm.base.ctx.initPrimaryKeyValues(v)
+	//orm.base.initByPrimaryKey()
+	//orm.base.initExtra()
+	return orm
 }
 
 // ptr-comp
-func (orm OrmTableHas) ByModel(v interface{}) (bool, error) {
-	orm.base.initByModel(v)
-	orm.base.initExtra()
-	return orm.base.doHas()
+func (orm OrmTableHas) ByModel(v interface{}) OrmTableHas {
+	orm.base.appendBaseToken(baseToken{
+		typ: tWhereModel,
+		v:   reflect.ValueOf(v),
+	})
+
+	//orm.base.initByModel(v)
+	//orm.base.initExtra()
+	return orm
 }
 
-func (orm OrmTableHas) ByWhere(w *WhereBuilder) (bool, error) {
-	orm.base.initByWhere(w)
-	orm.base.initExtra()
-	return orm.base.doHas()
+func (orm OrmTableHas) ByWhere(wb *WhereBuilder) OrmTableHas {
+	orm.base.appendBaseToken(baseToken{
+		typ: tWhereBuilder,
+		wb:  wb,
+	})
+
+	//orm.base.initByWhere(wb)
+	//orm.base.initExtra()
+	return orm
 }
 
 //-----------------------------------------------------------
