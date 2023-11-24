@@ -13,6 +13,10 @@ type coreTx struct {
 func (tx coreTx) getCtx() *ormContext {
 	return tx.dialect.getCtx()
 }
+
+func (tx coreTx) appendBaseToken(token baseToken) {
+	tx.dialect.appendBaseToken(token)
+}
 func (tx coreTx) getDB() *sql.DB {
 	panic("tx no db")
 	return nil

@@ -13,7 +13,7 @@ type PgConf struct {
 	Other    string
 }
 
-func (c *PgConf) dialect(ctx ormContext) Dialecter {
+func (c *PgConf) dialect(ctx *ormContext) Dialecter {
 	return &PgDialect{ctx: ctx}
 }
 

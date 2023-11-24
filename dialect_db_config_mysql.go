@@ -12,7 +12,7 @@ type MysqlConf struct {
 	Password string
 }
 
-func (c *MysqlConf) dialect(ctx ormContext) Dialecter {
+func (c *MysqlConf) dialect(ctx *ormContext) Dialecter {
 	return &MysqlDialect{ctx: ctx}
 }
 

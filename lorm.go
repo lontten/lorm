@@ -22,7 +22,7 @@ type PoolConf struct {
 	Logger *log.Logger
 }
 
-func genOrmCtx(pc *PoolConf) ormContext {
+func genOrmCtx(pc *PoolConf) *ormContext {
 	var logger *log.Logger
 	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -30,7 +30,7 @@ func genOrmCtx(pc *PoolConf) ormContext {
 	} else {
 		logger = pc.Logger
 	}
-	return ormContext{
+	return &ormContext{
 		log: Logger{log: logger},
 		ormConf: OrmConf{
 			PoDir:           "src/model/po",
@@ -117,6 +117,7 @@ func (db lnDB) BeginTx(ctx context.Context, opts *sql.TxOptions) TXer {
 		core: tx,
 	}
 }
+
 func (db lnDB) Query(query string, args ...interface{}) *NativeQuery {
 	return db.core.query(query, args...)
 }
@@ -129,13 +130,3 @@ func (db lnDB) Exec(query string, args ...interface{}) (sql.Result, error) {
 var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
 
 var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
-
-func (db lnDB) C() {
-}
-func (db lnDB) R() {
-}
-
-func (db lnDB) U() {
-}
-func (db lnDB) D() {
-}

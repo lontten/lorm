@@ -82,8 +82,7 @@ func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
 func (db lnDB) Delete(v interface{}) OrmTableDelete {
 	core := db.core
 	core.getCtx().tableSqlType = dDelete
-
-	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
+	core.appendBaseToken(baseToken{
 		typ: tableName,
 		t:   reflect.TypeOf(v),
 	})
@@ -91,8 +90,7 @@ func (db lnDB) Delete(v interface{}) OrmTableDelete {
 }
 
 func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) OrmTableDelete {
-	core := orm.base
-	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
+	orm.base.appendBaseToken(baseToken{
 		typ: tPrimaryKey,
 		pk:  v,
 	})
@@ -100,8 +98,7 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...interface{}) OrmTableDelete {
 }
 
 func (orm OrmTableDelete) ByModel(v interface{}) OrmTableDelete {
-	core := orm.base
-	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
+	orm.base.appendBaseToken(baseToken{
 		typ: tWhereModel,
 		v:   reflect.ValueOf(v),
 	})
@@ -109,8 +106,7 @@ func (orm OrmTableDelete) ByModel(v interface{}) OrmTableDelete {
 }
 
 func (orm OrmTableDelete) ByWhere(wb *WhereBuilder) OrmTableDelete {
-	core := orm.base
-	core.getCtx().baseTokens = append(core.getCtx().baseTokens, baseToken{
+	orm.base.appendBaseToken(baseToken{
 		typ: tWhereBuilder,
 		wb:  wb,
 	})

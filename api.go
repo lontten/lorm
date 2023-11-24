@@ -9,7 +9,7 @@ type DbConfig interface {
 	//根据db配置，打开db链接
 	open() (*sql.DB, error)
 	//根据 ctx生成dialecter，每种数据库类型各一种实现
-	dialect(ctx ormContext) Dialecter
+	dialect(ctx *ormContext) Dialecter
 }
 
 type DBer interface {
@@ -18,13 +18,10 @@ type DBer interface {
 
 	//原生调用方法
 	Query(query string, args ...interface{}) *NativeQuery
-	Exec(query string, args ...interface{}) (rowsNum int64, err error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
 
 	//lorm扩展方法
-	C()
-	R()
-	U()
-	D()
+	Delete(v interface{}) OrmTableDelete
 }
 
 type TXer interface {
@@ -33,18 +30,16 @@ type TXer interface {
 
 	//原生调用方法
 	Query(query string, args ...interface{}) *NativeQuery
-	Exec(query string, args ...interface{}) (rowsNum int64, err error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
 
 	//lorm扩展方法
-	C()
-	R()
-	U()
-	D()
+	Delete(v interface{}) OrmTableDelete
 }
 
 type corer interface {
 	// 获取 corer 下面的dialecter的coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
+	appendBaseToken(token baseToken)
 	getDB() *sql.DB
 	//getTX() *sql.Tx
 
@@ -67,6 +62,7 @@ type corer interface {
 type Dialecter interface {
 	// 获取coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
+	appendBaseToken(token baseToken)
 
 	//对执行语句进行方言处理
 	exec(query string, args ...interface{}) (string, []interface{})
