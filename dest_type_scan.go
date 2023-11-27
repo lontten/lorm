@@ -5,6 +5,11 @@ import (
 	"reflect"
 )
 
+/**
+从传入的struct实体，获取需要scan的目标类型，
+分为scanList，scanOne，
+后面会改为泛型，则不再需要这些。
+*/
 // todo 下面未重构--------------
 // ptr slice
 func (ctx *ormContext) initScanDestList(dest interface{}) {

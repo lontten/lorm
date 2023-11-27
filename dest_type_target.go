@@ -4,6 +4,9 @@ import (
 	"reflect"
 )
 
+/**
+从传入的struct实力，获取实例类对应的表名，解析字段是否合法
+*/
 // todo 下面未重构--------------
 // ptr
 // 检查数据类型 comp-struct

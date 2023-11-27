@@ -1,6 +1,6 @@
 package lorm
 
-// todo 下面未重构--------------
+// 句子类型，用于whereBuilder
 type clauseType int
 
 const (
@@ -25,3 +25,5 @@ const (
 	// [1] @< [1,2]
 	Contains
 )
+
+// todo 下面未重构--------------

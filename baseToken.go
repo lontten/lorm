@@ -21,14 +21,14 @@ const (
 
 	//	--------------------
 	// 对应数据 t reflect.Type
-	tableName
+	tTableName
 	// 对应数据 pk 主键值列表
 	tPrimaryKey
 	// 对应数据 wb
 	tWhereBuilder
 
 	// 对应数据 v dest
-	tableNameDestValue
+	tTableNameDestValue
 )
 
 type baseToken struct {

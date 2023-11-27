@@ -44,10 +44,10 @@ type OrmConf struct {
 	LogicDeleteNoSql  string
 	LogicDeleteSetSql string
 
-	//多租户 tenantIdFieldName不为零值，即开启
-	TenantIdFieldName    string
-	TenantIdValueFun     func() interface{}
-	TenantIgnoreTableFun func(tableName string) bool
+	//多租户
+	TenantIdFieldName    string                      //多租户的  租户字段名 空字符串极为不启用多租户
+	TenantIdValueFun     func() interface{}          //租户的id值，获取函数
+	TenantIgnoreTableFun func(tableName string) bool //该表是否忽略多租户，true忽略该表，即没有多租户
 }
 
 // todo 下面未重构--------------
@@ -406,7 +406,7 @@ func (c OrmConf) genDelSqlByWhere(tableName string, where []byte) []byte {
 	return bb.Bytes()
 }
 
-// 有tenantid功能
+// GenWhere 有tenantId功能
 func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 	if hasTen {
 		keys = append(keys, c.TenantIdFieldName)
@@ -423,7 +423,6 @@ func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
 		bb.WriteString(" AND ")
 		bb.WriteString(keys[i])
 		bb.WriteString(" = ? ")
-
 	}
 
 	return bb.Bytes()
