@@ -84,7 +84,7 @@ func (db lnDB) Delete(v interface{}) OrmTableDelete {
 	core := db.core
 	core.getCtx().tableSqlType = dDelete
 	core.appendBaseToken(baseToken{
-		typ: tableName,
+		typ: tTableName,
 		t:   reflect.TypeOf(v),
 	})
 	return OrmTableDelete{base: core}
@@ -125,7 +125,7 @@ func (db lnDB) Update(v interface{}) OrmTableUpdate {
 	core := db.core
 	core.getCtx().tableSqlType = dUpdate
 	core.appendBaseToken(baseToken{
-		typ:  tableNameDestValue,
+		typ:  tTableNameDestValue,
 		t:    reflect.TypeOf(v),
 		dest: v,
 		v:    reflect.ValueOf(v),
@@ -180,7 +180,7 @@ func (db lnDB) Select(v interface{}) OrmTableSelect {
 	core := db.core
 	core.getCtx().tableSqlType = dSelect
 	core.appendBaseToken(baseToken{
-		typ:  tableNameDestValue,
+		typ:  tTableNameDestValue,
 		t:    reflect.TypeOf(v),
 		dest: v,
 		v:    reflect.ValueOf(v),
@@ -319,7 +319,7 @@ func (db lnDB) Has(v interface{}) OrmTableHas {
 	core := db.core
 	core.getCtx().tableSqlType = dHas
 	core.appendBaseToken(baseToken{
-		typ:  tableNameDestValue,
+		typ:  tTableNameDestValue,
 		t:    reflect.TypeOf(v),
 		dest: v,
 		v:    reflect.ValueOf(v),

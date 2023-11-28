@@ -21,7 +21,6 @@ func (m PgDialect) appendBaseToken(token baseToken) {
 func (m PgDialect) query(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
 	m.ctx.log.Println(query, args)
-	//return m.db.Query(query, args...)
 	return query, args
 }
 
@@ -72,11 +71,6 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 func (m PgDialect) exec(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
 	m.ctx.log.Println(query, args)
-
-	//exec, err := m.db.Exec(query, args...)
-	//if err != nil {
-	//	return 0, err
-	//}
 	return query, args
 }
 

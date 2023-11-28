@@ -43,26 +43,16 @@ func (m MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, 
 
 	args = append(args, vs...)
 	m.ctx.log.Println(query, args)
-
-	//exec, err := m.db.Exec(query, args...)
-	//if err != nil {
-	//	return 0, err
-	//}
 	return query, args
 }
 
 func (m MysqlDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...interface{}) (string, []interface{}) {
-	//return 0, errors.New("MySQL insertOrUpdateByUnique not support, please use insertOrUpdateByPrimaryKey")
+	m.ctx.err = errors.New("MySQL insertOrUpdateByUnique not support, please use insertOrUpdateByPrimaryKey")
 	return "", nil
 }
 
 func (m MysqlDialect) exec(query string, args ...interface{}) (string, []interface{}) {
 	m.ctx.log.Println(query, args)
-
-	//exec, err := m.db.Exec(query, args...)
-	//if err != nil {
-	//	return 0, err
-	//}
 	return query, args
 }
 
