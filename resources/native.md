@@ -1,10 +1,10 @@
 ```js
 
-db.query("",id).getOne[User]()
-db.query("",id).getList[User]()
+num,dto,err:=db.query("",id).getOne[User]()
+num,[]dto,err:=db.query("",id).getList[User]()
 
 
-db.exec("",id)
+num,err:=db.exec("",id)
 
 
 ```

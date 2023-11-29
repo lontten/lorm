@@ -1,39 +1,81 @@
 ```js
 
-user,err:=db.select(user).byId(id).getOne<User>()
-user,err:=db.select(user).byId(id).getFirst<User>()
-users,err:=db.select(user).byId(...id).getList<User>()
+user, err
+:
+= db.select(user).byId(id).getOne < User > ()
+user, err
+:
+= db.select(user).byId(id).getFirst < User > ()
+users, err
+:
+= db.select(user).byId(...id).getList < User > ()
 
 
+db.select("t_user").OrmSelect
+:
+by;
+scanOne, scanFirst, scanList
 
+byModel(user)
+byMap(map)
+    .isNull("name")
+byPrimaryKeys(interface
+{
+}
+)
+filterPrimaryKeys(interface
+{
+}
+)
+byWhere( * whereBuider
+)
 
-db.select("t_user").                             OrmSelect: by;scanOne,scanFirst,scanList
- 
-    byModel(user)
-    byMap(map)
-        .isNull("name")
-    byPrimaryKeys(interface{})
-    filterPrimaryKeys(interface{})
-    byWhere(*whereBuider)
-    .scanOne() //返回受影响的行数  num,dto,err
-    .scanFirst() //返回受影响的行数  num,dto,err
-    .scanList() //返回受影响的行数  num,dto,err
+.
+scanOne[User]() //返回受影响的行数  dto,err
+    .scanFirst[User]() //返回受影响的行数  dto,err
+    .scanList[User]() //返回受影响的行数  []dto,err
+
     .sql()  //获取sql
 
 
+//根据id查找，若没有就添加user
+db.getOrInsert(user)
+    .byId(id)
+    .byModel(model)
+    .byWhere(where)
 
+    .scanOne() //返回受影响的行数  dto,err
+
+
+db.has("t_user").OrmSelect
+:
+by;
+scanOne, scanFirst, scanList
+byModel(user)
+byMap(map)
+    .isNull("name")
+byPrimaryKeys(interface
+{
+}
+)
+filterPrimaryKeys(interface
+{
+}
+)
+byWhere( * whereBuider
+)
+
+.
+exec() //返回   has true,err
 
 
 //根据id查找，若没有就添加user
-db.getOrInsert(user).byId(id)
+db.count(user)
+    .byId(id)
+    .byModel(model)
+    .byWhere(where)
 
-db.getOrInsert(user).byModel(model)
-
-db.getOrInsert(user).byWhere(where)
-
-
-
-
+    .exec() //返回受影响的行数  num,err
 
 
 ```

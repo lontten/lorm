@@ -15,6 +15,10 @@ func (db coreDb) getCtx() *ormContext {
 	return db.dialect.getCtx()
 }
 
+func (db coreDb) getDialect() Dialecter {
+	return db.dialect
+}
+
 func (tx coreDb) appendBaseToken(token baseToken) {
 	tx.dialect.appendBaseToken(token)
 }

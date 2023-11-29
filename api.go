@@ -52,9 +52,11 @@ Dialecter 的实现有两种
 */
 type corer interface {
 	// 获取 corer 下面的dialecter的coreDb,coreTx 里面的 ctx
-	getCtx() *ormContext
-	appendBaseToken(token baseToken)
 	getDB() *sql.DB
+	getCtx() *ormContext
+	getDialect() Dialecter
+
+	appendBaseToken(token baseToken)
 
 	//原生调用方法
 	query(query string, args ...interface{}) *NativeQuery

@@ -7,6 +7,8 @@ import (
 
 func main() {
 	k := get[Kk]()
+	k2 := get[Kk]()
+	println(k2.ID)
 	println(k.KkName)
 
 }
