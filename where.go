@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// todo 下面未重构--------------
 type whereTokenType int
 
 const (
@@ -42,6 +41,13 @@ func (w *WhereBuilder) toWhereToken() ([]whereToken, []interface{}) {
 	return w.wheres, w.args
 }
 
+/*
+*
+各个语句之间的and or关系和具体的数据库无关，直接在这里实现，parse。
+每个语句的具体sql生成和数据库有关，但是不需要其他参数，例如orm_config  orm_context 等，
+所以，生成具体sql的方法 toSql 直接接受 外界传过来的 parseFun 处理函数，代码结构比较简单，
+不然，whereBuilder 里面要有 dialecter 的两种实现，代码结构复杂
+*/
 func (w *WhereBuilder) toSql(f parseFun) (string, error) {
 	return parse(w.wheres, f)
 }
@@ -501,3 +507,5 @@ func (w *WhereBuilder) NoLike(query string, arg *string, condition ...bool) *Whe
 	w.args = append(w.args, *arg)
 	return w
 }
+
+// todo 下面未重构--------------
