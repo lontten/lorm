@@ -1,15 +1,14 @@
 package lorm
 
 import (
+	"errors"
 	"reflect"
 )
 
 //todo 下面未重构--------------
-// single 不是数组
-// array 是数组
 
-// atom 原子类型
-// composite 非原子类型
+// atom 原子类型			#作为字段使用。
+// composite 非原子类型		#多个atom组成的实体类
 
 // ------------------base------------------
 // 是否基本类型
@@ -66,6 +65,7 @@ func baseMapType(t reflect.Type) (is, has bool) {
 }
 
 // -----------------------nuller---------------------------------
+// v03
 // 检查是否nuller
 func isNullerType(t reflect.Type) bool {
 	return t.Implements(ImpNuller)
@@ -73,7 +73,7 @@ func isNullerType(t reflect.Type) bool {
 
 // ----------------------valuer------------------------
 //
-//	v0.7
+//	v03
 //
 // 是否valuer
 func isValuerType(t reflect.Type) bool {
@@ -83,32 +83,16 @@ func isValuerType(t reflect.Type) bool {
 	return t.Implements(ImpValuer)
 }
 
-// ----------------------struct-comp------------------------
+//	v03
 //
-//	v0.7
-//
-// 是否struct类型comp struct-comp
-func isStructCompValue(v reflect.Value) bool {
-	is := _isStructType(v.Type())
-	if !is {
-		return false
-	}
-	typ := checkAtomValue(v)
-	return typ == Composite
-}
-
-func isStructCompType(t reflect.Type) bool {
-	is := _isStructType(t)
-	if !is {
-		return false
-	}
-	typ := checkAtomType(t)
-	return typ == Composite
+// 是否 valuer nuller
+func isVNType(t reflect.Type) bool {
+	return isValuerType(t) && isNullerType(t)
 }
 
 // -------------ptr-----------------
-// v0.7
-// 是指针类型，返回指针的基类型
+// v03
+// 是指针类型，返回指针的基类型,如果是ptr，但是是nil，则返回error
 func basePtrType(t reflect.Type) (bool, reflect.Type) {
 	if t.Kind() == reflect.Ptr {
 		return true, t.Elem()
@@ -280,8 +264,8 @@ base:
 }
 
 // --------------------
-// v0.7
-// 检查是 ptr 还是 slice
+// v03
+// 包装类型：检查是 ptr 还是 slice
 type packType int
 
 const (
@@ -290,7 +274,7 @@ const (
 	Slice
 )
 
-// v0.7
+// v03
 // 检查是否是ptr，slice类型
 func checkPackType(t reflect.Type) (packType, reflect.Type) {
 	isPtr, base := basePtrDeepType(t)
@@ -353,13 +337,13 @@ func checkPackValue(v reflect.Value) (PackTyp, error) {
 //--------------------------------------------------
 
 // --------------------
-// v0.7
+// v03
 // 数据原子性
 // atom composite
-// 检查是 single 还是 composite
-// base和实现valuer的是single，
-// 否则，并且类型是struct、map的是composite
-// 其他为invade
+// 检查是 atom 还是 composite
+// base和实现valuer的是 atom 即可以作为实体类 字段的数据类型，可以对应一个数据库字段
+// 否则，并且类型是struct、map的是composite 即拥有多个 字段属性的 实体类，对应一条查询记录
+// 其他为 invalid
 type atomType int
 
 const (
@@ -368,6 +352,7 @@ const (
 	Composite
 )
 
+// v03
 func checkAtomValue(v reflect.Value) atomType {
 	is := isValuerType(v.Type())
 	if is {
@@ -386,6 +371,7 @@ func checkAtomValue(v reflect.Value) atomType {
 	return Invalid
 }
 
+// v03
 func checkAtomType(t reflect.Type) atomType {
 	is := isValuerType(t)
 	if is {
@@ -405,7 +391,7 @@ func checkAtomType(t reflect.Type) atomType {
 }
 
 // -----------------------map--------------------------------
-// v0.7
+// v03
 // scan不需要必须nuller
 // 检查map key是否string，value是否valuer
 func checkMapFieldType(t reflect.Type) bool {
@@ -419,7 +405,27 @@ func checkMapFieldType(t reflect.Type) bool {
 	return true
 }
 
-// v0.7
+// v03
+// scan不需要必须nuller
+// 检查map key是否string，value是否valuer
+func checkMapFieldV(t reflect.Type) error {
+	if t.Key().Kind() != reflect.String {
+		return errors.New("map key need string")
+	}
+	return checkFieldVError(t.Elem())
+}
+
+// v03
+// scan不需要必须nuller
+// 检查map key是否string，value是否 valuer/nuller
+func checkMapFieldVN(t reflect.Type) error {
+	if t.Key().Kind() != reflect.String {
+		return errors.New("map key need string")
+	}
+	return checkFieldVNError(t.Elem())
+}
+
+// v0
 // 检查map key是否string，value是否valuer/nuller
 func checkMapFieldValue(v reflect.Value) bool {
 	key := v.MapKeys()[0]
@@ -443,26 +449,26 @@ func checkMapFieldValue(v reflect.Value) bool {
 }
 
 // -----------------------struct--------------------------------
-// v0.7
+// v03
 // scan不需要必须nuller
 // 检查 struct field，value是否valuer
-func checkStructFieldType(t reflect.Type) bool {
+func checkStructFieldV(t reflect.Type) error {
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkField(t.Field(i).Type)
+		err := checkFieldVError(t.Field(i).Type)
 		if err != nil {
-			return false
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-// v0.7
+// v03
 // 检查 struct field，value是否valuer/nuller
-func checkStructFieldValue(v reflect.Value) error {
-	numField := v.NumField()
+func checkStructFieldVN(t reflect.Type) error {
+	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkFieldNuller(v.Field(i).Type())
+		err := checkFieldVNError(t.Field(i).Type)
 		if err != nil {
 			return err
 		}

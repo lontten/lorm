@@ -106,3 +106,45 @@ func (ctx *ormContext) initScanDestOne(dest interface{}) {
 	ctx.destValue = v
 
 }
+
+// v03
+// 从dest中获取filed 的名字，dest必须为struct或者*struct
+func (ctx *ormContext) initDestScanField(dest interface{}) {
+	if ctx.err != nil {
+		return
+	}
+	v := reflect.ValueOf(dest)
+	_, v, err := basePtrValue(v)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	is := isCompType(v.Type())
+	if is {
+		ctx.err = errors.New("dest need is struct or map")
+		return
+	}
+	is, _ = baseSliceType(v.Type())
+	if is {
+		ctx.err = errors.New("dest cannot slice")
+		return
+	}
+
+	err = checkFieldVError(v.Type())
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	//ctx.scanDest = dest
+	//
+	//ctx.scanIsSlice = false
+	//ctx.scanSliceItemIsPtr = false
+	//
+	//ctx.scanDestBaseType = base
+	//ctx.scanDestBaseTypeIsComp = ctyp == Composite
+	//
+	//ctx.destValue = v
+
+	//todo 把filed 获取到存入 ctx
+
+}

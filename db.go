@@ -15,6 +15,10 @@ func (db coreDb) getCtx() *ormContext {
 	return db.dialect.getCtx()
 }
 
+func (db coreDb) hasErr() bool {
+	return db.dialect.hasErr()
+}
+
 func (db coreDb) getDialect() Dialecter {
 	return db.dialect
 }
@@ -181,7 +185,7 @@ func (db *MysqlDialect) tWhereModel(t baseToken) {
 	db.initExtra()
 }
 
-func (db *MysqlDialect) tWhereBuilder(t baseToken) {
-	db.initByWhere(t.wb)
-	db.initExtra()
-}
+//func (db *MysqlDialect) tWhereBuilder(t baseToken) {
+//	db.initByWhere(t.wb)
+//	db.initExtra()
+//}

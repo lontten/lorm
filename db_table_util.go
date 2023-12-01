@@ -144,22 +144,22 @@ func (db *MysqlDialect) initByModel(v interface{}) {
 
 // 根据 byWhere 生成的where token
 func (db *lnDB) initByWhere(w *WhereBuilder) {
-	if err := db.core.getCtx().err; err != nil {
-		return
-	}
-	if w == nil {
-		db.core.getCtx().err = errors.New("ByWhere is nil")
-		return
-	}
-
-	args := w.args
-	toSql, err := w.toSql(db.core.getDialect().parse)
-	if err != nil {
-		db.core.getCtx().err = err
-		return
-	}
-	db.whereTokens = append(db.whereTokens, toSql)
-	db.args = append(db.args, args...)
+	//if err := db.core.getCtx().err; err != nil {
+	//	return
+	//}
+	//if w == nil {
+	//	db.core.getCtx().err = errors.New("ByWhere is nil")
+	//	return
+	//}
+	//
+	//args := w.args
+	//toSql, err := w.toSql(db.core.getDialect().parse)
+	//if err != nil {
+	//	db.core.getCtx().err = err
+	//	return
+	//}
+	//db.whereTokens = append(db.whereTokens, toSql)
+	//db.args = append(db.args, args...)
 }
 
 // init 逻辑删除、租户

@@ -75,7 +75,7 @@ func (b *SqlBuilder) initSelectSql() {
 //}
 
 func (b *SqlBuilder) AppendArg(arg interface{}, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	if b.core.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -85,9 +85,9 @@ func (b *SqlBuilder) AppendArg(arg interface{}, condition ...bool) *SqlBuilder {
 	}
 	if b.selectStatus == selectIng {
 		b.selectArgs = append(b.selectArgs, arg)
-		return b
+	} else {
+		b.otherArgs = append(b.otherArgs, arg)
 	}
-	b.otherArgs = append(b.otherArgs, arg)
 	return b
 }
 
@@ -97,19 +97,19 @@ func (b *SqlBuilder) AppendSql(sql string) *SqlBuilder {
 }
 
 func (b *SqlBuilder) AppendArgs(args ...interface{}) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	if b.core.hasErr() {
 		return b
 	}
 	if b.selectStatus == selectIng {
 		b.selectArgs = append(b.selectArgs, args...)
-		return b
+	} else {
+		b.otherArgs = append(b.otherArgs, args...)
 	}
-	b.otherArgs = append(b.otherArgs, args...)
 	return b
 }
 
 func (b *SqlBuilder) Select(arg string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	if b.core.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -125,7 +125,7 @@ func (b *SqlBuilder) Select(arg string, condition ...bool) *SqlBuilder {
 }
 
 func (b *SqlBuilder) SelectModel(v interface{}) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	if b.core.hasErr() {
 		return b
 	}
 	if v == nil {

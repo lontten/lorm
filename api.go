@@ -54,6 +54,7 @@ type corer interface {
 	// 获取 corer 下面的dialecter的coreDb,coreTx 里面的 ctx
 	getDB() *sql.DB
 	getCtx() *ormContext
+	hasErr() bool
 	getDialect() Dialecter
 
 	appendBaseToken(token baseToken)
@@ -99,6 +100,8 @@ PgDialect
 type Dialecter interface {
 	// 获取coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
+	hasErr() bool
+
 	appendBaseToken(token baseToken)
 
 	//对执行语句进行方言处理

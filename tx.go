@@ -13,7 +13,9 @@ type coreTx struct {
 func (tx coreTx) getCtx() *ormContext {
 	return tx.dialect.getCtx()
 }
-
+func (tx coreTx) hasErr() bool {
+	return tx.dialect.hasErr()
+}
 func (db coreTx) getDialect() Dialecter {
 	return db.dialect
 }

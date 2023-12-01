@@ -98,7 +98,7 @@ func checkCompFieldScan(typ reflect.Type) error {
 
 	//struct
 	if kind == reflect.Struct {
-		is := checkStructFieldType(typ)
+		is := checkStructFieldV(typ)
 		if is {
 			compValidCache[typ] = struct{}{}
 			return nil
@@ -134,7 +134,7 @@ func checkCompField(va reflect.Value) error {
 
 	//struct
 	if kind == reflect.Struct {
-		err := checkStructFieldValue(va)
+		err := checkStructFieldVN(typ)
 		if err == nil {
 			compValidNullerCache[typ] = va
 			return nil

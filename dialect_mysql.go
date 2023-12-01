@@ -14,6 +14,10 @@ func (m MysqlDialect) getCtx() *ormContext {
 	return m.ctx
 }
 
+func (m MysqlDialect) hasErr() bool {
+	return m.ctx.err != nil
+}
+
 func (m MysqlDialect) appendBaseToken(token baseToken) {
 	m.ctx.baseTokens = append(m.ctx.baseTokens, token)
 }

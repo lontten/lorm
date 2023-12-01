@@ -23,7 +23,9 @@ const (
 type ormContext struct {
 	ormConf  OrmConf
 	dbConfig DbConfig
-	log      Logger
+
+	log Logger
+	err error
 
 	tableSqlType tableSqlType
 
@@ -71,7 +73,6 @@ type ormContext struct {
 	args []interface{}
 
 	started bool
-	err     error
 }
 
 //todo 下面未重构--------------

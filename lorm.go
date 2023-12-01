@@ -13,6 +13,12 @@ import (
 	"time"
 )
 
+// 当scan的能力，struct的每个filed都要有这个能力，才行。
+var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+
+// 接收 null的能力
+var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
+
 type PoolConf struct {
 	MaxIdleCount int           // zero means defaultMaxIdleConns; negative means 0
 	MaxOpen      int           // <= 0 means unlimited
@@ -126,7 +132,3 @@ func (db lnDB) Exec(query string, args ...interface{}) (sql.Result, error) {
 }
 
 //todo 下面未重构--------------
-
-var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
-
-var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()

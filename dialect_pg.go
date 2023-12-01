@@ -14,7 +14,9 @@ type PgDialect struct {
 func (m PgDialect) getCtx() *ormContext {
 	return m.ctx
 }
-
+func (m PgDialect) hasErr() bool {
+	return m.ctx.err != nil
+}
 func (m PgDialect) appendBaseToken(token baseToken) {
 	m.ctx.baseTokens = append(m.ctx.baseTokens, token)
 }
