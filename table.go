@@ -12,7 +12,7 @@ import (
 // 2.comp-struct
 func (db lnDB) Insert(v interface{}) (num int64, err error) {
 	db.setTargetDest(v)
-	//db.initColumnsValue()
+	db.core.getCtx().initColumnsValue()
 	if db.core.getCtx().err != nil {
 		return 0, db.core.getCtx().err
 	}

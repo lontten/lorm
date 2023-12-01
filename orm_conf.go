@@ -50,7 +50,6 @@ type OrmConf struct {
 	TenantIgnoreTableFun func(tableName string) bool //该表是否忽略多租户，true忽略该表，即没有多租户
 }
 
-// todo 下面未重构--------------
 func (c OrmConf) tableName(t reflect.Type) (string, error) {
 
 	// fun
@@ -91,6 +90,8 @@ func (c OrmConf) tableName(t reflect.Type) (string, error) {
 
 	return name, nil
 }
+
+// todo 下面未重构--------------
 
 // v0.6
 func (c OrmConf) primaryKeys(tableName string) []string {

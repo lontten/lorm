@@ -211,12 +211,12 @@ func (db *lnDB) initLgDel() {
 // *.comp
 // target scanDest 一个comp-struct
 func (db *lnDB) setTargetDest(v interface{}) {
-	//if db.ctx.err != nil {
-	//	return
-	//}
-	//db.ctx.initTargetDest(v)
-	//db.ctx.checkTargetDestField()
-	//db.initTableName()
+	if db.core.hasErr() {
+		return
+	}
+	db.core.getCtx().initTargetDest(v)
+	db.core.getCtx().checkTargetDestField()
+	db.core.getCtx().initTableName()
 }
 
 func (db *lnDB) setTargetDest2TableName(v interface{}) {
@@ -236,34 +236,34 @@ func (d *MysqlDialect) initPrimaryKeyName() {
 }
 
 // 初始化 表名
-func (d *MysqlDialect) initTableName() {
-	if d.ctx.err != nil {
+func (ctx *ormContext) initTableName() {
+	if ctx.err != nil {
 		return
 	}
-	if d.ctx.tableName != "" {
+	if ctx.tableName != "" {
 		return
 	}
-	tableName, err := d.ctx.ormConf.tableName(d.ctx.destBaseType)
+	tableName, err := ctx.ormConf.tableName(ctx.destBaseType)
 	if err != nil {
-		d.ctx.err = err
+		ctx.err = err
 		return
 	}
-	d.ctx.tableName = tableName
+	ctx.tableName = tableName
 }
 
 // 获取struct对应的字段名 和 其值，
 // slice为全部，一个为非nil字段。
-func (db *MysqlDialect) initColumnsValue() {
-	if db.ctx.err != nil {
+func (ctx *ormContext) initColumnsValue() {
+	if ctx.err != nil {
 		return
 	}
-	columns, valuess, err := db.ctx.ormConf.getCompColumnsValueNoNil(db.ctx.destValue)
+	columns, valuess, err := ctx.ormConf.getCompColumnsValueNoNil(ctx.destValue)
 	if err != nil {
-		db.ctx.err = err
+		ctx.err = err
 		return
 	}
-	db.ctx.columns = columns
-	db.ctx.columnValues = valuess
+	ctx.columns = columns
+	ctx.columnValues = valuess
 	return
 }
 
