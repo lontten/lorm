@@ -43,9 +43,9 @@ func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 }
 
 // -----------------atom-------
-func isAtomType(t reflect.Type) bool {
-	return checkAtomType(t) == Atom
-}
+//func isAtomType(t reflect.Type) bool {
+//	return checkAtomType(t) == Atom
+//}
 
 // -----------------composite-------
 func isCompType(t reflect.Type) bool {
@@ -394,16 +394,16 @@ func checkAtomType(t reflect.Type) atomType {
 // v03
 // scan不需要必须nuller
 // 检查map key是否string，value是否valuer
-func checkMapFieldType(t reflect.Type) bool {
-	if t.Key().Kind() != reflect.String {
-		return false
-	}
-
-	if !isAtomType(t.Elem()) {
-		return false
-	}
-	return true
-}
+//func checkMapFieldType(t reflect.Type) bool {
+//	if t.Key().Kind() != reflect.String {
+//		return false
+//	}
+//
+//	if !isAtomType(t.Elem()) {
+//		return false
+//	}
+//	return true
+//}
 
 // v03
 // scan不需要必须nuller
@@ -412,7 +412,17 @@ func checkMapFieldV(t reflect.Type) error {
 	if t.Key().Kind() != reflect.String {
 		return errors.New("map key need string")
 	}
-	return checkFieldVError(t.Elem())
+	return checkFieldV(t.Elem())
+}
+
+// v03
+// scan不需要必须nuller
+// 检查map key是否string，value是否valuer
+func isMapFieldV(t reflect.Type) bool {
+	if t.Key().Kind() != reflect.String {
+		return false
+	}
+	return isFieldV(t.Elem())
 }
 
 // v03
@@ -422,7 +432,17 @@ func checkMapFieldVN(t reflect.Type) error {
 	if t.Key().Kind() != reflect.String {
 		return errors.New("map key need string")
 	}
-	return checkFieldVNError(t.Elem())
+	return checkFieldVN(t.Elem())
+}
+
+// v03
+// scan不需要必须nuller
+// 检查map key是否string，value是否 valuer/nuller
+func isMapFieldVN(t reflect.Type) bool {
+	if t.Key().Kind() != reflect.String {
+		return false
+	}
+	return isFieldVN(t.Elem())
 }
 
 // v0
@@ -436,7 +456,7 @@ func checkMapFieldValue(v reflect.Value) bool {
 	//valuer
 	t := v.MapIndex(key).Type()
 
-	if !isAtomType(t) {
+	if !isFieldV(t) {
 		return false
 	}
 
@@ -455,7 +475,7 @@ func checkMapFieldValue(v reflect.Value) bool {
 func checkStructFieldV(t reflect.Type) error {
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkFieldVError(t.Field(i).Type)
+		err := checkFieldV(t.Field(i).Type)
 		if err != nil {
 			return err
 		}
@@ -468,7 +488,7 @@ func checkStructFieldV(t reflect.Type) error {
 func checkStructFieldVN(t reflect.Type) error {
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkFieldVNError(t.Field(i).Type)
+		err := checkFieldVN(t.Field(i).Type)
 		if err != nil {
 			return err
 		}

@@ -55,16 +55,12 @@ func (ctx *ormContext) initScanDestList(dest interface{}) {
 
 }
 
+// v03
 // ptr slice
 func (ctx *ormContext) initScanDestOne(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
-	if dest == nil {
-		ctx.err = errors.New("scan is nil")
-		return
-	}
-
 	v := reflect.ValueOf(dest)
 	is, v, err := basePtrValue(v)
 	if !is {
@@ -77,18 +73,13 @@ func (ctx *ormContext) initScanDestOne(dest interface{}) {
 	}
 
 	is, base := baseSliceType(v.Type())
+	ctyp := checkAtomType(base)
 	if is {
-		if !isAtomType(base) {
+		if ctyp != Atom {
 			ctx.err = errors.New("scan can't be a slice ")
 			return
 		}
-
-	}
-
-	ctyp := Atom
-
-	if !is {
-		ctyp = checkAtomType(base)
+	} else {
 		if ctyp == Invalid {
 			ctx.err = errors.New("scan type is not supported")
 			return
@@ -130,7 +121,7 @@ func (ctx *ormContext) initDestScanField(dest interface{}) {
 		return
 	}
 
-	err = checkFieldVError(v.Type())
+	err = checkFieldV(v.Type())
 	if err != nil {
 		ctx.err = err
 		return

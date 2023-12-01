@@ -9,7 +9,7 @@ import (
 // v03
 // 校验struct 的 field 是否合法
 // 1. check valuer，不是 valuer 则返回error
-func checkFieldVError(t reflect.Type) error {
+func checkFieldV(t reflect.Type) error {
 	_, base := checkPackType(t)
 
 	is := isValuerType(base)
@@ -22,7 +22,7 @@ func checkFieldVError(t reflect.Type) error {
 // v03
 // 校验struct 的 field 是否合法
 // 1. check valuer，不是 valuer 则返回error
-func checkFieldV(t reflect.Type) bool {
+func isFieldV(t reflect.Type) bool {
 	_, base := checkPackType(t)
 	return isValuerType(base)
 }
@@ -31,7 +31,7 @@ func checkFieldV(t reflect.Type) bool {
 // 校验struct 的 field 是否合法 ：没有同时 valuer nuller 则报错
 // 1. check single
 // 3. nuller
-func checkFieldVNError(t reflect.Type) error {
+func checkFieldVN(t reflect.Type) error {
 	isNuller := false
 	typ, base := checkPackType(t)
 	if typ != None {
@@ -57,7 +57,7 @@ func checkFieldVNError(t reflect.Type) error {
 // 校验struct 的 field 是否合法 ：没有同时 valuer nuller 则报错
 // 1. check single
 // 3. nuller
-func checkFieldVN(t reflect.Type) bool {
+func isFieldVN(t reflect.Type) bool {
 	isNuller := false
 	typ, base := checkPackType(t)
 	if typ != None {

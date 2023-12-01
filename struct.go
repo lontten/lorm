@@ -106,7 +106,7 @@ func checkCompFieldScan(typ reflect.Type) error {
 	}
 	//map
 	if kind == reflect.Map {
-		is := checkMapFieldType(typ)
+		is := checkMapFieldV(typ)
 		if is {
 			compValidCache[typ] = struct{}{}
 			return nil
