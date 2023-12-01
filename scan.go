@@ -129,7 +129,8 @@ func (ctx ormContext) Scan(rows *sql.Rows) (int64, error) {
 	return num, nil
 }
 
-// 检查sturct的filed是否合法，valuer，nuller
+// v03
+// 检查scan dest 的filed是否合法，valuer，nuller
 func (ctx *ormContext) checkScanDestField() {
 	if ctx.err != nil {
 		return

@@ -197,7 +197,7 @@ func (ctx *ormContext) initPrimaryKeyValues(v []interface{}) {
 				return
 			}
 
-			if !isAtomType(value.Type()) {
+			if !isValuerType(value.Type()) {
 				ctx.err = errors.New("ByPrimaryKey typ err,not single")
 				return
 			}

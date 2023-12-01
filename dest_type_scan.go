@@ -16,10 +16,6 @@ func (ctx *ormContext) initScanDestList(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
-	if dest == nil {
-		ctx.err = errors.New("scanList is nil")
-		return
-	}
 
 	v := reflect.ValueOf(dest)
 	is, v, err := basePtrValue(v)
