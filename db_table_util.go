@@ -299,7 +299,7 @@ func getCompValueCV(v reflect.Value, c OrmConf) ([]string, []interface{}, error)
 	if !isCompType(v.Type()) {
 		return nil, nil, errors.New("getvcv not comp")
 	}
-	err := checkCompField(v)
+	err := checkCompFieldVN(v)
 	if err != nil {
 		return nil, nil, err
 	}

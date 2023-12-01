@@ -22,7 +22,7 @@ func (ctx *ormContext) initTargetDest(dest interface{}) {
 	}
 	ctx.destIsPtr = isPtr
 
-	err = checkCompField(base)
+	err = checkCompFieldVN(base)
 	if err != nil {
 		ctx.err = err
 		return
@@ -61,5 +61,5 @@ func (ctx *ormContext) checkTargetDestField() {
 	if ctx.err != nil {
 		return
 	}
-	ctx.err = checkCompField(ctx.destBaseValue)
+	ctx.err = checkCompFieldVN(ctx.destBaseValue)
 }

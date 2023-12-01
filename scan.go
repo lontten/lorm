@@ -137,7 +137,7 @@ func (ctx *ormContext) checkScanDestField() {
 	if !ctx.scanDestBaseTypeIsComp {
 		return
 	}
-	ctx.err = checkCompFieldScan(ctx.scanDestBaseType)
+	ctx.err = checkCompFieldV(ctx.scanDestBaseType)
 }
 
 // todo 下面未重构--------------

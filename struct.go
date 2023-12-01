@@ -66,7 +66,7 @@ type StructValidFieldValueMap map[string]interface{}
 // v0.6
 func newStruct(t reflect.Type) reflect.Value {
 	tPtr := reflect.New(t)
-	if isAtomType(t) {
+	if isValuerType(t) {
 		return tPtr
 	}
 	numField := t.NumField()
@@ -81,15 +81,15 @@ func newStruct(t reflect.Type) reflect.Value {
 }
 
 // --------------------comp-field-valuer---------
-// v0.6 检查一个 struct 是否合法
-var compValidCache = make(map[reflect.Type]struct{})
-var mutexCompValidCache sync.Mutex
+// v03 检查一个 struct/map 是否合法,valuer
+var compFieldVCache = make(map[reflect.Type]struct{})
+var mutexCompFieldVCache sync.Mutex
 
-func checkCompFieldScan(typ reflect.Type) error {
-	mutexCompValidCache.Lock()
-	defer mutexCompValidCache.Unlock()
+func checkCompFieldV(typ reflect.Type) error {
+	mutexCompFieldVCache.Lock()
+	defer mutexCompFieldVCache.Unlock()
 
-	_, ok := compValidCache[typ]
+	_, ok := compFieldVCache[typ]
 	if ok {
 		return nil
 	}
@@ -98,17 +98,21 @@ func checkCompFieldScan(typ reflect.Type) error {
 
 	//struct
 	if kind == reflect.Struct {
-		is := checkStructFieldV(typ)
-		if is {
-			compValidCache[typ] = struct{}{}
+		err := checkStructFieldV(typ)
+		if err != nil {
+			return err
+		} else {
+			compFieldVCache[typ] = struct{}{}
 			return nil
 		}
 	}
 	//map
 	if kind == reflect.Map {
-		is := checkMapFieldV(typ)
-		if is {
-			compValidCache[typ] = struct{}{}
+		err := checkMapFieldV(typ)
+		if err != nil {
+			return err
+		} else {
+			compFieldVCache[typ] = struct{}{}
 			return nil
 		}
 	}
@@ -117,15 +121,15 @@ func checkCompFieldScan(typ reflect.Type) error {
 
 // --------------------comp-field-valuer-nuller---------
 // v0.7 检查一个 comp 是否合法
-var compValidNullerCache = make(map[reflect.Type]reflect.Value)
-var mutexCompValidNullerCache sync.Mutex
+var compFieldVNCache = make(map[reflect.Type]reflect.Value)
+var mutexCompFieldVNCache sync.Mutex
 
-func checkCompField(va reflect.Value) error {
-	mutexCompValidNullerCache.Lock()
-	defer mutexCompValidNullerCache.Unlock()
+func checkCompFieldVN(va reflect.Value) error {
+	mutexCompFieldVNCache.Lock()
+	defer mutexCompFieldVNCache.Unlock()
 
 	typ := va.Type()
-	_, ok := compValidNullerCache[typ]
+	_, ok := compFieldVNCache[typ]
 	if ok {
 		return nil
 	}
@@ -136,7 +140,7 @@ func checkCompField(va reflect.Value) error {
 	if kind == reflect.Struct {
 		err := checkStructFieldVN(typ)
 		if err == nil {
-			compValidNullerCache[typ] = va
+			compFieldVNCache[typ] = va
 			return nil
 		}
 		return err
@@ -145,11 +149,11 @@ func checkCompField(va reflect.Value) error {
 	if kind == reflect.Map {
 		is := checkMapFieldValue(va)
 		if is {
-			compValidNullerCache[typ] = va
+			compFieldVNCache[typ] = va
 			return nil
 		}
 	}
-	return errors.New("checkCompField err;need a struct or map")
+	return errors.New("checkCompFieldVN err;need a struct or map")
 }
 
 // todo 下面未重构--------------
