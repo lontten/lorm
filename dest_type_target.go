@@ -9,7 +9,7 @@ import (
 */
 // ptr
 // 检查数据类型 comp-struct
-func (ctx *ormContext) initTargetDest(dest interface{}) {
+func (ctx *ormContext) initParamDest(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -43,7 +43,7 @@ func (ctx *ormContext) initTargetDest(dest interface{}) {
 //     struct
 //
 // comp-struct 获取 destBaseValue
-func (ctx *ormContext) initTargetDest2TableName(dest interface{}) {
+func (ctx *ormContext) initParamDest2TableName(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -58,7 +58,7 @@ func (ctx *ormContext) initTargetDest2TableName(dest interface{}) {
 }
 
 // 检查sturct的filed是否合法，valuer，nuller
-func (ctx *ormContext) checkTargetDestField() {
+func (ctx *ormContext) checkParamDestField() {
 	if ctx.err != nil {
 		return
 	}

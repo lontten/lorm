@@ -70,6 +70,13 @@ func (m PgDialect) insertOrUpdateByUnique(table string, fields []string, columns
 	return query, args
 }
 
+// v03 todo
+func (m PgDialect) toSqlInsert() (string, []interface{}) {
+	tableName := m.ctx.tableName
+
+	return tableName, nil
+}
+
 func (m PgDialect) exec(query string, args ...interface{}) (string, []interface{}) {
 	query = toPgSql(query)
 	m.ctx.log.Println(query, args)

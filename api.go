@@ -105,6 +105,8 @@ type Dialecter interface {
 	appendBaseToken(token baseToken)
 
 	//对执行语句进行方言处理
+	//toSqlInsert()
+
 	exec(query string, args ...interface{}) (string, []interface{})
 	execBatch(query string, args [][]interface{}) (string, [][]interface{})
 

@@ -2,11 +2,9 @@ package lorm
 
 import (
 	"bytes"
-	"github.com/lontten/lorm/types"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
-	"sort"
 	"strings"
 	"unicode"
 )
@@ -50,6 +48,7 @@ type OrmConf struct {
 	TenantIgnoreTableFun func(tableName string) bool //该表是否忽略多租户，true忽略该表，即没有多租户
 }
 
+// v03 从 type中获取表名
 func (c OrmConf) tableName(t reflect.Type) (string, error) {
 
 	// fun
@@ -91,9 +90,10 @@ func (c OrmConf) tableName(t reflect.Type) (string, error) {
 	return name, nil
 }
 
-// todo 下面未重构--------------
-
-// v0.6
+// v03 不可以缓存，因为fn
+// 1.默认主键为id，
+// 2.可以PrimaryKeyNames设置主键字段名
+// 3.通过表名动态设置主键字段名-fn
 func (c OrmConf) primaryKeys(tableName string) []string {
 	//fun
 	primaryKeyNameFun := c.PrimaryKeyNameFun
@@ -111,7 +111,14 @@ func (c OrmConf) primaryKeys(tableName string) []string {
 	return []string{"id"}
 }
 
-// v0.7
+// v03 可以缓存
+//
+//	主键Id、ID，都转化为id
+//
+// tag== db:name  可以自定义名字
+// tag== core:-  跳过
+// 过滤掉首字母小写的字段
+// 只获取字段对应的 数据库 字段名
 func (c OrmConf) initColumns(t reflect.Type) (columns []string, err error) {
 
 	cMap := make(map[string]int)
@@ -176,8 +183,14 @@ func (c OrmConf) initColumns(t reflect.Type) (columns []string, err error) {
 	return arr, nil
 }
 
-// v0.6
-// 获取struct对应的字段名 有效部分
+// v03 可以缓存
+//
+//	主键Id、ID，都转化为id
+//
+// tag== db:name  可以自定义名字
+// tag== core:-  跳过
+// 过滤掉首字母小写的字段
+// 获取struct对应的数据字段名：和其在struct中的index下标
 func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error) {
 	cMap := make(map[string]int)
 
@@ -236,94 +249,97 @@ func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error)
 	return cMap, nil
 }
 
-// 0.6
-// 获取comp 对应的字段名 和 其值   排除 nil部分
-func (c OrmConf) getCompColumnsValueNoNil(v reflect.Value) (columns []string, values []interface{}, err error) {
-	columns = make([]string, 0)
-	values = make([]interface{}, 0)
+type compCV struct {
+	//字段列表-not nil
+	columns []string
+	//值列表-多个-not nil
+	columnValues []interface{}
 
-	t := v.Type()
+	//字段列表-nil
+	nilColumns []string
+	//值列表-多个-nil
+	nilColumnValues []interface{}
 
-	mappingColumns, err := c.getStructMappingColumns(t)
-
-	if err != nil {
-		return
-	}
-
-	keys := types.StringList{}
-	for key := range mappingColumns {
-		keys = append(keys, key)
-	}
-	sort.Sort(keys)
-	for _, key := range keys {
-		inter := getFieldInter(v.Field(mappingColumns[key]))
-		if inter != nil {
-			columns = append(columns, key)
-			values = append(values, inter)
-		}
-	}
-
-	return
+	//字段列表-all
+	allColumns []string
+	//值列表-多个-all
+	allColumnValues []interface{}
 }
 
-// 0.6
-// 获取comp 对应的字段名 和 其值   不排除 nil部分
-func (c OrmConf) getCompAllColumnsValue(v reflect.Value) (columns []string, values []interface{}, err error) {
-	columns = make([]string, 0)
-	values = make([]interface{}, 0)
-
+// 03
+// 获取comp :struct/map 对应的字段名 和 其值
+func (c OrmConf) getCompCV(v reflect.Value) (compCV, error) {
 	t := v.Type()
-
-	mappingColumns, err := c.getStructMappingColumns(t)
-	if err != nil {
-		return
+	cv := compCV{
+		columns:         make([]string, 0),
+		columnValues:    make([]interface{}, 0),
+		nilColumns:      make([]string, 0),
+		nilColumnValues: make([]interface{}, 0),
+		allColumns:      make([]string, 0),
+		allColumnValues: make([]interface{}, 0),
 	}
-
-	for column, i := range mappingColumns {
-		inter := getFieldInter(v.Field(i))
-		columns = append(columns, column)
-		values = append(values, inter)
-	}
-	return
-}
-
-// 0.6
-// 获取comp 对应的字段名 和 其值   不排除 nil部分
-func (c OrmConf) getCompAllColumnsValueList(v []reflect.Value) ([]string, [][]interface{}, error) {
-	columns := make([]string, 0)
-	values := make([][]interface{}, 0)
-
-	mappingColumns, err := c.getStructMappingColumns(v[0].Type())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for column := range mappingColumns {
-		columns = append(columns, column)
-	}
-
-	for _, value := range v {
-		mappingColumns, err = c.getStructMappingColumns(value.Type())
+	if _isStructType(t) {
+		mappingColumns, err := c.getStructMappingColumns(t)
 		if err != nil {
-			return nil, nil, err
+			return cv, err
 		}
 
-		vas := make([]interface{}, 0)
-		for _, column := range columns {
-			j := mappingColumns[column]
-			inter := getFieldInter(value.Field(j))
-			if inter == nil {
-				inter = "default"
+		for column, i := range mappingColumns {
+			inter := getFieldInter(v.Field(i))
+			cv.allColumns = append(cv.allColumns, column)
+			cv.allColumnValues = append(cv.allColumnValues, inter)
+
+			if inter != nil {
+				cv.columns = append(cv.columns, column)
+				cv.columnValues = append(cv.columnValues, inter)
+			} else {
+				cv.nilColumns = append(cv.nilColumns, column)
+				cv.nilColumnValues = append(cv.nilColumnValues, inter)
 			}
-			vas = append(vas, inter)
 		}
-		values = append(values, vas)
+	} else {
+		for _, k := range v.MapKeys() {
+			inter := getFieldInter(v.MapIndex(k))
+
+			cv.allColumns = append(cv.allColumns, k.String())
+			cv.allColumnValues = append(cv.allColumnValues, inter)
+
+			cv.columns = append(cv.columns, k.String())
+			cv.columnValues = append(cv.columnValues, inter)
+		}
 	}
-	return columns, values, nil
+	return cv, nil
 }
+
+// 03
+// 获取comp :struct/map 对应的字段名
+func (c OrmConf) getCompC(t reflect.Type) (compCV, error) {
+	cv := compCV{
+		columns:         make([]string, 0),
+		columnValues:    make([]interface{}, 0),
+		nilColumns:      make([]string, 0),
+		nilColumnValues: make([]interface{}, 0),
+		allColumns:      make([]string, 0),
+		allColumnValues: make([]interface{}, 0),
+	}
+	if _isStructType(t) {
+		mappingColumns, err := c.getStructMappingColumns(t)
+		if err != nil {
+			return cv, err
+		}
+		for column := range mappingColumns {
+			cv.allColumns = append(cv.allColumns, column)
+		}
+	} else {
+		//map 无法获取 字段名
+	}
+	return cv, nil
+}
+
+// todo 下面未重构--------------
 
 func (c OrmConf) getColFieldIndexLinkMap(columns []string, t reflect.Type) (ColFieldIndexLinkMap, error) {
-	if isAtomType(t) {
+	if isValuerType(t) {
 		return ColFieldIndexLinkMap{}, nil
 	}
 

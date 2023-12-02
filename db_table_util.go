@@ -210,20 +210,22 @@ func (db *lnDB) initLgDel() {
 
 // *.comp
 // target scanDest 一个comp-struct
-func (db *lnDB) setTargetDest(v interface{}) {
+func (db *lnDB) setParamDest(v interface{}) {
 	if db.core.hasErr() {
 		return
 	}
-	db.core.getCtx().initTargetDest(v)
-	db.core.getCtx().checkTargetDestField()
-	db.core.getCtx().initTableName()
+	db.core.getCtx().initParamDest(v)      //初始化参数
+	db.core.getCtx().checkParamDestField() //检查dest合法并和接收数据
+	db.core.getCtx().initTableName()       //初始化表名
+	db.core.getCtx().initColumnsValue()    //初始化cv
+
 }
 
 func (db *lnDB) setTargetDest2TableName(v interface{}) {
 	//if db.ctx.err != nil {
 	//	return
 	//}
-	//db.ctx.initTargetDest2TableName(v)
+	//db.ctx.initParamDest2TableName(v)
 	//db.initTableName()
 }
 
@@ -235,12 +237,14 @@ func (d *MysqlDialect) initPrimaryKeyName() {
 	d.ctx.primaryKeyNames = d.ctx.ormConf.primaryKeys(d.ctx.tableName)
 }
 
+// v03
 // 初始化 表名
 func (ctx *ormContext) initTableName() {
 	if ctx.err != nil {
 		return
 	}
 	if ctx.tableName != "" {
+		ctx.err = errors.New("表名已经存在，不可再次初始化")
 		return
 	}
 	tableName, err := ctx.ormConf.tableName(ctx.destBaseType)
@@ -257,13 +261,13 @@ func (ctx *ormContext) initColumnsValue() {
 	if ctx.err != nil {
 		return
 	}
-	columns, valuess, err := ctx.ormConf.getCompColumnsValueNoNil(ctx.destValue)
+	cv, err := ctx.ormConf.getCompCV(ctx.destValue)
 	if err != nil {
 		ctx.err = err
 		return
 	}
-	ctx.columns = columns
-	ctx.columnValues = valuess
+	ctx.columns = cv.columns
+	ctx.columnValues = cv.columnValues
 	return
 }
 
@@ -304,14 +308,14 @@ func getCompValueCV(v reflect.Value, c OrmConf) ([]string, []interface{}, error)
 		return nil, nil, err
 	}
 
-	columns, values, err := c.getCompColumnsValueNoNil(v)
+	cv, err := c.getCompCV(v)
 	if err != nil {
 		return nil, nil, err
 	}
-	if len(columns) < 1 {
+	if len(cv.columns) < 1 {
 		return nil, nil, errors.New("where model valid field need ")
 	}
-	return columns, values, nil
+	return cv.columns, cv.columnValues, nil
 }
 
 // ------------------------query--------------------------

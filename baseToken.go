@@ -39,6 +39,16 @@ type baseToken struct {
 
 	pk []interface{}
 
+	//主键名-列表,这里考虑到多主键
+	primaryKeyNames []string
+	//主键值-列表
+	primaryKeyValues [][]interface{}
+
+	//字段列表-not nil
+	columns []string
+	//值列表-多个-not nil
+	columnValues []interface{}
+
 	wb *WhereBuilder
 }
 

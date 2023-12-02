@@ -11,8 +11,12 @@ import (
 // 1.ptr
 // 2.comp-struct
 func (db lnDB) Insert(v interface{}) (num int64, err error) {
-	db.setTargetDest(v)
-	db.core.getCtx().initColumnsValue()
+	db.core.appendBaseToken(baseToken{
+		typ:  tInsert,
+		dest: v,
+	})
+
+	db.setParamDest(v)
 	if db.core.getCtx().err != nil {
 		return 0, db.core.getCtx().err
 	}
@@ -31,7 +35,12 @@ func (db lnDB) Insert(v interface{}) (num int64, err error) {
 // 1.ptr
 // 2.comp-struct
 func (db lnDB) InsertOrUpdate(v interface{}) OrmTableCreate {
-	db.setTargetDest(v)
+	db.core.appendBaseToken(baseToken{
+		typ:  tInsert,
+		dest: v,
+	})
+
+	db.setParamDest(v)
 	//db.initColumnsValue()
 	return OrmTableCreate{base: db.core}
 }
@@ -131,7 +140,7 @@ func (db lnDB) Update(v interface{}) OrmTableUpdate {
 		v:    reflect.ValueOf(v),
 	})
 
-	//db.setTargetDest(v)
+	//db.setParamDest(v)
 	//db.initColumnsValue()
 
 	return OrmTableUpdate{base: core}

@@ -27,25 +27,40 @@ type ormContext struct {
 	log Logger
 	err error
 
-	tableSqlType tableSqlType
+	tableSqlType tableSqlType //单表，sql类型crud
 
 	baseTokens []baseToken
 
-	isLgDel bool
-	isTen   bool
+	isLgDel bool //是否启用了逻辑删除
+	isTen   bool //是否启用了多租户
 
-	//主键名-列表
+	//主键名-列表,这里考虑到多主键
 	primaryKeyNames []string
 	//主键值-列表
 	primaryKeyValues [][]interface{}
 
+	//主键名-列表,这里考虑到多主键-排除
+	filterPrimaryKeyNames []string
+	//主键值-列表-排除
+	filterPrimaryKeyValues [][]interface{}
+
 	//当前表名
 	tableName string
 
-	//字段列表
+	//字段列表-not nil
 	columns []string
-	//值列表-多个
+	//值列表-多个-not nil
 	columnValues []interface{}
+
+	//字段列表-nil
+	nilColumns []string
+	//值列表-多个-nil
+	nilColumnValues []interface{}
+
+	//字段列表-all
+	allColumns []string
+	//值列表-多个-all
+	allColumnValues []interface{}
 
 	//-------------------target---------------------
 	//当前struct对象
@@ -113,6 +128,37 @@ func (ctx *ormContext) tableInsertGen() string {
 
 	sb.WriteString("INSERT INTO ")
 	sb.WriteString(ctx.tableName + " ")
+
+	sb.WriteString(" ( ")
+	for i, v := range args {
+		if i == 0 {
+			sb.WriteString(v)
+		} else {
+			sb.WriteString(" , " + v)
+		}
+	}
+	sb.WriteString(" ) ")
+	sb.WriteString(" VALUES ")
+	sb.WriteString("( ")
+	for i := range args {
+		if i == 0 {
+			sb.WriteString(" ? ")
+		} else {
+			sb.WriteString(", ? ")
+		}
+	}
+	sb.WriteString(" ) ")
+	return sb.String()
+}
+
+// v03
+// 单表sql生成，insert
+func (p *PgDialect) tGenInsert() string {
+	args := p.ctx.columns
+	var sb strings.Builder
+
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(p.ctx.tableName + " ")
 
 	sb.WriteString(" ( ")
 	for i, v := range args {
