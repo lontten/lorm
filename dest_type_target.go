@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"github.com/pkg/errors"
 	"reflect"
 )
 
@@ -8,8 +9,8 @@ import (
 从传入的struct实力，获取实例类对应的表名，解析字段是否合法
 */
 // ptr
-// 检查数据类型 comp-struct
-func (ctx *ormContext) initParamDest(dest interface{}) {
+// 检查数据类型  struct
+func (ctx *ormContext) initTargetDest(dest interface{}) {
 	if ctx.err != nil {
 		return
 	}
@@ -20,6 +21,10 @@ func (ctx *ormContext) initParamDest(dest interface{}) {
 		return
 	}
 	ctx.destIsPtr = isPtr
+	if _isStructType(base.Type()) {
+		ctx.err = errors.New("dest need is struct")
+		return
+	}
 
 	err = checkCompFieldVN(base)
 	if err != nil {

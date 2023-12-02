@@ -16,7 +16,7 @@ func (db lnDB) Insert(v interface{}) (num int64, err error) {
 		dest: v,
 	})
 
-	db.setParamDest(v)
+	db.setTargetDest(v)
 	if db.core.getCtx().err != nil {
 		return 0, db.core.getCtx().err
 	}
@@ -40,7 +40,7 @@ func (db lnDB) InsertOrUpdate(v interface{}) OrmTableCreate {
 		dest: v,
 	})
 
-	db.setParamDest(v)
+	db.setTargetDest(v)
 	//db.initColumnsValue()
 	return OrmTableCreate{base: db.core}
 }
@@ -140,7 +140,7 @@ func (db lnDB) Update(v interface{}) OrmTableUpdate {
 		v:    reflect.ValueOf(v),
 	})
 
-	//db.setParamDest(v)
+	//db.setTargetDest(v)
 	//db.initColumnsValue()
 
 	return OrmTableUpdate{base: core}

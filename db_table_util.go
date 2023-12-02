@@ -208,17 +208,17 @@ func (db *lnDB) initLgDel() {
 
 //-------------------------------target------------------------
 
+// target 是必须struct，param是comp，scan是 comp
 // *.comp
-// target scanDest 一个comp-struct
-func (db *lnDB) setParamDest(v interface{}) {
+// target scanDest 一个struct
+func (db *lnDB) setTargetDest(v interface{}) {
 	if db.core.hasErr() {
 		return
 	}
-	db.core.getCtx().initParamDest(v)      //初始化参数
+	db.core.getCtx().initTargetDest(v)     //初始化参数
 	db.core.getCtx().checkParamDestField() //检查dest合法并和接收数据
 	db.core.getCtx().initTableName()       //初始化表名
 	db.core.getCtx().initColumnsValue()    //初始化cv
-
 }
 
 func (db *lnDB) setTargetDest2TableName(v interface{}) {
@@ -268,6 +268,12 @@ func (ctx *ormContext) initColumnsValue() {
 	}
 	ctx.columns = cv.columns
 	ctx.columnValues = cv.columnValues
+
+	ctx.nilColumns = cv.nilColumns
+	ctx.nilColumnValues = cv.nilColumnValues
+
+	ctx.allColumns = cv.allColumns
+	ctx.allColumnValues = cv.allColumnValues
 	return
 }
 
