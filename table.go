@@ -17,8 +17,8 @@ func (db lnDB) Insert(v interface{}) (num int64, err error) {
 	})
 
 	db.setTargetDest(v)
-	if db.core.getCtx().err != nil {
-		return 0, db.core.getCtx().err
+	if err = db.getErr(); err != nil {
+		return 0, err
 	}
 
 	sqlStr := db.core.getCtx().tableInsertGen()
@@ -195,7 +195,7 @@ func (db lnDB) Select(v interface{}) OrmTableSelect {
 		v:    reflect.ValueOf(v),
 	})
 
-	//db.setTargetDest2TableName(v)
+	db.setNameDest(v)
 	return OrmTableSelect{base: core}
 }
 
@@ -334,7 +334,7 @@ func (db lnDB) Has(v interface{}) OrmTableHas {
 		v:    reflect.ValueOf(v),
 	})
 
-	//db.setTargetDest2TableName(v)
+	db.setNameDest(v)
 	return OrmTableHas{base: core}
 }
 

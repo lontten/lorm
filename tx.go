@@ -16,6 +16,10 @@ func (tx coreTx) getCtx() *ormContext {
 func (tx coreTx) hasErr() bool {
 	return tx.dialect.hasErr()
 }
+func (tx coreTx) getErr() error {
+	return tx.dialect.getErr()
+}
+
 func (db coreTx) getDialect() Dialecter {
 	return db.dialect
 }

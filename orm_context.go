@@ -90,6 +90,46 @@ type ormContext struct {
 	started bool
 }
 
+// v03
+// 初始化 表名
+func (ctx *ormContext) initTableName() {
+	if ctx.err != nil {
+		return
+	}
+	if ctx.tableName != "" {
+		ctx.err = errors.New("表名已经存在，不可再次初始化")
+		return
+	}
+	tableName, err := ctx.ormConf.tableName(ctx.destBaseType)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	ctx.tableName = tableName
+}
+
+// 获取struct对应的字段名 和 其值，
+// slice为全部，一个为非nil字段。
+func (ctx *ormContext) initColumnsValue() {
+	if ctx.err != nil {
+		return
+	}
+	cv, err := ctx.ormConf.getCompCV(ctx.destValue)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	ctx.columns = cv.columns
+	ctx.columnValues = cv.columnValues
+
+	ctx.nilColumns = cv.nilColumns
+	ctx.nilColumnValues = cv.nilColumnValues
+
+	ctx.allColumns = cv.allColumns
+	ctx.allColumnValues = cv.allColumnValues
+	return
+}
+
 //todo 下面未重构--------------
 
 func (ctx ormContext) Copy() ormContext {

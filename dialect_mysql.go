@@ -10,12 +10,38 @@ type MysqlDialect struct {
 	ctx *ormContext
 }
 
+// 初始化主键
+func (d *MysqlDialect) initPrimaryKeyName() {
+	if d.ctx.err != nil {
+		return
+	}
+	d.ctx.primaryKeyNames = d.ctx.ormConf.primaryKeys(d.ctx.tableName)
+}
+
+// 获取struct对应的字段名 有效部分
+func (db *MysqlDialect) initColumns() {
+	if db.ctx.err != nil {
+		return
+	}
+
+	columns, err := db.ctx.ormConf.initColumns(db.ctx.scanDestBaseType)
+	if err != nil {
+		db.ctx.err = err
+		return
+	}
+	db.ctx.columns = columns
+}
+
 func (m MysqlDialect) getCtx() *ormContext {
 	return m.ctx
 }
 
 func (m MysqlDialect) hasErr() bool {
 	return m.ctx.err != nil
+}
+
+func (m MysqlDialect) getErr() error {
+	return m.ctx.err
 }
 
 func (m MysqlDialect) appendBaseToken(token baseToken) {

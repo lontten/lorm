@@ -17,6 +17,9 @@ func (m PgDialect) getCtx() *ormContext {
 func (m PgDialect) hasErr() bool {
 	return m.ctx.err != nil
 }
+func (m PgDialect) getErr() error {
+	return m.ctx.err
+}
 func (m PgDialect) appendBaseToken(token baseToken) {
 	m.ctx.baseTokens = append(m.ctx.baseTokens, token)
 }

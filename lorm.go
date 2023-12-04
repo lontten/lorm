@@ -109,6 +109,14 @@ type lnDB struct {
 	core corer
 }
 
+func (db lnDB) getErr() error {
+	return db.core.getErr()
+}
+
+func (db lnDB) hasErr() bool {
+	return db.core.hasErr()
+}
+
 func (db lnDB) Rollback() error {
 	return db.core.doRollback()
 }

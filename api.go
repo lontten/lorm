@@ -55,6 +55,8 @@ type corer interface {
 	getDB() *sql.DB
 	getCtx() *ormContext
 	hasErr() bool
+	getErr() error
+
 	getDialect() Dialecter
 
 	appendBaseToken(token baseToken)
@@ -101,6 +103,7 @@ type Dialecter interface {
 	// 获取coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
 	hasErr() bool
+	getErr() error
 
 	appendBaseToken(token baseToken)
 

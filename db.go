@@ -19,6 +19,10 @@ func (db coreDb) hasErr() bool {
 	return db.dialect.hasErr()
 }
 
+func (db coreDb) getErr() error {
+	return db.dialect.getErr()
+}
+
 func (db coreDb) getDialect() Dialecter {
 	return db.dialect
 }
@@ -170,7 +174,7 @@ func (db *lnDB) DoCount() Resulter {
 }
 
 func (db *lnDB) tDelete(t baseToken) {
-	db.setTargetDest2TableName(t.dest)
+	db.setNameDest(t.dest)
 }
 
 func (d *MysqlDialect) tPrimaryKey(t baseToken) {
