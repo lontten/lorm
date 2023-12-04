@@ -60,16 +60,6 @@ func (ctx *ormContext) initNameDest(dest interface{}) {
 	ctx.initTargetDest(dest)
 }
 
-// todo 下面未重构--------------
-
-// 检查sturct的filed是否合法，valuer，nuller
-func (ctx *ormContext) checkParamDestField() {
-	if ctx.err != nil {
-		return
-	}
-	ctx.err = checkCompFieldVN(ctx.destBaseValue)
-}
-
 // 参数分为comp 的 vn
 // 接受是comp、atom 的 v
 // 即：检查 comp 的 vn
@@ -99,3 +89,5 @@ func (ctx *ormContext) checkDestScan() {
 	}
 	ctx.err = checkCompFieldV(ctx.destBaseType)
 }
+
+// todo 下面未重构--------------
