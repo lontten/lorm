@@ -26,12 +26,8 @@ func (p StringList) Value() (driver.Value, error) {
 	return s, nil
 }
 
-func (p StringList) IsNull() bool {
-	return len(p) == 0
-}
-
 // Scan 实现方法
-func (p *StringList) Scan(data interface{}) error {
+func (p *StringList) Scan(data any) error {
 	array := pgtype.VarcharArray{}
 	err := array.Scan(data)
 	if err != nil {

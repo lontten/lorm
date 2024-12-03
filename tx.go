@@ -3,62 +3,53 @@ package lorm
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"github.com/pkg/errors"
 )
 
-func (db DB) Begin() DB {
-	t, err := db.db.Begin()
-	if err != nil {
-		panic(err)
-	}
-
-	d := DB{
-		db:       db.db,
-		tx:       t,
-		isTx:     true,
-		dbConfig: db.dbConfig,
-		ctx:      db.ctx.Copy(),
-		dialect:  db.dialect.Copy(t),
-	}
-	return d
+type coreTX struct {
+	tx      *sql.Tx
+	dialect Dialecter
 }
 
-func (db DB) BeginTx(ctx context.Context, opts *sql.TxOptions) DB {
-	t, err := db.db.BeginTx(ctx, opts)
-	if err != nil {
-		panic(err)
-	}
-
-	return DB{
-		db:       db.db,
-		tx:       t,
-		isTx:     true,
-		dbConfig: db.dbConfig,
-		ctx:      db.ctx.Copy(),
-		dialect:  db.dialect.Copy(t),
-	}
+func (db *coreTX) ping() error {
+	return errors.New("this is tx")
+}
+func (db *coreTX) getCtx() *ormContext {
+	return db.dialect.getCtx()
+}
+func (db *coreTX) getDialect() Dialecter {
+	return db.dialect
+}
+func (db *coreTX) query(query string, args ...any) (*sql.Rows, error) {
+	return db.tx.Query(query, args...)
+}
+func (db *coreTX) exec(query string, args ...any) (sql.Result, error) {
+	return db.tx.Exec(query, args...)
 }
 
-func (db DB) Rollback() error {
-	if !db.isTx {
-		return errors.New("not in transaction")
-	}
-	err := db.tx.Rollback()
+func (db *coreTX) prepare(query string) (Stmter, error) {
+	stmt, err := db.tx.Prepare(query)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	db.ctx.log.Println("rollback")
-	return nil
+	return &coreDBStmt{
+		db:      stmt,
+		dialect: db.dialect,
+	}, nil
 }
 
-func (db DB) Commit() error {
-	if !db.isTx {
-		return errors.New("not in transaction")
-	}
-	err := db.tx.Commit()
-	if err != nil {
-		return err
-	}
-	db.ctx.log.Println("commit")
-	return nil
+func (db *coreTX) BeginTx(ctx context.Context, opts *sql.TxOptions) (Engine, error) {
+	return nil, errors.New("this is tx")
+}
+
+func (db *coreTX) Begin() (Engine, error) {
+	return nil, errors.New("this is tx")
+}
+
+func (db *coreTX) Commit() error {
+	return db.tx.Commit()
+}
+
+func (db *coreTX) Rollback() error {
+	return db.tx.Rollback()
 }

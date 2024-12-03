@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-func ArrayOf(v ...interface{}) Array {
+func ArrayOf(v ...any) Array {
 	array := Array{}
 	for _, i := range v {
 		value := reflect.ValueOf(i)
@@ -21,7 +21,7 @@ func ArrayOf(v ...interface{}) Array {
 
 type Array struct {
 	ints  []driver.Valuer
-	bases []interface{}
+	bases []any
 }
 
 func (a Array) Value() (driver.Value, error) {

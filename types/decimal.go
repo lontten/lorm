@@ -7,8 +7,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-
-
 type DecimalList []decimal.Decimal
 
 // gorm 自定义结构需要实现 Value Scan 两个方法
@@ -30,7 +28,7 @@ func (p DecimalList) Value() (driver.Value, error) {
 }
 
 // Scan 实现方法
-func (p *DecimalList) Scan(data interface{}) error {
+func (p *DecimalList) Scan(data any) error {
 	array := pgtype.VarcharArray{}
 	err := array.Scan(data)
 	if err != nil {
@@ -52,4 +50,3 @@ func (p *DecimalList) Scan(data interface{}) error {
 	err = json.Unmarshal(marshal, &p)
 	return err
 }
-

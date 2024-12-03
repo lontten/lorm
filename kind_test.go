@@ -1,25 +1,29 @@
 package lorm
 
 import (
-	"github.com/lontten/lorm/types"
-	"github.com/stretchr/testify/assert"
+	"database/sql"
 	"reflect"
 	"testing"
 )
 
-func Test__isBaseType(t *testing.T) {
-	as := assert.New(t)
+func Test_basePtrValue(t *testing.T) {
+	var a *int
+	v := reflect.ValueOf(a)
+	t.Log(v.Kind())
+	t.Log(v.IsValid())
+	t.Log(v.IsZero())
+	t.Log(v.IsNil())
+	t.Log(v.Elem())
+	is, v, err := basePtrValue(v)
+	t.Log(is, v, err)
+}
 
-	is := _isBaseType(reflect.TypeOf(types.NewV4()))
-	as.False(is)
+func Test_vn(ts *testing.T) {
+	var d sql.NullTime
 
-	is = _isBaseType(reflect.TypeOf(12))
-	as.True(is)
-
-	is = _isBaseType(reflect.TypeOf("jfaskf"))
-	as.True(is)
-
-	is = _isBaseType(reflect.TypeOf(types.NewString("fjakls")))
-	as.False(is)
-
+	v := reflect.ValueOf(d)
+	t := v.Type()
+	ts.Log(t.Kind())
+	ts.Log(t.String())
+	ts.Log(t.Name())
 }

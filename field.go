@@ -1,89 +1,98 @@
 package lorm
 
 import (
-	"github.com/lontten/lorm/types"
+	"github.com/lontten/lorm/field"
 	"github.com/pkg/errors"
 	"reflect"
 )
 
-//校验struct 的 field 是否合法
-//1. check single
-func checkField(t reflect.Type) error {
-	_, base := checkPackType(t)
-
-	typ := checkCompType(base)
-	if typ != Single {
-		return errors.New("field没有实现valuer " + t.String())
+// 校验struct 的 field 是否合法
+// 1. check valuer，不是 valuer 则返回error
+func checkFieldV(t reflect.Type) error {
+	_, base := basePtrType(t)
+	is := isValuerType(base)
+	if !is {
+		return errors.New("field没有实现valuer " + base.String())
 	}
 	return nil
 }
 
-//校验struct 的 field 是否合法
-//1. check single
-//3. nuller
-func checkFieldNuller(t reflect.Type) error {
-	isNuller := false
-	typ, base := checkPackType(t)
-	if typ != None {
-		isNuller = true
-	} else {
-		isNuller = isNullerType(base)
-	}
+// 校验struct 的 field 是否合法
+// 1. check valuer，不是 valuer 则返回error
+func isFieldV(t reflect.Type) bool {
+	_, base := basePtrType(t)
+	return isValuerType(base)
+}
 
-	ctyp := checkCompType(base)
-	if ctyp != Single {
+// 校验struct 的 field 是否合法 ：没有同时 valuer scanner 则报错
+func checkFieldVS(t reflect.Type) error {
+	_, base := basePtrType(t)
+	is := isValuerType(base)
+	if !is {
 		return errors.New("field  no imp valuer:: " + t.String())
 	}
-	//nuller
-	if isNuller {
-		return nil
+	is = isScannerType(base)
+	if !is {
+		return errors.New("field  no imp scanner:: " + t.String())
 	}
-	return errors.New("field  no imp nuller:: " + t.String())
+	return nil
 }
 
-//获取field的值 interface类型
-func getFieldInter(v reflect.Value) interface{} {
-	_, v, err := basePtrDeepValue(v)
-	if err != nil {
+// 校验struct 的 field 是否合法 ：没有同时 valuer scanner
+func isFieldVS(t reflect.Type) bool {
+	_, base := basePtrType(t)
+	return isValuerType(base) && isScannerType(base)
+}
+
+// 零值为 nil
+func getFieldInterZero(v reflect.Value) any {
+	if !v.IsValid() {
 		return nil
 	}
-
-	is, _, err := baseSliceDeepValue(v)
-	if err != nil {
-		return nil
-	}
-
-	if is {
-		value, err := types.ArrayOf(v.Interface()).Value()
-		if err != nil {
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
 			return nil
 		}
-		return value
+		return v.Elem().Interface()
+	}
+	if v.IsZero() {
+		return nil
 	}
 	return v.Interface()
 }
 
-//获取  interface类型
-func getTargetInter(v reflect.Value) interface{} {
-	_, v, err := basePtrDeepValue(v)
-	if err != nil {
-		return nil
-	}
-	if isValuerType(v.Type()) {
-		return v.Interface()
-	}
-
-	is, _, err := baseSliceDeepValue(v)
-	if err != nil {
-		return nil
-	}
-
-	if is {
-		value, err := types.ArrayOf(v.Interface()).Value()
-		if err != nil {
-			return nil
+// 零值为 nil
+func getFieldInter(v reflect.Value) field.Value {
+	if !v.IsValid() {
+		return field.Value{
+			Type: field.None,
 		}
-		return value
 	}
-	return v.Interface()
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return field.Value{
+				Type: field.Null,
+			}
+		}
+		return field.Value{
+			Type:  field.Val,
+			Value: v.Elem().Interface(),
+		}
+	}
+	return field.Value{
+		Type:  field.Val,
+		Value: v.Interface(),
+	}
+}
+
+// ptr nil 为 null
+// 非ptr，零值为 null
+func isFieldNull(v reflect.Value) bool {
+	if !v.IsValid() {
+		return true
+	}
+	if v.Kind() != reflect.Ptr {
+		return v.IsZero()
+	}
+	return v.IsNil()
 }

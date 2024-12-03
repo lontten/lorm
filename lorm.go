@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"github.com/lontten/lorm/types"
 	"github.com/pkg/errors"
 	"log"
 	"os"
@@ -13,12 +12,7 @@ import (
 )
 
 var ImpValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
-var ImpNuller = reflect.TypeOf((*types.NullEr)(nil)).Elem()
-
-type DbConfig interface {
-	Open() (*sql.DB, error)
-	Dialect(db *sql.DB, pc *PoolConf) Dialect
-}
+var ImpScanner = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
 
 type PoolConf struct {
 	MaxIdleCount int           // zero means defaultMaxIdleConns; negative means 0
@@ -29,15 +23,7 @@ type PoolConf struct {
 	Logger *log.Logger
 }
 
-type MysqlConf struct {
-	Host     string
-	Port     string
-	DbName   string
-	User     string
-	Password string
-}
-
-func (c *MysqlConf) Dialect(db *sql.DB, pc *PoolConf) Dialect {
+func genOrmCtx(pc *PoolConf) *ormContext {
 	var logger *log.Logger
 	if pc == nil || pc.Logger == nil {
 		logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -45,62 +31,9 @@ func (c *MysqlConf) Dialect(db *sql.DB, pc *PoolConf) Dialect {
 	} else {
 		logger = pc.Logger
 	}
-	return &PgDialect{db: db, log: Logger{log: logger}}
-}
-
-func (c *MysqlConf) Open() (*sql.DB, error) {
-	dsn := c.User + ":" + c.Password +
-		"@tcp(" + c.Host +
-		":" + c.Port +
-		")/" + c.DbName
-	return sql.Open("mysql", dsn)
-}
-
-type PgConf struct {
-	Host     string
-	Port     string
-	DbName   string
-	User     string
-	Password string
-	Other    string
-}
-
-func (c *PgConf) Dialect(db *sql.DB, pc *PoolConf) Dialect {
-	var logger *log.Logger
-	if pc == nil || pc.Logger == nil {
-		logger = log.New(os.Stdout, "", log.LstdFlags)
-		log.SetFlags(log.LstdFlags | log.Llongfile)
-	} else {
-		logger = pc.Logger
-	}
-	return &PgDialect{db: db, log: Logger{log: logger}}
-}
-
-func (c *PgConf) Open() (*sql.DB, error) {
-	dsn := "user=" + c.User +
-		" password=" + c.Password +
-		" dbname=" + c.DbName +
-		" host=" + c.Host +
-		" port= " + c.Port +
-		" "
-	if c.Other == "" {
-		dsn += "sslmode=disable TimeZone=Asia/Shanghai"
-	}
-	dsn += c.Other
-	return sql.Open("pgx", dsn)
-}
-
-func setOrmCtx(pc *PoolConf) OrmContext {
-	var logger *log.Logger
-	if pc == nil || pc.Logger == nil {
-		logger = log.New(os.Stdout, "", log.LstdFlags)
-		log.SetFlags(log.LstdFlags | log.Llongfile)
-	} else {
-		logger = pc.Logger
-	}
-	return OrmContext{
+	return &ormContext{
 		log: Logger{log: logger},
-		conf: OrmConf{
+		ormConf: &OrmConf{
 			PoDir:           "src/model/po",
 			Author:          "lontten",
 			IdType:          0,
@@ -109,13 +42,13 @@ func setOrmCtx(pc *PoolConf) OrmContext {
 	}
 }
 
-func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
+func open(c DbConfig, pc *PoolConf) (Engine, error) {
 	if c == nil {
-		fmt.Println("dbconfig canot be nil")
-		return nil, errors.New("dbconfig canot be nil")
+		fmt.Println("dbconfig cannot be nil")
+		return nil, errors.New("dbconfig cannot be nil")
 	}
 
-	db, err := c.Open()
+	db, err := c.open()
 	if err != nil {
 		return nil, err
 	}
@@ -126,15 +59,14 @@ func open(c DbConfig, pc *PoolConf) (dp *DB, err error) {
 		db.SetMaxOpenConns(pc.MaxOpen)
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
-	return &DB{
-		db:       db,
-		dbConfig: c,
-		ctx:      setOrmCtx(pc),
-		dialect:  c.Dialect(db, pc),
+	ctx := genOrmCtx(pc)
+	return &coreDB{
+		db:      db,
+		dialect: c.dialect(ctx),
 	}, nil
 }
 
-func MustConnect(c DbConfig, pc *PoolConf) *DB {
+func MustConnect(c DbConfig, pc *PoolConf) Engine {
 	db, err := Connect(c, pc)
 	if err != nil {
 		panic(err)
@@ -142,24 +74,26 @@ func MustConnect(c DbConfig, pc *PoolConf) *DB {
 	return db
 }
 
-func MustConnectMock(db *sql.DB, c DbConfig) *DB {
-	return &DB{
-		db:       db,
-		dbConfig: c,
-		ctx:      setOrmCtx(nil),
-		dialect:  c.Dialect(db, nil),
+func MustConnectMock(db *sql.DB, c DbConfig) Engine {
+	ctx := genOrmCtx(nil)
+	return &coreDB{
+		db:      db,
+		dialect: c.dialect(ctx),
 	}
 }
 
-func Connect(c DbConfig, pc *PoolConf) (*DB, error) {
-	pool, err := open(c, pc)
+func Connect(c DbConfig, pc *PoolConf) (Engine, error) {
+	db, err := open(c, pc)
 	if err != nil {
 		return nil, err
 	}
+	err = db.ping()
+	if err != nil {
+		return nil, err
+	}
+	return db, err
+}
 
-	err = pool.db.Ping()
-	if err != nil {
-		return nil, err
-	}
-	return pool, err
+type lnDB struct {
+	core corer
 }

@@ -1,6 +1,5 @@
 # lorm
 
-[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/lontten/lorm/main/LICENSE)
 
 target - 必须是struct，用于tableName
 
@@ -45,15 +44,46 @@ db.update("t_user").
     setCurrentDateTime("create_time").
     byModel(user)
     byMap(map)
-    byPrimaryKey(interface{})
+    byPrimaryKey(any)
     byWhere(*whereBuider)
     .exec() //返回受影响的行数
     .sql()  //获取sql
     .prepare() //返回*sql.Stmt
 
-db.update(user)
-db.update().set("name",age)
 
 
 
+
+```
+
+
+### create
+```go
+db.Insert(user).set...by....exec()
+```
+
+### create
+```go
+db.InsertOrUpdate(user).set...by....exec()
+num, err := db.InsertOrUpdate(&user)
+            .Set("name","tome")
+            .ByUnique("name","age")
+```
+
+
+### update
+```go
+db.update(user).set...by....exec()
+```
+
+### delete
+```go
+db.delete(user).by....
+```
+
+### select
+```go
+db.getOne(User{}).by...
+db.getAll(User{}).by...
+db.has(User{}).by....
 ```

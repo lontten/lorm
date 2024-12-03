@@ -54,10 +54,6 @@ func Arr2Pg16(arr []int16) pgtype.Int2Array {
 	return list
 }
 
-
-
-
-
 type IntList []int
 
 // gorm 自定义结构需要实现 Value Scan 两个方法
@@ -78,12 +74,8 @@ func (p IntList) Value() (driver.Value, error) {
 	return s, nil
 }
 
-func (p IntList) IsNull() bool {
-	return len(p) == 0
-}
-
 // Scan 实现方法
-func (p *IntList) Scan(data interface{}) error {
+func (p *IntList) Scan(data any) error {
 	array := pgtype.VarcharArray{}
 	err := array.Scan(data)
 	if err != nil {

@@ -1,97 +1,152 @@
 package lorm
 
 import (
-	"errors"
-	"reflect"
-	"strings"
+	"github.com/lontten/lorm/field"
+	"github.com/lontten/lorm/insert_type"
+	"github.com/lontten/lorm/return_type"
 )
 
-func (db DB) Page(size int, current int64) *SqlBuilder {
-	if size < 1 || current < 1 {
-		db.ctx.err = errors.New("size,current must be greater than 0")
+// Extra
+//
+//	InsertType(InsertType.Overvide) // 插入执行逻辑
+//	ShowSql()  // 打印sql
+//	SkipSoftDelete() //跳过软删除逻辑
+//	ReturnType(Field.All,Field.Nil,Field.Pk,Field.None) //返回所有字段，；只返回nil字段；只返回主键字段
+//	tableName("")  //覆盖表名
+type Extra struct {
+	insertType     insert_type.InsertType
+	returnType     return_type.ReturnType
+	showSql        bool
+	skipSoftDelete bool
+	tableName      string
+
+	columns      []string
+	columnValues []field.Value
+
+	// 唯一索引字段名列表
+	duplicateKeyNames []string
+	set               *SetContext
+	err               error
+}
+
+func (e *Extra) GetErr() error {
+	if e.err != nil {
+		return e.err
 	}
-	return &SqlBuilder{
-		db:          db,
-		selectQuery: &strings.Builder{},
-		otherQuery:  &strings.Builder{},
-		other: PageCnfig{
-			size:    size,
-			current: current,
-		},
+	if e.set != nil {
+		return e.set.err
+	}
+	return nil
+}
+
+func (e *Extra) ShowSql() *Extra {
+	e.showSql = true
+	return e
+}
+
+func (e *Extra) SkipSoftDelete() *Extra {
+	e.skipSoftDelete = true
+	return e
+}
+
+func (e *Extra) TableName(name string) *Extra {
+	e.tableName = name
+	return e
+}
+
+func (e *Extra) ReturnType(typ return_type.ReturnType) *Extra {
+	e.returnType = typ
+	return e
+}
+
+func (e *Extra) SetNull(name string) *Extra {
+	e.columns = append(e.columns, name)
+	e.columnValues = append(e.columnValues, field.Value{
+		Type: field.Null,
+	})
+	return e
+}
+
+func (e *Extra) SetNow(name string) *Extra {
+	e.columns = append(e.columns, name)
+	e.columnValues = append(e.columnValues, field.Value{
+		Type: field.Now,
+	})
+	return e
+}
+
+func (e *Extra) Set(name string, value any) *Extra {
+	e.columns = append(e.columns, name)
+	e.columnValues = append(e.columnValues, field.Value{
+		Type:  field.Val,
+		Value: value,
+	})
+	return e
+}
+
+// 自增，自减
+func (e *Extra) SetIncrement(name string, num any) *Extra {
+	e.columns = append(e.columns, name)
+	e.columnValues = append(e.columnValues, field.Value{
+		Type:  field.Increment,
+		Value: num,
+	})
+	return e
+}
+
+// 自定义表达式
+// SetExpression("name", "substr(time('now'), 12)") // sqlite 设置时分秒
+func (e *Extra) SetExpression(name string, expression string) *Extra {
+	e.columns = append(e.columns, name)
+	e.columnValues = append(e.columnValues, field.Value{
+		Type:  field.Expression,
+		Value: expression,
+	})
+	return e
+}
+
+type DuplicateKey struct {
+	e *Extra
+}
+
+//.whenDuplicateKey(name ...string, )
+//.do(nothing, nil)
+//.do(update, all, .set(), select ("name", "age"))
+//.do(replace, all, .set(), select ("name", "age"))
+
+// 唯一索引冲突
+func (e *Extra) WhenDuplicateKey(name ...string) *DuplicateKey {
+	e.duplicateKeyNames = name
+	return &DuplicateKey{
+		e: e,
 	}
 }
 
-type PageCnfig struct {
-	size    int
-	current int64
+func (dk *DuplicateKey) DoNothing() *Extra {
+	dk.e.insertType = insert_type.Ignore
+	return dk.e
 }
 
-type Page struct {
-	Records interface{} `json:"records"`
-	Size    int         `json:"size"`
-	Current int64       `json:"current"`
-	Total   int64       `json:"total"`
-	Pages   int64       `json:"pages"`
-}
-
-// PageSelect 查询分页
-func (b *SqlBuilder) PageScan(dest interface{}) (rowsNum int64, dto Page, err error) {
-	if err = b.db.ctx.err; err != nil {
-		return
-	}
-	if b.other == nil {
-		err = errors.New("PageCnfig is nil")
-		return
-	}
-	var total int64
-	var size = b.other.(PageCnfig).size
-	var current = b.other.(PageCnfig).current
-
-	b.initSelectSql()
-	b.db.ctx.initScanDestList(dest)
-	b.db.ctx.checkScanDestField()
-	if err = b.db.ctx.err; err != nil {
-		return
-	}
-	var countSql = "select count(*) " + b.otherQuery.String()
-
-	rows, err := b.db.dialect.query(countSql, b.otherArgs...)
-	if err != nil {
-		return
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		box := reflect.ValueOf(&total).Interface()
-		err = rows.Scan(box)
-		if err != nil {
-			return
+func (dk *DuplicateKey) update(insertType insert_type.InsertType, set ...*SetContext) *Extra {
+	var sc *SetContext
+	if len(set) == 0 {
+		sc = &SetContext{}
+	} else {
+		if set[0] == nil {
+			sc = &SetContext{}
+		} else {
+			sc = set[0]
 		}
 	}
-	// 计算总页数
+	dk.e.insertType = insertType
+	dk.e.set = sc
+	return dk.e
+}
 
-	var selectSql = b.query + " limit ? offset ?"
-	var offset = (current - int64(1)) * int64(size)
-	var args = append(b.args, size, offset)
-	listRows, err := b.db.dialect.query(selectSql, args...)
-	if err != nil {
-		return
-	}
-	defer listRows.Close()
-	num, err := b.db.ctx.Scan(listRows)
-	if err != nil {
-		return
-	}
+func (dk *DuplicateKey) DoUpdate(set ...*SetContext) *Extra {
+	return dk.update(insert_type.Update, set...)
+}
 
-	if num == 0 {
-		dest = make([]interface{}, 0)
-	}
-	dto = Page{
-		Records: dest,
-		Size:    size,
-		Current: current,
-		Total:   total,
-		Pages:   total / int64(size),
-	}
-	return num, dto, nil
+func (dk *DuplicateKey) DoReplace(set ...*SetContext) *Extra {
+	return dk.update(insert_type.Replace, set...)
 }

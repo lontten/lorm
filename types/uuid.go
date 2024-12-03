@@ -41,7 +41,7 @@ func (u UUID) Value() (driver.Value, error) {
 }
 
 // Scan valueof time.Time
-func (u *UUID) Scan(v interface{}) error {
+func (u *UUID) Scan(v any) error {
 	value, ok := v.(string)
 	if ok {
 		*u = UUID(uuid.FromStringOrNil(value))
@@ -61,6 +61,16 @@ func Str2UUIDMustP(v string) *UUID {
 	}
 	u := UUID(fromString)
 	return &u
+}
+
+func V4() uuid.UUID {
+	v4, _ := uuid.NewV4()
+	return v4
+}
+
+func V4p() *uuid.UUID {
+	v4, _ := uuid.NewV4()
+	return &v4
 }
 
 func NewV4() UUID {
@@ -105,7 +115,7 @@ func (p UUIDList) Value() (driver.Value, error) {
 }
 
 // Scan 实现方法
-func (p *UUIDList) Scan(data interface{}) error {
+func (p *UUIDList) Scan(data any) error {
 	array := pgtype.UUIDArray{}
 	err := array.Scan(data)
 	if err != nil {

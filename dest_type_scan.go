@@ -5,98 +5,162 @@ import (
 	"reflect"
 )
 
-// ptr slice
-func (ctx *OrmContext) initScanDestList(dest interface{}) {
-	if ctx.err != nil {
-		return
-	}
-	if dest == nil {
-		ctx.err = errors.New("scanList is nil")
+func (ctx *ormContext) initScanDestList(dest any) {
+	if ctx.hasErr() {
 		return
 	}
 
 	v := reflect.ValueOf(dest)
-	is, v, err := basePtrValue(v)
-	if !is {
-		ctx.err = errors.New("scanList must be a ptr ")
-		return
-	}
+	isPtr, v, err := basePtrValue(v)
 	if err != nil {
 		ctx.err = err
 		return
 	}
-	is, base := baseSliceType(v.Type())
-	if !is {
-		ctx.err = errors.New("scanList must be a slice ")
+	if !isPtr {
+		ctx.err = errors.New("scan must be a ptr ")
 		return
 	}
 
-	ctyp := checkCompType(base)
-	if ctyp == Invade {
+	isSlice, t := baseSliceType(v.Type())
+	if !isSlice {
+		ctx.err = errors.New("scanList must be a slice ")
+		return
+	}
+	ctyp := checkAtomType(t)
+	if ctyp == Invalid {
 		ctx.err = errors.New("scan type is not supported")
 		return
 	}
 
 	ctx.scanDest = dest
+	ctx.scanIsPtr = isPtr
 
-	ctx.scanIsSlice = true
-	ctx.scanSliceItemIsPtr = base.Kind() == reflect.Ptr
+	ctx.destV = v
+	ctx.destBaseType = t
+	ctx.destBaseTypeIsComp = ctyp == Composite
 
-	ctx.scanDestBaseType = base
-	ctx.scanDestBaseTypeIsComp = ctyp == Composite
-
-	ctx.destValue = v
-
+	ctx.destIsSlice = true
+	ctx.destSliceItemIsPtr = t.Kind() == reflect.Ptr
 }
 
-// ptr slice
-func (ctx *OrmContext) initScanDestOne(dest interface{}) {
-	if ctx.err != nil {
-		return
-	}
-	if dest == nil {
-		ctx.err = errors.New("scan is nil")
+func (ctx *ormContext) initScanDestListT(dest any, v reflect.Value, t reflect.Type, destSliceItemIsPtr bool) {
+	if ctx.hasErr() {
 		return
 	}
 
-	v := reflect.ValueOf(dest)
-	is, v, err := basePtrValue(v)
-	if !is {
-		ctx.err = errors.New("scan must be a ptr ")
+	ctyp := checkAtomType(t)
+	if ctyp == Invalid {
+		ctx.err = errors.New("scan type is not supported")
 		return
 	}
+
+	ctx.scanDest = dest
+	ctx.scanIsPtr = true
+
+	ctx.destV = v
+	ctx.destBaseType = t
+	ctx.destBaseTypeIsComp = ctyp == Composite
+
+	ctx.destIsSlice = true
+	ctx.destSliceItemIsPtr = destSliceItemIsPtr
+}
+
+func (ctx *ormContext) initScanDestOne(dest any) {
+	if ctx.hasErr() {
+		return
+	}
+	v := reflect.ValueOf(dest)
+	isPtr, v, err := basePtrValue(v)
 	if err != nil {
 		ctx.err = err
 		return
 	}
-
-	is, base := baseSliceType(v.Type())
-	if is {
-		if !isSingleType(base) {
-			ctx.err = errors.New("scan can't be a slice ")
-			return
-		}
-
+	if !isPtr {
+		ctx.err = errors.New("scan must be a ptr ")
+		return
 	}
 
-	ctyp := Single
+	t := v.Type()
 
-	if !is {
-		ctyp = checkCompType(base)
-		if ctyp == Invade {
-			ctx.err = errors.New("scan type is not supported")
-			return
-		}
+	ctyp := checkAtomType(t)
+	if ctyp == Invalid {
+		ctx.err = errors.New("scan type is not supported")
+		return
 	}
 
 	ctx.scanDest = dest
+	ctx.scanIsPtr = isPtr
+	ctx.destV = v
 
-	ctx.scanIsSlice = false
-	ctx.scanSliceItemIsPtr = false
+	ctx.destBaseType = t
+	ctx.destBaseTypeIsComp = ctyp == Composite
 
-	ctx.scanDestBaseType = base
-	ctx.scanDestBaseTypeIsComp = ctyp == Composite
+	ctx.destIsSlice = false
+	ctx.destSliceItemIsPtr = false
+}
 
-	ctx.destValue = v
+func (ctx *ormContext) initScanDestOneT(dest any) {
+	if ctx.hasErr() {
+		return
+	}
+
+	v := reflect.ValueOf(dest).Elem()
+	t := v.Type()
+
+	ctyp := checkAtomType(t)
+	if ctyp == Invalid {
+		ctx.err = errors.New("scan type is not supported")
+		return
+	}
+
+	ctx.scanDest = dest
+	ctx.scanIsPtr = true
+	ctx.destV = v
+
+	ctx.destBaseType = t
+	ctx.destBaseTypeIsComp = ctyp == Composite
+
+	ctx.destIsSlice = false
+	ctx.destSliceItemIsPtr = false
+}
+
+// 从dest中获取filed 的名字，dest必须为struct或者*struct
+func (ctx *ormContext) initDestScanField(dest any) {
+	if ctx.hasErr() {
+		return
+	}
+	v := reflect.ValueOf(dest)
+	_, v, err := basePtrValue(v)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	is := isCompType(v.Type())
+	if is {
+		ctx.err = errors.New("dest need is struct or map")
+		return
+	}
+	is, _ = baseSliceType(v.Type())
+	if is {
+		ctx.err = errors.New("dest cannot slice")
+		return
+	}
+
+	err = checkFieldV(v.Type())
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	//ctx.scanDest = dest
+	//
+	//ctx.scanIsSlice = false
+	//ctx.destSliceItemIsPtr = false
+	//
+	//ctx.scanDestBaseType = base
+	//ctx.destBaseTypeIsComp = ctyp == Composite
+	//
+	//ctx.destValue = v
+
+	//todo 把filed 获取到存入 ctx
 
 }

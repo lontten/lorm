@@ -1,8 +1,9 @@
 package lorm
 
-//批量操作
+// todo 下面未重构--------------
+// 批量操作
 type EngineBatch struct {
-	dialect Dialect
+	dialect Dialecter
 
-	context OrmContext
+	context ormContext
 }

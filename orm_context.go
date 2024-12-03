@@ -1,71 +1,266 @@
 package lorm
 
 import (
+	"github.com/lontten/lorm/field"
+	"github.com/lontten/lorm/insert_type"
+	"github.com/lontten/lorm/return_type"
+	"github.com/lontten/lorm/soft_delete"
+	"github.com/lontten/lorm/sql_type"
+	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 )
 
-type OrmContext struct {
-	conf OrmConf
+type tableSqlType int
 
-	isLgDel bool
-	isTen   bool
+// d前缀是单表的意思，tableSqlType 只用于单表操作
+const (
+	dInsert tableSqlType = iota
+	dInsertOrUpdate
+	dUpdate
+	dDelete
+	dSelect
+	dGetOrInsert
+	dHas
+	dCount
+)
 
-	//主键名-列表
+type ormContext struct {
+	ormConf *OrmConf
+	extra   *Extra
+
+	// model 参数，用于校验字段类型是否合法
+	paramModelBaseV reflect.Value
+
+	// dest
+	scanDest  any
+	scanIsPtr bool
+
+	// dest去除ptr的value
+	destV              reflect.Value
+	destBaseType       reflect.Type
+	destBaseTypeIsComp bool
+	// scan 为slice时，里面item是否是ptr
+	destIsSlice        bool
+	destSliceItemIsPtr bool
+
+	log Logger
+	err error
+
+	tableSqlType tableSqlType //单表，sql类型crud
+
+	baseTokens []baseToken
+
+	isLgDel bool //是否启用了逻辑删除
+	isTen   bool //是否启用了多租户
+
+	// ------------------主键----------------------
+
+	// id = 1
+	//主键名-列表,这里考虑到多主键
 	primaryKeyNames []string
 	//主键值-列表
-	primaryKeyValues [][]interface{}
+	primaryKeyValues [][]field.Value
 
-	//当前表名
-	tableName string
+	// id != 1 ,使用场景 更新名字时，检查名字重复，排除自己
+	//主键名-列表,这里考虑到多主键-排除
+	filterPrimaryKeyNames []string
+	//主键值-列表-排除
+	filterPrimaryKeyValues [][]any
 
-	//字段列表
-	columns []string
-	//值列表-多个
-	columnValues []interface{}
+	// ------------------conf----------------------
 
-	//-------------------target---------------------
-	//当前struct对象
-	scanDest  interface{}
-	destIsPtr bool
-	//去除 ptr
-	destValue reflect.Value
-	//用作 参数合法行校验
-	destBaseValue reflect.Value
-	destBaseType  reflect.Type
+	insertType     insert_type.InsertType
+	returnType     return_type.ReturnType
+	softDeleteType soft_delete.SoftDelType
+	skipSoftDelete bool   // 跳过软删除
+	tableName      string //当前表名
+	checkParam     bool   // 是否检查参数
+	showSql        bool   // 是否打印sql
+	// ------------------conf-end----------------------
+
+	// ------------------字段名：字段值----------------------
+
+	columns      []string      // 有效字段列表
+	columnValues []field.Value // 有效字段值
+
+	modelZeroFieldNames []string // model 零值字段列表
+	modelAllFieldNames  []string // model 所有字段列表
+	// ------------------字段名：字段值-end----------------------
 
 	//------------------scan----------------------
-	//scan base type
-	scanDestBaseType reflect.Type
-	//scan 是comp，false是single
-	scanDestBaseTypeIsComp bool
-	//scan 接收返回
-	scanIsSlice bool
-	//scan 为slice时，里面item是否是ptr
-	scanSliceItemIsPtr bool
+	//true query,false exec
+	sqlIsQuery bool
+	sqlType    sql_type.SqlType
 
 	//要执行的sql语句
 	query *strings.Builder
 	//参数
-	args []interface{}
+	args []any
 
 	started bool
-	err     error
-
-	//log的层级
-	log Logger
 }
 
-func (ctx OrmContext) Copy() OrmContext {
-	return OrmContext{
-		conf: ctx.conf,
-		log:  ctx.log,
+func (ctx *ormContext) initExtra(extra ...*Extra) {
+	if len(extra) == 0 {
+		return
+	}
+	e := extra[0]
+	if e == nil {
+		return
+	}
+	if e.GetErr() != nil {
+		ctx.err = e.GetErr()
+		return
+	}
+	ctx.extra = e
+	ctx.insertType = e.insertType
+	ctx.returnType = e.returnType
+	ctx.showSql = e.showSql
+	ctx.skipSoftDelete = e.skipSoftDelete
+	ctx.tableName = e.tableName
+}
+
+// 初始化 表名,主键
+func (ctx *ormContext) initConf() {
+	if ctx.hasErr() {
+		return
+	}
+	v := ctx.destV
+	dest := ctx.scanDest
+	t := ctx.destBaseType
+	ctx.softDeleteType = utils.GetSoftDelType(t)
+
+	if ctx.tableName == "" {
+		tableName := ctx.ormConf.tableName(v, dest)
+		ctx.tableName = tableName
+	}
+
+	primaryKeys := ctx.ormConf.primaryKeys(v, dest)
+	ctx.primaryKeyNames = primaryKeys
+}
+
+// 获取struct对应的字段名 和 其值，
+// slice为全部，一个为非nil字段。
+func (ctx *ormContext) initColumnsValue() {
+	if ctx.hasErr() {
+		return
+	}
+	cv, err := ctx.ormConf.getStructFV(ctx.destV)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	ctx.columns = cv.columns
+	ctx.columnValues = cv.columnValues
+
+	ctx.modelZeroFieldNames = cv.modelZeroFieldNames
+
+	ctx.modelAllFieldNames = cv.modelAllFieldNames
+
+	ctx.initColumnsValueSet()
+	ctx.initColumnsValueExtra()
+	ctx.initColumnsValueSoftDel()
+	return
+}
+func (ctx *ormContext) initColumnsValueSet() {
+	if ctx.hasErr() {
+		return
+	}
+	e := ctx.extra
+	if e == nil {
+		return
+	}
+	if e.GetErr() != nil {
+		ctx.err = e.GetErr()
+		return
+	}
+	set := e.set
+	if set == nil {
+		return
+	}
+	if set.err != nil {
+		ctx.err = set.err
+		return
+	}
+
+	if set.hasModel {
+		oc := &ormContext{
+			ormConf:        ctx.ormConf,
+			skipSoftDelete: true,
+		}
+
+		oc.initModelDest(set.model) //初始化参数
+		oc.initColumnsValue()       //初始化cv
+
+		set.columns = append(set.columns, oc.columns...)
+		set.columnValues = append(set.columnValues, oc.columnValues...)
+	}
+
+	return
+}
+func (ctx *ormContext) initColumnsValueExtra() {
+	if ctx.hasErr() {
+		return
+	}
+	e := ctx.extra
+	if e == nil {
+		return
+	}
+	for i, column := range e.columns {
+		cv := e.columnValues[i]
+		if cv.Type == field.Null || cv.Type == field.Now {
+			ctx.modelZeroFieldNames = append(ctx.modelZeroFieldNames, column)
+		}
+		find := utils.Find(ctx.columns, column)
+		if find == -1 {
+			ctx.columns = append(ctx.columns, column)
+			ctx.columnValues = append(ctx.columnValues, e.columnValues[i])
+		} else {
+			ctx.columnValues[i] = e.columnValues[i]
+		}
+	}
+	return
+}
+func (ctx *ormContext) initColumnsValueSoftDel() {
+	if ctx.hasErr() {
+		return
+	}
+	if ctx.skipSoftDelete {
+		return
+	}
+
+	switch ctx.sqlType {
+	case sql_type.Insert:
+		value, has := soft_delete.SoftDelTypeNoFVMap[ctx.softDeleteType]
+		if has && value.Type != field.None {
+			ctx.columns = append(ctx.columns, value.Name)
+			ctx.columnValues = append(ctx.columnValues, value.ToValue())
+		}
+		break
+	case sql_type.Delete:
+		value, has := soft_delete.SoftDelTypeYesFVMap[ctx.softDeleteType]
+		if has && value.Type != field.None {
+			ctx.columns = append(ctx.columns, value.Name)
+			ctx.columnValues = append(ctx.columnValues, value.ToValue())
+		}
+		break
+	default:
+		break
+	}
+	return
+}
+
+func (ctx ormContext) Copy() ormContext {
+	return ormContext{
+		ormConf: ctx.ormConf,
+		log:     ctx.log,
 	}
 }
 
-//select 生成
-func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
+// select 生成
+func (ctx *ormContext) selectArgsArr2SqlStr(args []string) {
 	query := ctx.query
 	if ctx.started {
 		for _, name := range args {
@@ -87,7 +282,7 @@ func (ctx *OrmContext) selectArgsArr2SqlStr(args []string) {
 }
 
 // create 生成
-func (ctx *OrmContext) tableInsertGen() string {
+func (ctx *ormContext) tableInsertGen() string {
 	args := ctx.columns
 	var sb strings.Builder
 
@@ -116,7 +311,37 @@ func (ctx *OrmContext) tableInsertGen() string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) createSqlGenera(args []string) string {
+// 单表sql生成，insert
+func (p *PgDialect) tGenInsert() string {
+	args := p.ctx.columns
+	var sb strings.Builder
+
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(p.ctx.tableName + " ")
+
+	sb.WriteString(" ( ")
+	for i, v := range args {
+		if i == 0 {
+			sb.WriteString(v)
+		} else {
+			sb.WriteString(" , " + v)
+		}
+	}
+	sb.WriteString(" ) ")
+	sb.WriteString(" VALUES ")
+	sb.WriteString("( ")
+	for i := range args {
+		if i == 0 {
+			sb.WriteString(" ? ")
+		} else {
+			sb.WriteString(", ? ")
+		}
+	}
+	sb.WriteString(" ) ")
+	return sb.String()
+}
+
+func (ctx *ormContext) createSqlGenera(args []string) string {
 	var sb strings.Builder
 	sb.WriteString(" ( ")
 	for i, v := range args {
@@ -141,7 +366,7 @@ func (ctx *OrmContext) createSqlGenera(args []string) string {
 }
 
 // upd 生成
-func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
+func (ctx *ormContext) tableUpdateArgs2SqlStr(args []string) string {
 	var sb strings.Builder
 	l := len(args)
 	for i, v := range args {
@@ -154,8 +379,8 @@ func (ctx *OrmContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
-	if ctx.err != nil {
+func (ctx *ormContext) initPrimaryKeyValues(v []any) {
+	if ctx.hasErr() {
 		return
 	}
 
@@ -166,7 +391,7 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 	}
 	pkLen := len(ctx.primaryKeyNames)
 
-	idValuess := make([][]interface{}, 0)
+	idValuess := make([][]field.Value, 0)
 
 	if pkLen == 1 { //单主键
 		for _, i := range v {
@@ -177,13 +402,16 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 				return
 			}
 
-			if !isSingleType(value.Type()) {
+			if !isValuerType(value.Type()) {
 				ctx.err = errors.New("ByPrimaryKey typ err,not single")
 				return
 			}
 
-			idValues := make([]interface{}, 1)
-			idValues[0] = value.Interface()
+			idValues := make([]field.Value, 1)
+			idValues[0] = field.Value{
+				Type:  field.Val,
+				Value: value.Interface(),
+			}
 			idValuess = append(idValuess, idValues)
 		}
 
@@ -200,7 +428,7 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 				return
 			}
 
-			columns, values, err := getCompValueCV(value, ctx.conf)
+			columns, values, err := getCompValueCV(value, ctx.ormConf)
 			if err != nil {
 				ctx.err = err
 				return
@@ -210,7 +438,7 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 				return
 			}
 
-			idValues := make([]interface{}, 0)
+			idValues := make([]field.Value, 0)
 			idValues = append(idValues, values...)
 			idValuess = append(idValuess, idValues)
 		}
@@ -219,14 +447,14 @@ func (ctx *OrmContext) initPrimaryKeyValues(v []interface{}) {
 	ctx.primaryKeyValues = idValuess
 }
 
-func (ctx *OrmContext) initSelfPrimaryKeyValues() {
-	if ctx.err != nil {
+func (ctx *ormContext) initSelfPrimaryKeyValues() {
+	if ctx.hasErr() {
 		return
 	}
 
 	keyNum := len(ctx.primaryKeyNames)
-	idValues := make([]interface{}, 0)
-	columns, values, err := getCompCV(ctx.scanDest, ctx.conf)
+	idValues := make([]field.Value, 0)
+	columns, values, err := getCompCV(ctx.scanDest, ctx.ormConf)
 	if err != nil {
 		ctx.err = err
 		return
@@ -253,51 +481,55 @@ func (ctx *OrmContext) initSelfPrimaryKeyValues() {
 	ctx.primaryKeyValues = append(ctx.primaryKeyValues, idValues)
 }
 
-//生成select sql
-func (ctx *OrmContext) genSelectByPrimaryKey() []byte {
+// 生成select sql
+func (ctx *ormContext) genSelectByPrimaryKey() []byte {
 	tableName := ctx.tableName
 	columns := ctx.columns
-	selSql := ctx.conf.genSelectSqlCommon(tableName, columns)
+	selSql := ctx.ormConf.genSelectSqlCommon(tableName, columns)
 	where := ctx.genWhereByPrimaryKey()
 	return append(selSql, where...)
 }
 
-//生成del sql
-func (ctx *OrmContext) genDelByPrimaryKey() []byte {
-	return ctx.conf.genDelSqlCommon(ctx.tableName, ctx.primaryKeyNames)
+// 生成del sql
+func (ctx *ormContext) genDelByPrimaryKey() []byte {
+	return ctx.ormConf.genDelSqlCommon(ctx.tableName, ctx.primaryKeyNames)
 }
 
-//生成del sql
-func (ctx *OrmContext) genDelByKeys(keys []string) []byte {
-	return ctx.conf.genDelSqlCommon(ctx.tableName, keys)
+// 生成del sql
+func (ctx *ormContext) genDelByKeys(keys []string) []byte {
+	return ctx.ormConf.genDelSqlCommon(ctx.tableName, keys)
 }
 
-//生成del sql
-func (ctx *OrmContext) genDelByWhere(where []byte) []byte {
-	return ctx.conf.genDelSqlByWhere(ctx.tableName, where)
+// 生成del sql
+func (ctx *ormContext) genDelByWhere(where []byte) []byte {
+	return ctx.ormConf.genDelSqlByWhere(ctx.tableName, where)
 }
 
-//生成where sql
-func (ctx *OrmContext) genWhereByPrimaryKey() []byte {
+// 生成where sql
+func (ctx *ormContext) genWhereByPrimaryKey() []byte {
 	keys := ctx.primaryKeyNames
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ctx.conf.TenantIdFieldName != "" && !ctx.conf.TenantIgnoreTableFun(tableName)
-	return ctx.conf.GenWhere(keys, hasTen)
+	hasTen := ctx.ormConf.TenantIdFieldName != "" && !ctx.ormConf.TenantIgnoreTableFun(tableName)
+	return ctx.ormConf.GenWhere(keys, hasTen)
 }
 
-//生成where sql
-func (ctx *OrmContext) genWhere(keys []string) []byte {
+// 生成where sql
+func (ctx *ormContext) genWhere(keys []string) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ctx.conf.TenantIdFieldName != "" && !ctx.conf.TenantIgnoreTableFun(tableName)
-	return ctx.conf.GenWhere(keys, hasTen)
+	hasTen := ctx.ormConf.TenantIdFieldName != "" && !ctx.ormConf.TenantIgnoreTableFun(tableName)
+	return ctx.ormConf.GenWhere(keys, hasTen)
 }
 
-//为where语句附加上，租户，逻辑删除等。。。
-func (ctx *OrmContext) whereExtra(where []byte) []byte {
+// 为where语句附加上，租户，逻辑删除等。。。
+func (ctx *ormContext) whereExtra(where []byte) []byte {
 	tableName := ctx.tableName
 	//开启多租户，并且该表不跳过
-	hasTen := ctx.conf.TenantIdFieldName != "" && !ctx.conf.TenantIgnoreTableFun(tableName)
-	return ctx.conf.whereExtra(where, hasTen)
+	hasTen := ctx.ormConf.TenantIdFieldName != "" && !ctx.ormConf.TenantIgnoreTableFun(tableName)
+	return ctx.ormConf.whereExtra(where, hasTen)
+}
+
+func (ctx *ormContext) hasErr() bool {
+	return ctx.err != nil
 }

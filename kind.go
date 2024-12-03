@@ -1,11 +1,17 @@
 package lorm
 
 import (
+	"errors"
 	"reflect"
 )
 
-//------------------base------------------
-//是否基本类型
+//todo 下面未重构--------------
+
+// atom 原子类型			#作为字段使用。
+// composite 非原子类型		#多个atom组成的实体类
+
+// ------------------base------------------
+// 是否基本类型
 func _isBaseType(t reflect.Type) bool {
 	kind := t.Kind()
 	if reflect.Invalid < kind && kind < reflect.Array {
@@ -17,13 +23,13 @@ func _isBaseType(t reflect.Type) bool {
 	return false
 }
 
-//------------------struct------------------
-//是否基本类型
+// ------------------struct------------------
+// 是否struct类型
 func _isStructType(t reflect.Type) bool {
 	return t.Kind() == reflect.Struct
 }
 
-//-----------------map-------
+// -----------------map-------
 // is 是否 slice has 是否有内容
 func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 	if v.Kind() != reflect.Map {
@@ -36,14 +42,14 @@ func baseMapValue(v reflect.Value) (is bool, key reflect.Value) {
 	return true, key
 }
 
-//-----------------single-------
-func isSingleType(t reflect.Type) bool {
-	return checkCompType(t) == Single
-}
+// -----------------atom-------
+//func isAtomType(t reflect.Type) bool {
+//	return checkAtomType(t) == Atom
+//}
 
-//-----------------composite-------
+// -----------------composite-------
 func isCompType(t reflect.Type) bool {
-	return checkCompType(t) == Composite
+	return checkAtomType(t) == Composite
 }
 
 // is 是否 slice has 是否有内容
@@ -58,15 +64,13 @@ func baseMapType(t reflect.Type) (is, has bool) {
 	return true, true
 }
 
-//-----------------------nuller---------------------------------
-//检查是否nuller
-func isNullerType(t reflect.Type) bool {
-	return t.Implements(ImpNuller)
+func isScannerType(t reflect.Type) bool {
+	if _isBaseType(t) {
+		return true
+	}
+	return t.Implements(ImpScanner)
 }
 
-//----------------------valuer------------------------
-//	v0.7
-//是否valuer
 func isValuerType(t reflect.Type) bool {
 	if _isBaseType(t) {
 		return true
@@ -74,37 +78,26 @@ func isValuerType(t reflect.Type) bool {
 	return t.Implements(ImpValuer)
 }
 
-//----------------------struct-comp------------------------
-//	v0.7
-//是否struct类型comp struct-comp
-func isStructCompValue(v reflect.Value) bool {
-	is := _isStructType(v.Type())
-	if !is {
-		return false
-	}
-	typ := checkCompValue(v)
-	return typ == Composite
+func isVSType(t reflect.Type) bool {
+	return isValuerType(t) && isScannerType(t)
 }
 
-func isStructCompType(t reflect.Type) bool {
-	is := _isStructType(t)
-	if !is {
-		return false
-	}
-	typ := checkCompType(t)
-	return typ == Composite
-}
-
-//-------------ptr-----------------
-// v0.7
-//是指针类型，返回指针的基类型
+// -------------ptr-----------------
+// 是指针类型，返回指针的基类型,如果是ptr，但是是nil，则返回error
 func basePtrType(t reflect.Type) (bool, reflect.Type) {
 	if t.Kind() == reflect.Ptr {
 		return true, t.Elem()
 	}
 	return false, t
 }
+
+// v not valid 返回 err
+// v 不是 ptr，返回false
+// v 是 ptr，如果v是nil，则返回error，v 否则返回 v的指向
 func basePtrValue(v reflect.Value) (bool, reflect.Value, error) {
+	if !v.IsValid() {
+		return false, v, ErrNil
+	}
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
 			return false, v, ErrNil
@@ -114,9 +107,9 @@ func basePtrValue(v reflect.Value) (bool, reflect.Value, error) {
 	return false, v, nil
 }
 
-//-------------ptr-deep-------------------
+// -------------ptr-deep-------------------
 // v0.7
-//是指针类型，返回指针的最基类型
+// 是指针类型，返回指针的最基类型
 func basePtrDeepType(t reflect.Type) (bool, reflect.Type) {
 	isPtr := false
 base:
@@ -142,66 +135,59 @@ base:
 	return isPtr, v, nil
 }
 
-//-----------------slice---------------
-// v0.7
-//是数组类型，返回数组的基类型
+// -----------------slice---------------
+// 是数组类型，返回数组的基础类型
 func baseSliceType(t reflect.Type) (bool, reflect.Type) {
-	typ := checkCompType(t)
-	if typ != Invade {
+	if isValuerType(t) {
 		return false, t
 	}
+
 	if t.Kind() == reflect.Slice {
 		return true, t.Elem()
 	}
 	return false, t
 }
 
-// v0.7
-// is 是否 slice
-func baseSliceValue(v reflect.Value, canEmpty bool) (is bool, structType reflect.Value) {
-	typ := checkCompValue(v)
-	if typ != Invade {
+// 是数组类型，返回数组的基础类型
+func baseSliceValue(v reflect.Value) (bool, reflect.Value) {
+	if isValuerType(v.Type()) {
 		return false, v
 	}
 
 	if v.Kind() == reflect.Slice {
 		if v.Len() == 0 {
-			return canEmpty, v
+			return false, v
 		}
 		return true, v.Index(0)
 	}
 	return false, v
 }
 
-//---------------------slice-deep------------------
+// ---------------------slice-deep------------------
 // v0.7
-//是数组类型，返回数组的最基类型
+// 是数组类型，返回数组的最基类型
 func baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
-	isSlice := false
-	tmp := t
-
-	for true {
-		isBaseFlag := true //base
-
-		is, base := basePtrDeepType(tmp)
-		if is {
-			isBaseFlag = false
-		}
-
-		is, base = _baseSliceDeepType(base)
-		if is {
-			isBaseFlag = false
-			isSlice = true
-		}
-		if isBaseFlag {
-			if isSlice {
-				return true, base
-			}
-			return false, t
-		}
-		tmp = base
-	}
-	return false, t
+	return _baseSliceDeepType(t)
+	//isSlice := false
+	//tmp := t
+	//
+	//for true {
+	//	isDeepFlag := true //base
+	//
+	//	is, base = _baseSliceDeepType(base)
+	//	if is {
+	//		isDeepFlag = false
+	//		isSlice = true
+	//	}
+	//	if isDeepFlag {
+	//		if isSlice {
+	//			return true, base
+	//		}
+	//		return false, t
+	//	}
+	//	tmp = base
+	//}
+	//return false, t
 }
 
 // v0.6
@@ -237,9 +223,8 @@ func baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	return false, v, nil
 }
 
-// v0.7
-//是数组类型，返回数组的最基类型
-func _baseSliceDeepType(t reflect.Type) (ok bool, structType reflect.Type) {
+// 是数组类型，返回数组的最基类型
+func _baseSliceDeepType(t reflect.Type) (bool, reflect.Type) {
 	isSlice := false
 base:
 	is, t := baseSliceType(t)
@@ -250,7 +235,7 @@ base:
 	return isSlice, t
 }
 
-//slice 用到value的一定是非空
+// slice 用到value的一定是非空
 func _baseSliceDeepValue(v reflect.Value) (bool, reflect.Value, error) {
 	isSlice := false
 base:
@@ -266,7 +251,7 @@ base:
 		}
 	}
 
-	is, v := baseSliceValue(v, false)
+	is, v := baseSliceValue(v)
 	if is {
 		isSlice = true
 		goto base
@@ -274,9 +259,9 @@ base:
 	return isSlice, v, nil
 }
 
-//--------------------
-// v0.7
-//检查是 ptr 还是 slice
+// --------------------
+// v03
+// 包装类型：检查是 ptr 还是 slice
 type packType int
 
 const (
@@ -285,8 +270,8 @@ const (
 	Slice
 )
 
-// v0.7
-//检查是否是ptr，slice类型
+// v03
+// 检查是否是ptr，slice类型
 func checkPackType(t reflect.Type) (packType, reflect.Type) {
 	isPtr, base := basePtrDeepType(t)
 
@@ -347,24 +332,27 @@ func checkPackValue(v reflect.Value) (PackTyp, error) {
 
 //--------------------------------------------------
 
-//--------------------
-// v0.7
-//检查是 single 还是 composite
-//base和实现valuer的是single，
-//否则，并且类型是struct、map的是composite
-//其他为invade
-type compType int
+// --------------------
+// v03
+// 数据原子性
+// atom composite
+// 检查是 atom 还是 composite
+// base和实现valuer的是 atom 即可以作为实体类 字段的数据类型，可以对应一个数据库字段
+// 否则，并且类型是struct、map的是composite 即拥有多个 字段属性的 实体类，对应一条查询记录
+// 其他为 invalid
+type atomType int
 
 const (
-	Invade compType = iota
-	Single
+	Invalid atomType = iota
+	Atom
 	Composite
 )
 
-func checkCompValue(v reflect.Value) compType {
+// v03
+func checkAtomValue(v reflect.Value) atomType {
 	is := isValuerType(v.Type())
 	if is {
-		return Single
+		return Atom
 	}
 	is = _isStructType(v.Type())
 	if is {
@@ -376,13 +364,14 @@ func checkCompValue(v reflect.Value) compType {
 		return Composite
 	}
 
-	return Invade
+	return Invalid
 }
 
-func checkCompType(t reflect.Type) compType {
+// v03
+func checkAtomType(t reflect.Type) atomType {
 	is := isValuerType(t)
 	if is {
-		return Single
+		return Atom
 	}
 
 	is = _isStructType(t)
@@ -394,68 +383,89 @@ func checkCompType(t reflect.Type) compType {
 	if is {
 		return Composite
 	}
-	return Invade
+	return Invalid
 }
 
-//-----------------------map--------------------------------
-// v0.7
-//scan不需要必须nuller
-//检查map key是否string，value是否valuer
-func checkMapFieldType(t reflect.Type) bool {
+// -----------------------map--------------------------------
+// v03
+// scan不需要必须nuller
+// 检查map key是否string，value是否valuer
+//func checkMapFieldType(t reflect.Type) bool {
+//	if t.Key().Kind() != reflect.String {
+//		return false
+//	}
+//
+//	if !isAtomType(t.Elem()) {
+//		return false
+//	}
+//	return true
+//}
+
+// 检查map key是否string，value是否valuer
+func checkMapFieldV(t reflect.Type) error {
+	if t.Key().Kind() != reflect.String {
+		return errors.New("map key need string")
+	}
+	return checkFieldV(t.Elem())
+}
+
+// scan不需要必须nuller
+// 检查map key是否string，value是否valuer
+func isMapFieldV(t reflect.Type) bool {
 	if t.Key().Kind() != reflect.String {
 		return false
 	}
-
-	if !isSingleType(t.Elem()) {
-		return false
-	}
-	return true
+	return isFieldV(t.Elem())
 }
 
-// v0.7
-//检查map key是否string，value是否valuer/nuller
+// scan不需要必须nuller
+// 检查map key是否string，value是否 valuer/nuller
+func checkMapFieldVN(t reflect.Type) error {
+	if t.Key().Kind() != reflect.String {
+		return errors.New("map key need string")
+	}
+	return checkFieldVS(t.Elem())
+}
+
+// scan不需要必须nuller
+// 检查map key是否string，value是否 valuer/nuller
+func isMapFieldVN(t reflect.Type) bool {
+	if t.Key().Kind() != reflect.String {
+		return false
+	}
+	return isFieldVS(t.Elem())
+}
+
+// 检查map key是否string，value是否valuer/scanner
 func checkMapFieldValue(v reflect.Value) bool {
 	key := v.MapKeys()[0]
 	if key.Kind() != reflect.String {
 		return false
 	}
 
-	//valuer
 	t := v.MapIndex(key).Type()
-
-	if !isSingleType(t) {
-		return false
-	}
-
-	//nuller
-	is := isNullerType(t)
-	if !is {
-		return false
-	}
-	return true
+	return isFieldVS(t)
 }
 
-//-----------------------struct--------------------------------
-// v0.7
-//scan不需要必须nuller
-//检查 struct field，value是否valuer
-func checkStructFieldType(t reflect.Type) bool {
+// -----------------------struct--------------------------------
+// scan需要 scanner
+// 检查 struct field
+func checkStructFieldV(t reflect.Type) error {
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkField(t.Field(i).Type)
+		err := checkFieldV(t.Field(i).Type)
 		if err != nil {
-			return false
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-// v0.7
-//检查 struct field，value是否valuer/nuller
-func checkStructFieldValue(v reflect.Value) error {
-	numField := v.NumField()
+// 检查 struct field，value是否valuer/scanner
+func checkStructFieldVS(t reflect.Type) error {
+	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		err := checkFieldNuller(v.Field(i).Type())
+		err := checkFieldVS(t.Field(i).Type)
 		if err != nil {
 			return err
 		}

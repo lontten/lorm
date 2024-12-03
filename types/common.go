@@ -1,11 +1,5 @@
 package types
 
-type NullEr interface {
-	IsNull() bool
-}
-
-
-
 func NewInt(i int) *int {
 	var t = i
 	return &t
@@ -15,7 +9,6 @@ func NewInt8(i int8) *int8 {
 	var t = i
 	return &t
 }
-
 
 func NewInt16(i int16) *int16 {
 	var t = i

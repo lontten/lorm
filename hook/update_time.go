@@ -1,0 +1,5 @@
+package hook
+
+func BeforeAutoUpdateTime() {
+
+}

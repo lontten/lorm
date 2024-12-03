@@ -42,7 +42,7 @@ func (t Time) Value() (driver.Value, error) {
 	return t.Time, nil
 }
 
-func (t *Time) Scan(v interface{}) error {
+func (t *Time) Scan(v any) error {
 	if v == nil {
 		return nil
 	}
@@ -92,7 +92,7 @@ func (p TimeList) Value() (driver.Value, error) {
 }
 
 // Scan 实现方法
-func (p *TimeList) Scan(data interface{}) error {
+func (p *TimeList) Scan(data any) error {
 	array := pgtype.TimestampArray{}
 	err := array.Scan(data)
 	if err != nil {
@@ -111,7 +111,7 @@ func (p *TimeList) Scan(data interface{}) error {
 	return err
 }
 
-//date
+// date
 type Date struct {
 	time.Time
 }
@@ -148,7 +148,7 @@ func (t Date) Value() (driver.Value, error) {
 }
 
 // Scan valueof jstime.Time
-func (t *Date) Scan(v interface{}) error {
+func (t *Date) Scan(v any) error {
 
 	value, ok := v.(time.Time)
 	if ok {
@@ -190,7 +190,7 @@ func (p DateList) Value() (driver.Value, error) {
 }
 
 // Scan 实现方法
-func (p *DateList) Scan(data interface{}) error {
+func (p *DateList) Scan(data any) error {
 	array := pgtype.TimestampArray{}
 	err := array.Scan(data)
 	if err != nil {
@@ -209,7 +209,7 @@ func (p *DateList) Scan(data interface{}) error {
 	return err
 }
 
-//datetime
+// datetime
 type DateTime struct {
 	time.Time
 }
@@ -246,7 +246,7 @@ func (t DateTime) Value() (driver.Value, error) {
 }
 
 // Scan valueof jstime.Time
-func (t *DateTime) Scan(v interface{}) error {
+func (t *DateTime) Scan(v any) error {
 	value, ok := v.(time.Time)
 	if ok {
 		*t = DateTime{value}
@@ -288,7 +288,7 @@ func (p DateTimeList) Value() (driver.Value, error) {
 }
 
 // Scan 实现方法
-func (p *DateTimeList) Scan(data interface{}) error {
+func (p *DateTimeList) Scan(data any) error {
 	array := pgtype.TimestampArray{}
 	err := array.Scan(data)
 	if err != nil {
@@ -329,7 +329,7 @@ func (t Time) AddData(d Date) DateTime {
 	)}
 }
 
-//datetime
+// datetime
 type AutoDateTime struct {
 	time.Time
 }
@@ -363,7 +363,7 @@ func (t AutoDateTime) Value() (driver.Value, error) {
 }
 
 // Scan valueof jstime.Time
-func (t *AutoDateTime) Scan(v interface{}) error {
+func (t *AutoDateTime) Scan(v any) error {
 	var s = ""
 	switch v := v.(type) {
 	case string:

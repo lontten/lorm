@@ -1,7 +1,7 @@
 package lorm
 
-type ArgArray []interface{}
+type ArgArray []any
 
-func ArrayOf(v ...interface{}) ArgArray {
+func ArrayOf(v ...any) ArgArray {
 	return v
 }
