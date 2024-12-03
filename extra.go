@@ -6,14 +6,8 @@ import (
 	"github.com/lontten/lorm/return_type"
 )
 
-// Extra
-//
-//	InsertType(InsertType.Overvide) // 插入执行逻辑
-//	ShowSql()  // 打印sql
-//	SkipSoftDelete() //跳过软删除逻辑
-//	ReturnType(Field.All,Field.Nil,Field.Pk,Field.None) //返回所有字段，；只返回nil字段；只返回主键字段
-//	tableName("")  //覆盖表名
-type Extra struct {
+// ExtraContext 扩展参数
+type ExtraContext struct {
 	insertType     insert_type.InsertType
 	returnType     return_type.ReturnType
 	showSql        bool
@@ -29,7 +23,11 @@ type Extra struct {
 	err               error
 }
 
-func (e *Extra) GetErr() error {
+func Extra() *ExtraContext {
+	return &ExtraContext{}
+}
+
+func (e *ExtraContext) GetErr() error {
 	if e.err != nil {
 		return e.err
 	}
@@ -39,27 +37,27 @@ func (e *Extra) GetErr() error {
 	return nil
 }
 
-func (e *Extra) ShowSql() *Extra {
+func (e *ExtraContext) ShowSql() *ExtraContext {
 	e.showSql = true
 	return e
 }
 
-func (e *Extra) SkipSoftDelete() *Extra {
+func (e *ExtraContext) SkipSoftDelete() *ExtraContext {
 	e.skipSoftDelete = true
 	return e
 }
 
-func (e *Extra) TableName(name string) *Extra {
+func (e *ExtraContext) TableName(name string) *ExtraContext {
 	e.tableName = name
 	return e
 }
 
-func (e *Extra) ReturnType(typ return_type.ReturnType) *Extra {
+func (e *ExtraContext) ReturnType(typ return_type.ReturnType) *ExtraContext {
 	e.returnType = typ
 	return e
 }
 
-func (e *Extra) SetNull(name string) *Extra {
+func (e *ExtraContext) SetNull(name string) *ExtraContext {
 	e.columns = append(e.columns, name)
 	e.columnValues = append(e.columnValues, field.Value{
 		Type: field.Null,
@@ -67,7 +65,7 @@ func (e *Extra) SetNull(name string) *Extra {
 	return e
 }
 
-func (e *Extra) SetNow(name string) *Extra {
+func (e *ExtraContext) SetNow(name string) *ExtraContext {
 	e.columns = append(e.columns, name)
 	e.columnValues = append(e.columnValues, field.Value{
 		Type: field.Now,
@@ -75,7 +73,7 @@ func (e *Extra) SetNow(name string) *Extra {
 	return e
 }
 
-func (e *Extra) Set(name string, value any) *Extra {
+func (e *ExtraContext) Set(name string, value any) *ExtraContext {
 	e.columns = append(e.columns, name)
 	e.columnValues = append(e.columnValues, field.Value{
 		Type:  field.Val,
@@ -85,7 +83,7 @@ func (e *Extra) Set(name string, value any) *Extra {
 }
 
 // 自增，自减
-func (e *Extra) SetIncrement(name string, num any) *Extra {
+func (e *ExtraContext) SetIncrement(name string, num any) *ExtraContext {
 	e.columns = append(e.columns, name)
 	e.columnValues = append(e.columnValues, field.Value{
 		Type:  field.Increment,
@@ -96,7 +94,7 @@ func (e *Extra) SetIncrement(name string, num any) *Extra {
 
 // 自定义表达式
 // SetExpression("name", "substr(time('now'), 12)") // sqlite 设置时分秒
-func (e *Extra) SetExpression(name string, expression string) *Extra {
+func (e *ExtraContext) SetExpression(name string, expression string) *ExtraContext {
 	e.columns = append(e.columns, name)
 	e.columnValues = append(e.columnValues, field.Value{
 		Type:  field.Expression,
@@ -106,7 +104,7 @@ func (e *Extra) SetExpression(name string, expression string) *Extra {
 }
 
 type DuplicateKey struct {
-	e *Extra
+	e *ExtraContext
 }
 
 //.whenDuplicateKey(name ...string, )
@@ -115,19 +113,19 @@ type DuplicateKey struct {
 //.do(replace, all, .set(), select ("name", "age"))
 
 // 唯一索引冲突
-func (e *Extra) WhenDuplicateKey(name ...string) *DuplicateKey {
+func (e *ExtraContext) WhenDuplicateKey(name ...string) *DuplicateKey {
 	e.duplicateKeyNames = name
 	return &DuplicateKey{
 		e: e,
 	}
 }
 
-func (dk *DuplicateKey) DoNothing() *Extra {
+func (dk *DuplicateKey) DoNothing() *ExtraContext {
 	dk.e.insertType = insert_type.Ignore
 	return dk.e
 }
 
-func (dk *DuplicateKey) update(insertType insert_type.InsertType, set ...*SetContext) *Extra {
+func (dk *DuplicateKey) update(insertType insert_type.InsertType, set ...*SetContext) *ExtraContext {
 	var sc *SetContext
 	if len(set) == 0 {
 		sc = &SetContext{}
@@ -143,10 +141,10 @@ func (dk *DuplicateKey) update(insertType insert_type.InsertType, set ...*SetCon
 	return dk.e
 }
 
-func (dk *DuplicateKey) DoUpdate(set ...*SetContext) *Extra {
+func (dk *DuplicateKey) DoUpdate(set ...*SetContext) *ExtraContext {
 	return dk.update(insert_type.Update, set...)
 }
 
-func (dk *DuplicateKey) DoReplace(set ...*SetContext) *Extra {
+func (dk *DuplicateKey) DoReplace(set ...*SetContext) *ExtraContext {
 	return dk.update(insert_type.Replace, set...)
 }

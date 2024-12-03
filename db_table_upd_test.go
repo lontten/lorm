@@ -1,21 +1,21 @@
 package lorm
 
+import "github.com/lontten/lorm/types"
+
+// import (
 //
-//import (
 //	"github.com/DATA-DOG/go-sqlmock"
 //	"github.com/lontten/lorm/types"
 //	"github.com/stretchr/testify/assert"
 //	"testing"
-//)
 //
-//type UserP struct {
-//	Name *string
-//	Id   *int
-//}
-//type UserUuid struct {
-//	Name *string
-//	ID   *types.UUID ``
-//}
+// )
+
+type UserUuid struct {
+	Name *string
+	ID   *types.UUID ``
+}
+
 //
 //func TestUpdateByPrimaryKey(t *testing.T) {
 //	as := assert.New(t)

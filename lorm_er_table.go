@@ -9,7 +9,7 @@ import (
 // ------------------------------------Insert--------------------------------------------
 
 // Insert
-func Insert(db Engine, v any, extra ...*Extra) (num int64, err error) {
+func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	dialect := db.getDialect()
 	ctx := dialect.initContext()
 	ctx.initExtra(extra...)
@@ -47,7 +47,7 @@ func Insert(db Engine, v any, extra ...*Extra) (num int64, err error) {
 }
 
 // Insert
-func InsertOrHas(db Engine, v any, extra ...*Extra) (num int64, err error) {
+func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	dialect := db.getDialect()
 	ctx := dialect.initContext()
 	ctx.initExtra(extra...)

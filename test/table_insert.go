@@ -13,7 +13,7 @@ func TableInsert() {
 		Name: types.NewString("abc"),
 		Age:  types.NewInt(44),
 	}
-	num, err := lorm.Insert(ldb.DB, &user, new(lorm.Extra).
+	num, err := lorm.Insert(ldb.DB, &user, new(lorm.ExtraContext).
 		TableName("t_user").
 		WhenDuplicateKey("name").DoUpdate(lorm.Set()).
 		ShowSql(),
@@ -33,7 +33,7 @@ func TableInsert2() {
 	var user = User{
 		Name: types.NewString("abc"),
 	}
-	num, err := lorm.Insert(ldb.DB, &user, new(lorm.Extra).
+	num, err := lorm.Insert(ldb.DB, &user, new(lorm.ExtraContext).
 		TableName("t_user2").
 		SetNull("uuid").
 		WhenDuplicateKey().DoUpdate(lorm.Set().Set("user_state", 1).SetNull("name")).

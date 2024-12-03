@@ -108,8 +108,7 @@ func (d *PgDialect) tableInsertGen() {
 	if ctx.hasErr() {
 		return
 	}
-	extra := ctx.extra
-	set := extra.set
+
 	columns := ctx.columns
 	values := ctx.columnValues
 	var query = d.ctx.query
@@ -174,6 +173,7 @@ func (d *PgDialect) tableInsertGen() {
 	query.WriteString(" ) ")
 
 	if ctx.insertType == insert_type.Ignore || ctx.insertType == insert_type.Update {
+		extra := ctx.extra
 		query.WriteString("ON CONFLICT (")
 		query.WriteString(strings.Join(extra.duplicateKeyNames, ","))
 		query.WriteString(") DO")
@@ -184,6 +184,8 @@ func (d *PgDialect) tableInsertGen() {
 		query.WriteString(" NOTHING")
 		break
 	case insert_type.Update:
+		extra := ctx.extra
+		set := extra.set
 		query.WriteString(" UPDATE SET ")
 
 		// 当未设置更新字段时，默认为所有字段
@@ -197,19 +199,18 @@ func (d *PgDialect) tableInsertGen() {
 				}
 			}
 		}
+
 		for i, name := range set.fieldNames {
+			query.WriteString(name + " = EXCLUDED." + name)
 			if i < len(set.fieldNames)-1 {
-				query.WriteString(name + " = EXCLUDED." + name + ",")
-			} else {
-				query.WriteString(name + " = EXCLUDED." + name)
+				query.WriteString(",")
 			}
 		}
 
 		for i, column := range set.columns {
+			query.WriteString(column + " = ? ")
 			if i < len(set.columns)-1 {
-				query.WriteString(column + " = ? , ")
-			} else {
-				query.WriteString(column + " = ? ")
+				query.WriteString(",")
 			}
 			ctx.args = append(ctx.args, set.columnValues[i].Value)
 		}

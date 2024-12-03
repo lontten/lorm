@@ -28,7 +28,7 @@ const (
 
 type ormContext struct {
 	ormConf *OrmConf
-	extra   *Extra
+	extra   *ExtraContext
 
 	// model 参数，用于校验字段类型是否合法
 	paramModelBaseV reflect.Value
@@ -102,7 +102,7 @@ type ormContext struct {
 	started bool
 }
 
-func (ctx *ormContext) initExtra(extra ...*Extra) {
+func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 	if len(extra) == 0 {
 		return
 	}
