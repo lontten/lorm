@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lontten/lorm"
+	"github.com/lontten/lorm/return_type"
 	"github.com/lontten/lorm/types"
 	"test/ldb"
 )
@@ -11,11 +12,12 @@ import (
 func TableInsert() {
 	var user = User{
 		Name: types.NewString("abc"),
-		Age:  types.NewInt(44),
+		Age:  types.NewInt(66),
 	}
 	num, err := lorm.Insert(ldb.DB, &user, lorm.Extra().
 		TableName("t_user").
-		WhenDuplicateKey("name").DoUpdate().
+		ReturnType(return_type.PrimaryKey).
+		WhenDuplicateKey("name").DoNothing().
 		ShowSql(),
 	)
 	if err != nil {

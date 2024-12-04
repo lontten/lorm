@@ -5,6 +5,7 @@ import (
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert_type"
 	"github.com/lontten/lorm/return_type"
+	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -110,6 +111,9 @@ func (d *MysqlDialect) tableInsertGen() {
 	if ctx.hasErr() {
 		return
 	}
+	extra := ctx.extra
+	set := extra.set
+
 	columns := ctx.columns
 	values := ctx.columnValues
 	var query = d.ctx.query
@@ -130,17 +134,11 @@ func (d *MysqlDialect) tableInsertGen() {
 	}
 	query.WriteString(ctx.tableName + " ")
 
-	query.WriteString(" ( ")
-	for i, v := range columns {
-		if i == 0 {
-			query.WriteString(v)
-		} else {
-			query.WriteString(" , " + v)
-		}
-	}
-	query.WriteString(" ) ")
-	query.WriteString(" VALUES ")
-	query.WriteString("( ")
+	query.WriteString("(")
+	query.WriteString(strings.Join(columns, ","))
+	query.WriteString(") ")
+	query.WriteString("VALUES")
+	query.WriteString("(")
 	for i, v := range values {
 		if i > 0 {
 			query.WriteString(" , ")
@@ -187,12 +185,19 @@ func (d *MysqlDialect) tableInsertGen() {
 
 	switch ctx.insertType {
 	case insert_type.Update:
-		set := ctx.extra.set
 		query.WriteString(" AS new ON DUPLICATE KEY UPDATE ")
 		// 当未设置更新字段时，默认为所有字段
 		if len(set.columns) == 0 && len(set.fieldNames) == 0 {
-			set.fieldNames = ctx.modelAllFieldNames
+			list := append(ctx.columns, extra.columns...)
+
+			for _, name := range list {
+				find := utils.Find(extra.duplicateKeyNames, name)
+				if find < 0 {
+					set.fieldNames = append(set.fieldNames, name)
+				}
+			}
 		}
+
 		for _, name := range set.fieldNames {
 			query.WriteString(name + " = new." + name + ", ")
 		}
@@ -206,18 +211,15 @@ func (d *MysqlDialect) tableInsertGen() {
 		break
 	}
 
-	// INSERT IGNORE 无法和 RETURNING 共存，当 INSERT IGNORE 时，不返回
-	if ctx.scanIsPtr && ctx.insertType != insert_type.Ignore {
+	if ctx.scanIsPtr {
 		switch expr := ctx.returnType; expr {
 		case return_type.None:
 			ctx.sqlIsQuery = true
 			break
 		case return_type.PrimaryKey:
-			query.WriteString(" RETURNING " + strings.Join(ctx.primaryKeyNames, ","))
-		case return_type.ZeroField:
-			query.WriteString(" RETURNING " + strings.Join(ctx.modelZeroFieldNames, ","))
-		case return_type.AllField:
-			query.WriteString(" RETURNING " + strings.Join(ctx.modelAllFieldNames, ","))
+			query.WriteString("; LAST_INSERT_ID(); ")
+		default:
+			break
 		}
 	}
 	query.WriteString(";")

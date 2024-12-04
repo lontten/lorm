@@ -72,6 +72,10 @@ func (d *PgDialect) tableInsertGen() {
 	if ctx.hasErr() {
 		return
 	}
+	if ctx.insertType == insert_type.Replace {
+		ctx.err = errors.New("pg不支持的插入类型 insert_type.Replace")
+		return
+	}
 	extra := ctx.extra
 	set := extra.set
 
@@ -176,7 +180,6 @@ func (d *PgDialect) tableInsertGen() {
 		break
 	}
 
-	// INSERT IGNORE 无法和 RETURNING 共存，当 INSERT IGNORE 时，不返回
 	if ctx.scanIsPtr {
 		switch expr := ctx.returnType; expr {
 		case return_type.None:
