@@ -61,42 +61,6 @@ func (d *PgDialect) queryBatch(query string) string {
 	return query
 }
 
-func (m *PgDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...any) (string, []any) {
-	return m.insertOrUpdateByUnique(table, fields, columns, args...)
-}
-
-func (p *PgDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...any) (string, []any) {
-	cs := make([]string, 0)
-	vs := make([]any, 0)
-
-	for i, column := range columns {
-		if utils.Contains(fields, column) {
-			continue
-		}
-		cs = append(cs, column)
-		vs = append(vs, args[i])
-	}
-
-	var query = "INSERT INTO " + table + "(" + strings.Join(columns, ",") +
-		") VALUES (" + strings.Repeat(" ? ,", len(args)-1) +
-		" ? ) ON CONFLICT (" + strings.Join(fields, ",") + ") DO"
-	if len(vs) == 0 {
-		query += "NOTHING"
-	} else {
-		query += " UPDATE SET " + strings.Join(cs, "= ? , ") + "= ? "
-	}
-	args = append(args, vs...)
-	query = toPgSql(query)
-	p.ctx.log.Println(query, args)
-	//exec, err := m.ldb.Exec(query, args...)
-	//if err != nil {
-	//	if errors.As(err, &ErrNoPkOrUnique) {
-	//		return 0, errors.New("insertOrUpdateByUnique fields need to be unique or primary key:" + strings.Join(fields, ",") + err.Error())
-	//	}
-	//	return 0, err
-	//}
-	return query, args
-}
 func (d *PgDialect) getSql() string {
 	s := d.ctx.query.String()
 	return toPgSql(s)
@@ -108,6 +72,8 @@ func (d *PgDialect) tableInsertGen() {
 	if ctx.hasErr() {
 		return
 	}
+	extra := ctx.extra
+	set := extra.set
 
 	columns := ctx.columns
 	values := ctx.columnValues
@@ -117,20 +83,14 @@ func (d *PgDialect) tableInsertGen() {
 
 	query.WriteString(ctx.tableName + " ")
 
-	query.WriteString(" ( ")
-	for i, v := range columns {
-		if i == 0 {
-			query.WriteString(v)
-		} else {
-			query.WriteString(" , " + v)
-		}
-	}
-	query.WriteString(" ) ")
-	query.WriteString(" VALUES ")
-	query.WriteString("( ")
+	query.WriteString("(")
+	query.WriteString(strings.Join(columns, ","))
+	query.WriteString(") ")
+	query.WriteString("VALUES")
+	query.WriteString("(")
 	for i, v := range values {
 		if i > 0 {
-			query.WriteString(" , ")
+			query.WriteString(", ")
 		}
 		switch v.Type {
 		case field.None:
@@ -151,11 +111,11 @@ func (d *PgDialect) tableInsertGen() {
 			query.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 			break
 		case field.Val:
-			query.WriteString(" ? ")
+			query.WriteString("? ")
 			ctx.args = append(ctx.args, v.Value)
 			break
 		case field.Increment:
-			query.WriteString(columns[i] + " + ? ")
+			query.WriteString(columns[i] + "+ ? ")
 			ctx.args = append(ctx.args, v.Value)
 			break
 		case field.Expression:
@@ -170,28 +130,25 @@ func (d *PgDialect) tableInsertGen() {
 			break
 		}
 	}
-	query.WriteString(" ) ")
+	query.WriteString(") ")
 
 	if ctx.insertType == insert_type.Ignore || ctx.insertType == insert_type.Update {
-		extra := ctx.extra
 		query.WriteString("ON CONFLICT (")
 		query.WriteString(strings.Join(extra.duplicateKeyNames, ","))
-		query.WriteString(") DO")
+		query.WriteString(") DO ")
 	}
 
 	switch ctx.insertType {
 	case insert_type.Ignore:
-		query.WriteString(" NOTHING")
+		query.WriteString("NOTHING ")
 		break
 	case insert_type.Update:
-		extra := ctx.extra
-		set := extra.set
-		query.WriteString(" UPDATE SET ")
+		query.WriteString("UPDATE SET ")
 
 		// 当未设置更新字段时，默认为所有字段
 		if len(set.columns) == 0 && len(set.fieldNames) == 0 {
 			list := append(ctx.columns, extra.columns...)
-			list = append(list, set.columns...)
+
 			for _, name := range list {
 				find := utils.Find(extra.duplicateKeyNames, name)
 				if find < 0 {
@@ -201,17 +158,17 @@ func (d *PgDialect) tableInsertGen() {
 		}
 
 		for i, name := range set.fieldNames {
-			query.WriteString(name + " = EXCLUDED." + name)
+			query.WriteString(name + "= EXCLUDED." + name)
 			if i < len(set.fieldNames)-1 {
 				query.WriteString(",")
 			}
 		}
 
 		for i, column := range set.columns {
-			query.WriteString(column + " = ? ")
-			if i < len(set.columns)-1 {
-				query.WriteString(",")
+			if i > 0 {
+				query.WriteString(", ")
 			}
+			query.WriteString(column + "= ? ")
 			ctx.args = append(ctx.args, set.columnValues[i].Value)
 		}
 		break
@@ -269,7 +226,7 @@ func (p *PgDialect) appendBaseToken(token baseToken) {
 func toPgSql(sql string) string {
 	var i = 1
 	for {
-		t := strings.Replace(sql, "?", " $"+strconv.Itoa(i)+" ", 1)
+		t := strings.Replace(sql, "?", "$"+strconv.Itoa(i), 1)
 		if t == sql {
 			break
 		}

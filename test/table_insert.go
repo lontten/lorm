@@ -13,9 +13,9 @@ func TableInsert() {
 		Name: types.NewString("abc"),
 		Age:  types.NewInt(44),
 	}
-	num, err := lorm.Insert(ldb.DB, &user, new(lorm.ExtraContext).
+	num, err := lorm.Insert(ldb.DB, &user, lorm.Extra().
 		TableName("t_user").
-		WhenDuplicateKey("name").DoUpdate(lorm.Set()).
+		WhenDuplicateKey("name").DoUpdate().
 		ShowSql(),
 	)
 	if err != nil {

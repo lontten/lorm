@@ -19,20 +19,22 @@ type ExtraContext struct {
 
 	// 唯一索引字段名列表
 	duplicateKeyNames []string
-	set               *SetContext
-	err               error
+
+	set *SetContext
+
+	err error
 }
 
 func Extra() *ExtraContext {
-	return &ExtraContext{}
+	return &ExtraContext{
+		set: Set(),
+	}
 }
 
+// set 中的错误已经被上抛到 ExtraContext，所以只用判断 ExtraContext 的 err
 func (e *ExtraContext) GetErr() error {
 	if e.err != nil {
 		return e.err
-	}
-	if e.set != nil {
-		return e.set.err
 	}
 	return nil
 }
@@ -126,18 +128,17 @@ func (dk *DuplicateKey) DoNothing() *ExtraContext {
 }
 
 func (dk *DuplicateKey) update(insertType insert_type.InsertType, set ...*SetContext) *ExtraContext {
-	var sc *SetContext
+	dk.e.insertType = insertType
 	if len(set) == 0 {
-		sc = &SetContext{}
-	} else {
-		if set[0] == nil {
-			sc = &SetContext{}
-		} else {
-			sc = set[0]
+		return dk.e
+	}
+	if sc := set[0]; sc != nil {
+		dk.e.set = sc
+		// err上抛到 ExtraContext
+		if sc.err != nil {
+			dk.e.err = sc.err
 		}
 	}
-	dk.e.insertType = insertType
-	dk.e.set = sc
 	return dk.e
 }
 

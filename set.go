@@ -6,7 +6,7 @@ import (
 )
 
 type SetContext struct {
-	// 更新的字段
+	// 直接更新model中的字段
 	fieldNames []string
 
 	// model 需要 ormContext 才能解析

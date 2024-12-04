@@ -145,9 +145,6 @@ type Dialecter interface {
 	query(query string, args ...any) (string, []any)
 	queryBatch(query string) string
 
-	insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...any) (string, []any)
-	insertOrUpdateByUnique(table string, fields []string, columns []string, args ...any) (string, []any)
-
 	parse(c Clause) (string, error)
 
 	tableInsertGen()

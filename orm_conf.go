@@ -216,11 +216,11 @@ func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error)
 		}
 		name = utils.Camel2Case(name)
 
-		if tag := field.Tag.Get("core"); tag == "-" {
+		if tag := field.Tag.Get("lorm"); tag == "-" {
 			continue
 		}
 
-		if tag := field.Tag.Get("ldb"); tag != "" {
+		if tag := field.Tag.Get("lorm"); tag != "" {
 			name = tag
 			cMap[name] = i
 			num++
@@ -316,24 +316,20 @@ func getMapCV(v reflect.Value) (compCV, error) {
 	return cv, nil
 }
 
-// 获取comp :struct/map 对应的字段名
-func (c OrmConf) getCompC(t reflect.Type) (compCV, error) {
+// 获取comp :struct 对应的字段名
+func (c OrmConf) getStructC(t reflect.Type) (compCV, error) {
 	cv := compCV{
 		columns:             make([]string, 0),
 		columnValues:        make([]field.Value, 0),
 		modelZeroFieldNames: make([]string, 0),
 		modelAllFieldNames:  make([]string, 0),
 	}
-	if _isStructType(t) {
-		mappingColumns, err := c.getStructMappingColumns(t)
-		if err != nil {
-			return cv, err
-		}
-		for column := range mappingColumns {
-			cv.modelAllFieldNames = append(cv.modelAllFieldNames, column)
-		}
-	} else {
-		//map 无法获取 字段名
+	mappingColumns, err := c.getStructMappingColumns(t)
+	if err != nil {
+		return cv, err
+	}
+	for column := range mappingColumns {
+		cv.modelAllFieldNames = append(cv.modelAllFieldNames, column)
 	}
 	return cv, nil
 }

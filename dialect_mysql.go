@@ -5,7 +5,6 @@ import (
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert_type"
 	"github.com/lontten/lorm/return_type"
-	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -56,32 +55,6 @@ func (d *MysqlDialect) prepare(query string) string {
 
 func (d *MysqlDialect) exec(query string, args ...any) (string, []any) {
 	return query, args
-}
-
-func (d *MysqlDialect) insertOrUpdateByPrimaryKey(table string, fields []string, columns []string, args ...any) (string, []any) {
-	cs := make([]string, 0)
-	vs := make([]any, 0)
-
-	for i, column := range columns {
-		if utils.Contains(fields, column) {
-			continue
-		}
-		cs = append(cs, column)
-		vs = append(vs, args[i])
-	}
-
-	var query = "INSERT INTO " + table + "(" + strings.Join(columns, ",") +
-		") VALUES (" + strings.Repeat("?", len(args)) +
-		") ON duplicate key UPDATE " + strings.Join(cs, "=?, ") + "=?"
-
-	args = append(args, vs...)
-	d.ctx.log.Println(query, args)
-	return query, args
-}
-
-func (d *MysqlDialect) insertOrUpdateByUnique(table string, fields []string, columns []string, args ...any) (string, []any) {
-	d.ctx.err = errors.New("MySQL insertOrUpdateByUnique not support, please use insertOrUpdateByPrimaryKey")
-	return "", nil
 }
 
 func (d *MysqlDialect) execBatch(query string, args [][]any) (string, [][]any) {

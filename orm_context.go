@@ -103,13 +103,13 @@ type ormContext struct {
 }
 
 func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
-	if len(extra) == 0 {
-		return
+	var e *ExtraContext
+	if len(extra) > 0 && extra[0] != nil {
+		e = extra[0]
+	} else {
+		e = Extra()
 	}
-	e := extra[0]
-	if e == nil {
-		return
-	}
+	// err 上抛到 ormContext
 	if e.GetErr() != nil {
 		ctx.err = e.GetErr()
 		return
@@ -169,28 +169,12 @@ func (ctx *ormContext) initColumnsValueSet() {
 		return
 	}
 	e := ctx.extra
-	if e == nil {
-		return
-	}
-	if e.GetErr() != nil {
-		ctx.err = e.GetErr()
-		return
-	}
 	set := e.set
-	if set == nil {
-		return
-	}
-	if set.err != nil {
-		ctx.err = set.err
-		return
-	}
-
 	if set.hasModel {
 		oc := &ormContext{
 			ormConf:        ctx.ormConf,
 			skipSoftDelete: true,
 		}
-
 		oc.initModelDest(set.model) //初始化参数
 		oc.initColumnsValue()       //初始化cv
 
