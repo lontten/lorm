@@ -2,10 +2,10 @@ package lorm
 
 import (
 	"github.com/lontten/lorm/field"
-	"github.com/lontten/lorm/insert_type"
-	"github.com/lontten/lorm/return_type"
-	"github.com/lontten/lorm/soft_delete"
-	"github.com/lontten/lorm/sql_type"
+	"github.com/lontten/lorm/insert-type"
+	"github.com/lontten/lorm/return-type"
+	"github.com/lontten/lorm/soft-delete"
+	"github.com/lontten/lorm/sql-type"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"

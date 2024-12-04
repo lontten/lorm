@@ -3,8 +3,8 @@ package lorm
 import (
 	"errors"
 	"github.com/lontten/lorm/field"
-	"github.com/lontten/lorm/insert_type"
-	"github.com/lontten/lorm/return_type"
+	"github.com/lontten/lorm/insert-type"
+	"github.com/lontten/lorm/return-type"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"

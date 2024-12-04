@@ -2,7 +2,7 @@ package lorm
 
 import (
 	"fmt"
-	"github.com/lontten/lorm/sql_type"
+	"github.com/lontten/lorm/sql-type"
 	"reflect"
 )
 

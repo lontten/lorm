@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/lontten/lorm"
-	"github.com/lontten/lorm/soft_delete"
+	"github.com/lontten/lorm/soft-delete"
 )
 
 type Ka struct {

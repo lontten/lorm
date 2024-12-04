@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lontten/lorm"
-	"github.com/lontten/lorm/return_type"
+	"github.com/lontten/lorm/return-type"
 	"github.com/lontten/lorm/types"
 	"test/ldb"
 )

@@ -3,8 +3,8 @@ package lorm
 import (
 	"errors"
 	"github.com/lontten/lorm/field"
-	"github.com/lontten/lorm/insert_type"
-	"github.com/lontten/lorm/return_type"
+	"github.com/lontten/lorm/insert-type"
+	"github.com/lontten/lorm/return-type"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
@@ -73,7 +73,7 @@ func (d *PgDialect) tableInsertGen() {
 		return
 	}
 	if ctx.insertType == insert_type.Replace {
-		ctx.err = errors.New("pg不支持的插入类型 insert_type.Replace")
+		ctx.err = errors.New("pg不支持的插入类型 insert-type.Replace")
 		return
 	}
 	extra := ctx.extra

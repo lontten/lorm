@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/lontten/lorm/soft_delete"
+	"github.com/lontten/lorm/soft-delete"
 	"github.com/pkg/errors"
 	"reflect"
 	"testing"

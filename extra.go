@@ -2,8 +2,8 @@ package lorm
 
 import (
 	"github.com/lontten/lorm/field"
-	"github.com/lontten/lorm/insert_type"
-	"github.com/lontten/lorm/return_type"
+	"github.com/lontten/lorm/insert-type"
+	"github.com/lontten/lorm/return-type"
 )
 
 // ExtraContext 扩展参数
