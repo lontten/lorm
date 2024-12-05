@@ -111,6 +111,11 @@ func (c OrmConf) primaryKeys(v reflect.Value, dest any) []string {
 	return []string{"id"}
 }
 
+// 可缓存
+func (c OrmConf) autoIncrements(v reflect.Value) []string {
+	return GetAutoIncrements(v)
+}
+
 // 可以缓存
 //
 //	主键Id、ID，都转化为id
@@ -118,7 +123,7 @@ func (c OrmConf) primaryKeys(v reflect.Value, dest any) []string {
 // tag== ldb:name  可以自定义名字
 // tag== core:-  跳过
 // 过滤掉首字母小写的字段
-// 只获取字段对应的 数据库 字段名
+// 获取model字段对应的 数据库 字段名
 func (c OrmConf) initColumns(t reflect.Type) (columns []string, err error) {
 
 	cMap := make(map[string]int)
@@ -190,7 +195,7 @@ func (c OrmConf) initColumns(t reflect.Type) (columns []string, err error) {
 // tag== ldb:name  可以自定义名字
 // tag== core:-  跳过
 // 过滤掉首字母小写的字段
-// 获取struct对应的数据字段名：和其在struct中的index下标
+// 获取model对应的数据字段名：和其在model中的index下标
 func (c OrmConf) getStructMappingColumns(t reflect.Type) (map[string]int, error) {
 	cMap := make(map[string]int)
 
@@ -263,7 +268,7 @@ type compCV struct {
 }
 
 // 获取 struct 对应的字段名 和 其值
-func (c OrmConf) getStructFV(v reflect.Value) (compCV, error) {
+func (c OrmConf) getStructCV(v reflect.Value) (compCV, error) {
 	t := v.Type()
 	cv := compCV{
 		columns:             make([]string, 0),

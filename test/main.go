@@ -13,7 +13,13 @@ type Ka struct {
 }
 
 func (k Ka) TableConf() *lorm.TableConf {
-	return new(lorm.TableConf).Table("t_ka")
+	return new(lorm.TableConf).
+		Table("t_ka").AutoIncrements("id")
+}
+
+func (u User) TableConf() *lorm.TableConf {
+	return new(lorm.TableConf).
+		Table("t_user").AutoIncrements("id")
 }
 
 type User struct {

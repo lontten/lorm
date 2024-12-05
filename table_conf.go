@@ -13,7 +13,7 @@ type TableConf struct {
 	tableName       *string  // 表名
 	primaryKeyNames []string // 主键字段列表
 	indexs          []Index  // 索引列表
-	AutoIncrements  []string // 自增字段列表
+	autoIncrements  []string // 自增字段列表
 }
 type Index struct {
 	Name      string   // 索引名称
@@ -30,6 +30,11 @@ func (c *TableConf) Table(name string) *TableConf {
 
 func (c *TableConf) PrimaryKeys(name ...string) *TableConf {
 	c.primaryKeyNames = name
+	return c
+}
+
+func (c *TableConf) AutoIncrements(name ...string) *TableConf {
+	c.autoIncrements = name
 	return c
 }
 
@@ -75,4 +80,12 @@ func GetPrimaryKeyNames(v reflect.Value) []string {
 		return nil
 	}
 	return tc.primaryKeyNames
+}
+
+func GetAutoIncrements(v reflect.Value) []string {
+	tc := GetTableConf(v)
+	if tc == nil {
+		return nil
+	}
+	return tc.autoIncrements
 }

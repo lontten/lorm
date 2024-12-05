@@ -48,21 +48,17 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 		if err != nil {
 			return 0, err
 		}
-		if id > 0 {
+		if id > 0 && len(ctx.autoIncrements) > 0 {
 			// todo 将自增id 赋值到v
-			numField := ctx.destV.NumField()
-			fmt.Println(numField)
-			for i := range numField {
-				field := ctx.destV.Field(i)
-				isPtr, v, err := basePtrValue(field)
-				fmt.Println(isPtr, v.Type().Name(), err)
-				fmt.Println(field.Interface())
-
-				fmt.Println("------")
+			ci, err := ctx.ormConf.getStructMappingColumns(ctx.destBaseType)
+			if err != nil {
+				return 0, err
 			}
-			//field := ctx.destV.Field(0)
-			//field.Set(reflect.ValueOf(id))
-			fmt.Println(ctx.destV.Interface())
+			i := ci[ctx.autoIncrements[0]]
+			field := ctx.destV.Field(i)
+			fmt.Println(field.Kind().String())
+			fmt.Println(field.Type().Name())
+			field.Set(reflect.ValueOf(id))
 		}
 	}
 	return exec.RowsAffected()

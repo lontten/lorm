@@ -56,6 +56,8 @@ type ormContext struct {
 	isTen   bool //是否启用了多租户
 
 	// ------------------主键----------------------
+	indexs         []Index  // 索引列表
+	autoIncrements []string // 自增字段列表
 
 	// id = 1
 	//主键名-列表,这里考虑到多主键
@@ -142,6 +144,8 @@ func (ctx *ormContext) initConf() {
 
 	primaryKeys := ctx.ormConf.primaryKeys(v, dest)
 	ctx.primaryKeyNames = primaryKeys
+
+	ctx.autoIncrements = ctx.ormConf.autoIncrements(v)
 }
 
 // 获取struct对应的字段名 和 其值，
@@ -150,7 +154,7 @@ func (ctx *ormContext) initColumnsValue() {
 	if ctx.hasErr() {
 		return
 	}
-	cv, err := ctx.ormConf.getStructFV(ctx.destV)
+	cv, err := ctx.ormConf.getStructCV(ctx.destV)
 	if err != nil {
 		ctx.err = err
 		return

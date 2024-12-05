@@ -131,7 +131,7 @@ func (d *MysqlDialect) initByModel(v any) {
 	//	return
 	//}
 	//
-	//columns, values, err := getStructFV(v, ldb.ctx.ormConf)
+	//columns, values, err := getStructCV(v, ldb.ctx.ormConf)
 	//if err != nil {
 	//	ldb.ctx.err = err
 	//	return
@@ -227,7 +227,7 @@ func getCompValueCV(v reflect.Value, c *OrmConf) ([]string, []field.Value, error
 		return nil, nil, err
 	}
 
-	cv, err := c.getStructFV(v)
+	cv, err := c.getStructCV(v)
 	if err != nil {
 		return nil, nil, err
 	}
