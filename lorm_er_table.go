@@ -43,6 +43,26 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	if err != nil {
 		return 0, err
 	}
+	if ctx.needLastInsertId {
+		id, err := exec.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
+		if id > 0 {
+			// todo 将自增id 赋值到v
+			numField := ctx.destV.NumField()
+			fmt.Println(numField)
+			for i := range numField {
+				field := ctx.destV.Field(i)
+				isPtr, v, err := basePtrValue(field)
+				fmt.Println(isPtr, v.Type().Name(), err)
+
+				fmt.Println("------")
+			}
+			field := ctx.destV.Field(0)
+			field.Set(reflect.ValueOf(id))
+		}
+	}
 	return exec.RowsAffected()
 }
 

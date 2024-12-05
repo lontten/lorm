@@ -2,7 +2,6 @@ package lorm
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
@@ -336,7 +335,6 @@ func (c OrmConf) getStructC(t reflect.Type) (compCV, error) {
 
 // 获取 rows 返回数据，每个字段 对应 struct 的字段 下标
 func (c OrmConf) getColFieldIndexLinkMap(columns []string, t reflect.Type) (ColFieldIndexLinkMap, error) {
-	fmt.Println(t)
 	if isValuerType(t) {
 		return ColFieldIndexLinkMap{}, nil
 	}

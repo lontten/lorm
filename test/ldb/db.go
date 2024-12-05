@@ -2,13 +2,13 @@ package ldb
 
 import "github.com/lontten/lorm"
 
-//import _ "github.com/go-sql-driver/mysql"
+import _ "github.com/go-sql-driver/mysql"
 
-import _ "github.com/jackc/pgx/v5/stdlib"
+//import _ "github.com/jackc/pgx/v5/stdlib"
 
 var DB lorm.Engine
 
-func init2() {
+func init() {
 	conf := lorm.MysqlConf{
 		Host:     "127.0.0.1",
 		Port:     "3306",
@@ -23,7 +23,7 @@ func init2() {
 	DB = db
 }
 
-func init() {
+func init2() {
 	conf := lorm.PgConf{
 		Host:     "127.0.0.1",
 		Port:     "5432",

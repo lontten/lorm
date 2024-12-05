@@ -10,9 +10,10 @@ type LormTabler interface {
 
 // 表配置,会缓存，不可设置动态属性
 type TableConf struct {
-	tableName       *string
-	primaryKeyNames []string
-	indexs          []Index
+	tableName       *string  // 表名
+	primaryKeyNames []string // 主键字段列表
+	indexs          []Index  // 索引列表
+	AutoIncrements  []string // 自增字段列表
 }
 type Index struct {
 	Name      string   // 索引名称
