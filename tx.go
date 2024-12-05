@@ -6,25 +6,49 @@ import (
 	"github.com/pkg/errors"
 )
 
-type coreTX struct {
-	tx      *sql.Tx
+// TX -----------------TX---------------------
+type TX struct {
 	dialect Dialecter
+}
+
+func (db *TX) getDialect() Dialecter {
+	return db.dialect
+}
+func (db *TX) prepare(query string) (EngineStmt, error) {
+	dialect := db.getDialect()
+	err := dialect.prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	return &TXStmt{dialect: dialect}, nil
+}
+
+func (db *TX) BeginTx(ctx context.Context, opts *sql.TxOptions) (Engine, error) {
+	return nil, errors.New("this is tx")
+}
+
+func (db *TX) Begin() (Engine, error) {
+	return nil, errors.New("this is tx")
+}
+
+func (db *TX) Commit() error {
+	return db.getDialect().commit()
+}
+
+func (db *TX) Rollback() error {
+	return db.getDialect().rollback()
+}
+
+// -----------------DB-end---------------------
+
+// coreTX -----------------coreTX---------------------
+
+type coreTX struct {
+	tx *sql.Tx
 }
 
 func (db *coreTX) ping() error {
 	return errors.New("this is tx")
-}
-func (db *coreTX) getCtx() *ormContext {
-	return db.dialect.getCtx()
-}
-func (db *coreTX) getDialect() Dialecter {
-	return db.dialect
-}
-func (db *coreTX) query(query string, args ...any) (*sql.Rows, error) {
-	return db.tx.Query(query, args...)
-}
-func (db *coreTX) exec(query string, args ...any) (sql.Result, error) {
-	return db.tx.Exec(query, args...)
 }
 
 func (db *coreTX) prepare(query string) (Stmter, error) {
@@ -32,24 +56,26 @@ func (db *coreTX) prepare(query string) (Stmter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &coreDBStmt{
-		db:      stmt,
-		dialect: db.dialect,
-	}, nil
+	return &coreTXStmt{tx: stmt}, nil
 }
 
-func (db *coreTX) BeginTx(ctx context.Context, opts *sql.TxOptions) (Engine, error) {
+func (db *coreTX) query(query string, args ...any) (*sql.Rows, error) {
+	return db.tx.Query(query, args...)
+}
+func (db *coreTX) exec(query string, args ...any) (sql.Result, error) {
+	return db.tx.Exec(query, args...)
+}
+
+func (db *coreTX) beginTx(ctx context.Context, opts *sql.TxOptions) (DBer, error) {
 	return nil, errors.New("this is tx")
 }
 
-func (db *coreTX) Begin() (Engine, error) {
-	return nil, errors.New("this is tx")
-}
-
-func (db *coreTX) Commit() error {
+func (db *coreTX) commit() error {
 	return db.tx.Commit()
 }
 
-func (db *coreTX) Rollback() error {
+func (db *coreTX) rollback() error {
 	return db.tx.Rollback()
 }
+
+// -----------------coreTX-end---------------------

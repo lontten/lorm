@@ -1,85 +1,101 @@
-// Copyright (c) 2024 lontten
-// lorm is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-// http://license.coscl.org.cn/MulanPSL2
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
 package lorm
-
-import "database/sql"
 
 import (
 	"context"
+	"database/sql"
 )
 
 type DbConfig interface {
 	//根据db配置，打开db链接
 	open() (*sql.DB, error)
 	//根据 ctx生成dialecter，每种数据库类型各一种实现
-	dialect(ctx *ormContext) Dialecter
+	dialect(ctx *ormContext, db DBer) Dialecter
 }
 
 type Stmter interface {
-	getCtx() *ormContext
-	getDialect() Dialecter
-
 	query(args ...any) (*sql.Rows, error)
 	exec(args ...any) (sql.Result, error)
 
 	Exec(args ...any) (int64, error)
 	QueryScan(args ...any) *NativePrepare
 }
-type Engine interface {
-	ping() error
-	getCtx() *ormContext
-	getDialect() Dialecter
-
-	query(query string, args ...any) (*sql.Rows, error)
-	exec(query string, args ...any) (sql.Result, error)
-	prepare(query string) (Stmter, error)
-
-	//用db开启tx事务
-	BeginTx(ctx context.Context, opts *sql.TxOptions) (Engine, error)
-	Begin() (Engine, error)
-
-	Commit() error
-	Rollback() error
-}
 
 type DBer interface {
-	//用db开启tx事务
-	BeginTx(ctx context.Context, opts *sql.TxOptions) TXer
-
-	//lorm扩展方法
-	Delete(v any) OrmTableDelete
+	// util
+	ping() error
+	// stmt
+	prepare(query string) (Stmter, error)
+	// tx
+	beginTx(ctx context.Context, opts *sql.TxOptions) (DBer, error)
+	commit() error
+	rollback() error
+	// db
+	query(query string, args ...any) (*sql.Rows, error)
+	exec(query string, args ...any) (sql.Result, error)
 }
 
-type TXer interface {
+type Engine interface {
+	// 上下文
+	getDialect() Dialecter
+	// stmt
+	prepare(query string) (EngineStmt, error)
+	// tx
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (Engine, error)
+	Begin() (Engine, error)
 	Commit() error
 	Rollback() error
+}
 
-	//lorm扩展方法
-	Delete(v any) OrmTableDelete
+type EngineStmt interface {
+	// 上下文
+	getDialect() Dialecter
+
+	Exec(args ...any) (int64, error)
+	QueryScan(args ...any) *NativePrepare
 }
 
 /*
 *
-直属lnDb
 
-Dialecter 的实现有两种
+	Dialecter 的实现有两种
 
-	coreDb
-	coreTx
+MysqlDialect
+PgDialect
 
-内部属性为
+内部属性为 	ctx *ormContext
+有	ormConf  OrmConf
 
-	ldb      *sql.DB
-	dialect Dialecter
+	dbConfig DbConfig
+	baseTokens []baseToken
 */
+type Dialecter interface {
+	// 上下文
+	getDB() DBer
+	getStmt() Stmter
+	getCtx() *ormContext
+	initContext() *ormContext
+	hasErr() bool
+	getErr() error
+	// tx
+	beginTx(ctx context.Context, opts *sql.TxOptions) error
+	commit() error
+	rollback() error
+	// stmt
+	prepare(query string) error
+	// db
+	exec(query string, args ...any) (string, []any)
+	execBatch(query string, args [][]any) (string, [][]any)
+	query(query string, args ...any) (string, []any)
+	queryBatch(query string) string
+	// utils
+	parse(c Clause) (string, error)
+	appendBaseToken(token baseToken)
+	tableInsertGen()
+	getSql() string
+	//对执行语句进行方言处理
+	//toSqlInsert()
+}
+
 type corer interface {
 	//===----------------------------------------------------------------------===//
 	// 获取上下文
@@ -111,42 +127,6 @@ type corer interface {
 	//===----------------------------------------------------------------------===//
 	appendBaseToken(token baseToken)
 }
-
-/*
-*
-
-	Dialecter 的实现有两种
-
-MysqlDialect
-PgDialect
-
-内部属性为 	ctx *ormContext
-有	ormConf  OrmConf
-
-	dbConfig DbConfig
-	baseTokens []baseToken
-*/
-type Dialecter interface {
-	// 获取coreDb,coreTx 里面的 ctx
-	getCtx() *ormContext
-	initContext() *ormContext
-	hasErr() bool
-	getErr() error
-
-	appendBaseToken(token baseToken)
-
-	//对执行语句进行方言处理
-	//toSqlInsert()
-
-	//prepare(query string) string
-	exec(query string, args ...any) (string, []any)
-	execBatch(query string, args [][]any) (string, [][]any)
-
-	query(query string, args ...any) (string, []any)
-	queryBatch(query string) string
-
-	parse(c Clause) (string, error)
-
-	tableInsertGen()
-	getSql() string
+type lnDB struct {
+	core corer
 }

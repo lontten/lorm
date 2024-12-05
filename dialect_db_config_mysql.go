@@ -12,8 +12,11 @@ type MysqlConf struct {
 	Password string
 }
 
-func (c MysqlConf) dialect(ctx *ormContext) Dialecter {
-	return &MysqlDialect{ctx: ctx}
+func (c MysqlConf) dialect(ctx *ormContext, db DBer) Dialecter {
+	return &MysqlDialect{
+		ctx: ctx,
+		db:  db,
+	}
 }
 
 func (c MysqlConf) open() (*sql.DB, error) {

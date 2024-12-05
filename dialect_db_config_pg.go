@@ -13,8 +13,11 @@ type PgConf struct {
 	Other    string
 }
 
-func (c PgConf) dialect(ctx *ormContext) Dialecter {
-	return &PgDialect{ctx: ctx}
+func (c PgConf) dialect(ctx *ormContext, db DBer) Dialecter {
+	return &PgDialect{
+		ctx: ctx,
+		db:  db,
+	}
 }
 
 func (c PgConf) open() (*sql.DB, error) {

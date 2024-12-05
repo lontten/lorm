@@ -3,29 +3,57 @@ package lorm
 import (
 	"context"
 	"database/sql"
-	"github.com/pkg/errors"
+	"errors"
 )
 
-type coreDB struct {
-	db      *sql.DB
+// DB -----------------DB---------------------
+type DB struct {
 	dialect Dialecter
+}
+
+func (db *DB) getDialect() Dialecter {
+	return db.dialect
+}
+func (db *DB) prepare(query string) (EngineStmt, error) {
+	dialect := db.getDialect()
+	err := dialect.prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	return &DBStmt{dialect: dialect}, nil
+}
+
+func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (Engine, error) {
+	dialect := db.getDialect()
+	err := dialect.beginTx(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	return &TX{dialect: dialect}, nil
+}
+
+func (db *DB) Begin() (Engine, error) {
+	return db.BeginTx(context.Background(), nil)
+}
+
+func (db *DB) Commit() error {
+	return errors.New("this not tx")
+}
+
+func (db *DB) Rollback() error {
+	return errors.New("this not tx")
+}
+
+// -----------------DB-end---------------------
+
+// coreDB -----------------coreDB---------------------
+
+type coreDB struct {
+	db *sql.DB
 }
 
 func (db *coreDB) ping() error {
 	return db.db.Ping()
-}
-
-func (db *coreDB) getCtx() *ormContext {
-	return db.dialect.getCtx()
-}
-func (db *coreDB) getDialect() Dialecter {
-	return db.dialect
-}
-func (db *coreDB) query(query string, args ...any) (*sql.Rows, error) {
-	return db.db.Query(query, args...)
-}
-func (db *coreDB) exec(query string, args ...any) (sql.Result, error) {
-	return db.db.Exec(query, args...)
 }
 
 func (db *coreDB) prepare(query string) (Stmter, error) {
@@ -33,34 +61,34 @@ func (db *coreDB) prepare(query string) (Stmter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &coreDBStmt{
-		db:      stmt,
-		dialect: db.dialect,
-	}, nil
+	return &coreDBStmt{db: stmt}, nil
 }
 
-func (db *coreDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (Engine, error) {
+func (db *coreDB) query(query string, args ...any) (*sql.Rows, error) {
+	return db.db.Query(query, args...)
+}
+
+func (db *coreDB) exec(query string, args ...any) (sql.Result, error) {
+	return db.db.Exec(query, args...)
+}
+
+func (db *coreDB) beginTx(ctx context.Context, opts *sql.TxOptions) (DBer, error) {
 	tx, err := db.db.BeginTx(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	return &coreTX{
-		tx:      tx,
-		dialect: db.dialect,
-	}, nil
+	return &coreTX{tx: tx}, nil
 }
 
-func (db *coreDB) Begin() (Engine, error) {
-	return db.BeginTx(context.Background(), nil)
+func (db *coreDB) commit() error {
+	return errors.New("this is db")
 }
 
-func (db *coreDB) Commit() error {
-	return errors.New("this not tx")
+func (db *coreDB) rollback() error {
+	return errors.New("this is db")
 }
 
-func (db *coreDB) Rollback() error {
-	return errors.New("this not tx")
-}
+// -----------------coreDB-end---------------------
 
 //todo 下面未重构--------------
 

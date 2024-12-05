@@ -31,19 +31,20 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 		fmt.Println(sql, ctx.args)
 	}
 
-	if ctx.sqlIsQuery {
-		rows, err := db.query(sql, ctx.args...)
-		if err != nil {
-			return 0, err
-		}
-		return ctx.ScanLnT(rows)
-	}
-
-	exec, err := db.exec(sql, ctx.args...)
-	if err != nil {
-		return 0, err
-	}
-	return exec.RowsAffected()
+	//if ctx.sqlIsQuery {
+	//	rows, err := db.query(sql, ctx.args...)
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//	return ctx.ScanLnT(rows)
+	//}
+	//
+	//exec, err := db.exec(sql, ctx.args...)
+	//if err != nil {
+	//	return 0, err
+	//}
+	//return exec.RowsAffected()
+	return 0, err
 }
 
 // Insert
@@ -66,19 +67,20 @@ func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error
 		fmt.Println(sql, ctx.args)
 	}
 
-	if ctx.sqlIsQuery {
-		rows, err := db.query(sql, ctx.args...)
-		if err != nil {
-			return 0, err
-		}
-		return ctx.ScanLnT(rows)
-	}
-
-	exec, err := db.exec(sql, ctx.args...)
-	if err != nil {
-		return 0, err
-	}
-	return exec.RowsAffected()
+	//if ctx.sqlIsQuery {
+	//	rows, err := db.query(sql, ctx.args...)
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//	return ctx.ScanLnT(rows)
+	//}
+	//
+	//exec, err := db.exec(sql, ctx.args...)
+	//if err != nil {
+	//	return 0, err
+	//}
+	//return exec.RowsAffected()
+	return 0, err
 }
 
 // InsertOrUpdate

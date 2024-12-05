@@ -1,6 +1,8 @@
 package lorm
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
@@ -12,12 +14,20 @@ import (
 )
 
 type PgDialect struct {
-	ctx *ormContext
+	db   DBer
+	stmt Stmter
+	ctx  *ormContext
 }
 
 // ===----------------------------------------------------------------------===//
 // 获取上下文
 // ===----------------------------------------------------------------------===//
+func (d *PgDialect) getDB() DBer {
+	return d.db
+}
+func (d *PgDialect) getStmt() Stmter {
+	return d.stmt
+}
 func (d *PgDialect) getCtx() *ormContext {
 	return d.ctx
 }
@@ -37,13 +47,39 @@ func (d *PgDialect) getErr() error {
 }
 
 // ===----------------------------------------------------------------------===//
+// TX
+// ===----------------------------------------------------------------------===//
+func (d *PgDialect) beginTx(ctx context.Context, opts *sql.TxOptions) error {
+	tx, err := d.db.beginTx(ctx, opts)
+	if err != nil {
+		return err
+	}
+	d.db = tx
+	return nil
+}
+
+func (d *PgDialect) commit() error {
+	return d.db.commit()
+}
+
+func (d *PgDialect) rollback() error {
+	return d.db.rollback()
+}
+
+// ===----------------------------------------------------------------------===//
 // sql 方言化
 // ===----------------------------------------------------------------------===//
 
-func (d *PgDialect) prepare(query string) string {
+func (d *PgDialect) prepare(query string) error {
 	query = toPgSql(query)
-	return query
+	prepare, err := d.db.prepare(query)
+	if err != nil {
+		return err
+	}
+	d.stmt = prepare
+	return nil
 }
+
 func (d *PgDialect) exec(query string, args ...any) (string, []any) {
 	query = toPgSql(query)
 	return query, args

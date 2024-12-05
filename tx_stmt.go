@@ -4,23 +4,39 @@ import (
 	"database/sql"
 )
 
-type coreTXStmt struct {
-	tx      *sql.Stmt
+// TXStmt -----------------TXStmt---------------------
+type TXStmt struct {
 	dialect Dialecter
 }
 
-func (db *coreTXStmt) getCtx() *ormContext {
-	return db.dialect.getCtx()
-}
-func (db *coreTXStmt) getDialect() Dialecter {
-	return db.dialect
+func (s *TXStmt) getDialect() Dialecter {
+	return s.dialect
 }
 
-func (db *coreTXStmt) query(args ...any) (*sql.Rows, error) {
-	return db.tx.Query(args...)
+func (s *TXStmt) Exec(args ...any) (int64, error) {
+	return s.dialect.getStmt().Exec(args...)
 }
-func (db *coreTXStmt) exec(args ...any) (sql.Result, error) {
-	return db.tx.Exec(args...)
+
+func (s *TXStmt) QueryScan(args ...any) *NativePrepare {
+	return &NativePrepare{
+		db:   s,
+		args: args,
+	}
+}
+
+// -----------------DBStmt-end---------------------
+
+// coreTXStmt -----------------coreTXStmt---------------------
+
+type coreTXStmt struct {
+	tx *sql.Stmt
+}
+
+func (s *coreTXStmt) query(args ...any) (*sql.Rows, error) {
+	return s.tx.Query(args...)
+}
+func (s *coreTXStmt) exec(args ...any) (sql.Result, error) {
+	return s.tx.Exec(args...)
 }
 
 func (s coreTXStmt) Exec(args ...any) (int64, error) {
@@ -37,3 +53,5 @@ func (s *coreTXStmt) QueryScan(args ...any) *NativePrepare {
 		args: args,
 	}
 }
+
+// -----------------coreTXStmt-end---------------------

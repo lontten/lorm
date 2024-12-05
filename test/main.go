@@ -25,7 +25,7 @@ type User struct {
 }
 
 func main() {
-	//QueryOneT2()
+	QueryOneT()
 	//QueryListT2()
 	//
 	//QueryOne1()
@@ -34,5 +34,5 @@ func main() {
 	//
 	//Prepare4()
 
-	TableInsert()
+	//TableInsert()
 }

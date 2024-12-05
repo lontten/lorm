@@ -1,6 +1,8 @@
 package lorm
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
@@ -11,13 +13,21 @@ import (
 )
 
 type MysqlDialect struct {
-	ctx *ormContext
+	db   DBer
+	stmt Stmter
+	ctx  *ormContext
 }
 
 // ===----------------------------------------------------------------------===//
 // 获取上下文
 // ===----------------------------------------------------------------------===//
 
+func (d *MysqlDialect) getDB() DBer {
+	return d.db
+}
+func (d *MysqlDialect) getStmt() Stmter {
+	return d.stmt
+}
 func (d *MysqlDialect) getCtx() *ormContext {
 	return d.ctx
 }
@@ -38,6 +48,26 @@ func (d *MysqlDialect) getErr() error {
 }
 
 // ===----------------------------------------------------------------------===//
+// TX
+// ===----------------------------------------------------------------------===//
+func (d *MysqlDialect) beginTx(ctx context.Context, opts *sql.TxOptions) error {
+	tx, err := d.db.beginTx(ctx, opts)
+	if err != nil {
+		return err
+	}
+	d.db = tx
+	return nil
+}
+
+func (d *MysqlDialect) commit() error {
+	return d.db.commit()
+}
+
+func (d *MysqlDialect) rollback() error {
+	return d.db.rollback()
+}
+
+// ===----------------------------------------------------------------------===//
 // sql 方言化
 // ===----------------------------------------------------------------------===//
 func (d *MysqlDialect) query(query string, args ...any) (string, []any) {
@@ -49,8 +79,13 @@ func (d *MysqlDialect) queryBatch(query string) string {
 	return query
 }
 
-func (d *MysqlDialect) prepare(query string) string {
-	return query
+func (d *MysqlDialect) prepare(query string) error {
+	stmt, err := d.db.prepare(query)
+	if err != nil {
+		return err
+	}
+	d.stmt = stmt
+	return nil
 }
 
 func (d *MysqlDialect) exec(query string, args ...any) (string, []any) {

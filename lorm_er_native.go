@@ -12,9 +12,11 @@ num,dtos,err:=QueryList[User](ldb,"",id)
 num,err:=Exec(ldb,"",id)
 */
 
-func StmtQueryOne[T any](db Stmter, args ...any) (*T, error) {
-	db.getDialect().initContext()
-	ctx := db.getCtx()
+func StmtQueryOne[T any](engine EngineStmt, args ...any) (*T, error) {
+	dialect := engine.getDialect()
+	dialect.initContext()
+	db := dialect.getStmt()
+	ctx := dialect.getCtx()
 
 	dest := new(T)
 
@@ -34,9 +36,11 @@ func StmtQueryOne[T any](db Stmter, args ...any) (*T, error) {
 	return dest, nil
 }
 
-func StmtQueryList[T any](db Stmter, args ...any) ([]T, error) {
-	db.getDialect().initContext()
-	ctx := db.getCtx()
+func StmtQueryList[T any](engine EngineStmt, args ...any) ([]T, error) {
+	dialect := engine.getDialect()
+	dialect.initContext()
+	db := dialect.getStmt()
+	ctx := dialect.getCtx()
 
 	var dest = &[]T{}
 	v := reflect.ValueOf(dest).Elem()
@@ -58,9 +62,11 @@ func StmtQueryList[T any](db Stmter, args ...any) ([]T, error) {
 	return *dest, nil
 }
 
-func StmtQueryListP[T any](db Stmter, args ...any) ([]*T, error) {
-	db.getDialect().initContext()
-	ctx := db.getCtx()
+func StmtQueryListP[T any](engine EngineStmt, args ...any) ([]*T, error) {
+	dialect := engine.getDialect()
+	dialect.initContext()
+	db := dialect.getStmt()
+	ctx := dialect.getCtx()
 
 	var dest = &[]*T{}
 	v := reflect.ValueOf(dest).Elem()
@@ -82,9 +88,11 @@ func StmtQueryListP[T any](db Stmter, args ...any) ([]*T, error) {
 	return *dest, nil
 }
 
-func QueryOne[T any](db Engine, query string, args ...any) (*T, error) {
-	db.getDialect().initContext()
-	ctx := db.getCtx()
+func QueryOne[T any](engine Engine, query string, args ...any) (*T, error) {
+	dialect := engine.getDialect()
+	dialect.initContext()
+	db := dialect.getDB()
+	ctx := dialect.getCtx()
 
 	dest := new(T)
 
@@ -104,9 +112,11 @@ func QueryOne[T any](db Engine, query string, args ...any) (*T, error) {
 	return dest, nil
 }
 
-func QueryList[T any](db Engine, query string, args ...any) ([]T, error) {
-	db.getDialect().initContext()
-	ctx := db.getCtx()
+func QueryList[T any](engine Engine, query string, args ...any) ([]T, error) {
+	dialect := engine.getDialect()
+	dialect.initContext()
+	db := dialect.getDB()
+	ctx := dialect.getCtx()
 
 	var dest = &[]T{}
 	v := reflect.ValueOf(dest).Elem()
@@ -128,9 +138,11 @@ func QueryList[T any](db Engine, query string, args ...any) ([]T, error) {
 	return *dest, nil
 }
 
-func QueryListP[T any](db Engine, query string, args ...any) ([]*T, error) {
-	db.getDialect().initContext()
-	ctx := db.getCtx()
+func QueryListP[T any](engine Engine, query string, args ...any) ([]*T, error) {
+	dialect := engine.getDialect()
+	dialect.initContext()
+	db := dialect.getDB()
+	ctx := dialect.getCtx()
 
 	var dest = &[]*T{}
 	v := reflect.ValueOf(dest).Elem()
@@ -152,8 +164,11 @@ func QueryListP[T any](db Engine, query string, args ...any) ([]*T, error) {
 	return *dest, nil
 }
 
-func Exec(db Engine, query string, args ...any) (int64, error) {
-	db.getDialect().initContext()
+func Exec(engine Engine, query string, args ...any) (int64, error) {
+	dialect := engine.getDialect()
+	dialect.initContext()
+	db := dialect.getDB()
+
 	exec, err := db.exec(query, args...)
 	if err != nil {
 		return 0, err
@@ -176,8 +191,10 @@ func QueryScan(db Engine, query string, args ...any) NativeQuery {
 }
 
 func (q NativeQuery) ScanOne(dest any) (num int64, err error) {
-	db := q.db
-	ctx := db.getCtx()
+	dialect := q.db.getDialect()
+	db := dialect.getDB()
+	ctx := dialect.getCtx()
+
 	ctx.initScanDestOne(dest)
 	if ctx.err != nil {
 		return 0, ctx.err
@@ -196,8 +213,10 @@ func (q NativeQuery) ScanOne(dest any) (num int64, err error) {
 // scanList 切片 必须 ptr ，才能赋值
 // get操作必须 ptr，但是 insert 可是不是ptr，只是dest 不是 ptr，无法返回 自增id
 func (q NativeQuery) ScanList(dest any) (num int64, err error) {
-	db := q.db
-	ctx := db.getCtx()
+	dialect := q.db.getDialect()
+	db := dialect.getDB()
+	ctx := dialect.getCtx()
+
 	ctx.initScanDestList(dest)
 	if ctx.err != nil {
 		return 0, ctx.err

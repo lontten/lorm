@@ -60,10 +60,7 @@ func open(c DbConfig, pc *PoolConf) (Engine, error) {
 		db.SetMaxIdleConns(pc.MaxIdleCount)
 	}
 	ctx := genOrmCtx(pc)
-	return &coreDB{
-		db:      db,
-		dialect: c.dialect(ctx),
-	}, nil
+	return &DB{dialect: c.dialect(ctx, &coreDB{db: db})}, nil
 }
 
 func MustConnect(c DbConfig, pc *PoolConf) Engine {
@@ -76,10 +73,7 @@ func MustConnect(c DbConfig, pc *PoolConf) Engine {
 
 func MustConnectMock(db *sql.DB, c DbConfig) Engine {
 	ctx := genOrmCtx(nil)
-	return &coreDB{
-		db:      db,
-		dialect: c.dialect(ctx),
-	}
+	return &DB{dialect: c.dialect(ctx, &coreDB{db: db})}
 }
 
 func Connect(c DbConfig, pc *PoolConf) (Engine, error) {
@@ -87,13 +81,10 @@ func Connect(c DbConfig, pc *PoolConf) (Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = db.ping()
+
+	err = db.getDialect().getDB().ping()
 	if err != nil {
 		return nil, err
 	}
 	return db, err
-}
-
-type lnDB struct {
-	core corer
 }

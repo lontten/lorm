@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"database/sql"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/lontten/lorm/types"
 	"github.com/stretchr/testify/assert"
