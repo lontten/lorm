@@ -93,6 +93,8 @@ type ormContext struct {
 	//true query,false exec
 	sqlIsQuery bool
 	sqlType    sql_type.SqlType
+	// 需要执行 last_insert_id 获取 mysql 的自增id
+	needLastInsertId bool
 
 	//要执行的sql语句
 	query *strings.Builder

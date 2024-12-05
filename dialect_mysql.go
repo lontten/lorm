@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
+	return_type "github.com/lontten/lorm/return-type"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
@@ -110,6 +111,11 @@ func (d *MysqlDialect) tableInsertGen() {
 	if ctx.hasErr() {
 		return
 	}
+	// mysql insert 时，无法直接返回数据，只能借助 last_insert_id
+	ctx.sqlIsQuery = false
+	if ctx.scanIsPtr && ctx.returnType != return_type.None {
+		ctx.needLastInsertId = true
+	}
 	extra := ctx.extra
 	set := extra.set
 
@@ -207,11 +213,11 @@ func (d *MysqlDialect) tableInsertGen() {
 			query.WriteString(column + " = ? , ")
 			ctx.args = append(ctx.args, set.columnValues[i].Value)
 		}
-
 		break
 	default:
 		break
 	}
+
 	query.WriteString(";")
 }
 

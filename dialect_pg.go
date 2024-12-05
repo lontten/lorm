@@ -183,7 +183,7 @@ func (d *PgDialect) tableInsertGen() {
 	if ctx.scanIsPtr {
 		switch expr := ctx.returnType; expr {
 		case return_type.None:
-			ctx.sqlIsQuery = true
+			ctx.sqlIsQuery = false
 			break
 		case return_type.PrimaryKey:
 			query.WriteString(" RETURNING " + strings.Join(ctx.primaryKeyNames, ","))
@@ -192,6 +192,8 @@ func (d *PgDialect) tableInsertGen() {
 		case return_type.AllField:
 			query.WriteString(" RETURNING " + strings.Join(ctx.modelAllFieldNames, ","))
 		}
+	} else {
+		ctx.sqlIsQuery = false
 	}
 	query.WriteString(";")
 }
