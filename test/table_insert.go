@@ -17,7 +17,7 @@ func TableInsert() {
 	num, err := lorm.Insert(ldb.DB, &user, lorm.Extra().
 		TableName("t_user").
 		ReturnType(return_type.PrimaryKey).
-		WhenDuplicateKey("name").DoNothing().
+		WhenDuplicateKey("name").DoUpdate().
 		ShowSql(),
 	)
 	if err != nil {

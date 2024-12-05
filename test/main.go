@@ -21,10 +21,6 @@ type User struct {
 	Name *string
 	Age  *int
 
-	//UserState *int    `ldb:"user_state"`
-
-	//Uuid uuid.UUID `ldb:"uuid"`
-
 	soft_delete.DeleteGormMilli
 }
 

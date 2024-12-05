@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
-	"github.com/lontten/lorm/return-type"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
@@ -198,8 +197,11 @@ func (d *MysqlDialect) tableInsertGen() {
 			}
 		}
 
-		for _, name := range set.fieldNames {
-			query.WriteString(name + " = new." + name + ", ")
+		for i, name := range set.fieldNames {
+			if i > 0 {
+				query.WriteString(", ")
+			}
+			query.WriteString(name + " = new." + name)
 		}
 		for i, column := range set.columns {
 			query.WriteString(column + " = ? , ")
@@ -209,18 +211,6 @@ func (d *MysqlDialect) tableInsertGen() {
 		break
 	default:
 		break
-	}
-
-	if ctx.scanIsPtr {
-		switch expr := ctx.returnType; expr {
-		case return_type.None:
-			ctx.sqlIsQuery = true
-			break
-		case return_type.PrimaryKey:
-			query.WriteString("; LAST_INSERT_ID(); ")
-		default:
-			break
-		}
 	}
 	query.WriteString(";")
 }
