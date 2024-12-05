@@ -56,11 +56,13 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 				field := ctx.destV.Field(i)
 				isPtr, v, err := basePtrValue(field)
 				fmt.Println(isPtr, v.Type().Name(), err)
+				fmt.Println(field.Interface())
 
 				fmt.Println("------")
 			}
-			field := ctx.destV.Field(0)
-			field.Set(reflect.ValueOf(id))
+			//field := ctx.destV.Field(0)
+			//field.Set(reflect.ValueOf(id))
+			fmt.Println(ctx.destV.Interface())
 		}
 	}
 	return exec.RowsAffected()

@@ -91,10 +91,11 @@ type ormContext struct {
 
 	//------------------scan----------------------
 	//true query,false exec
-	sqlIsQuery bool
-	sqlType    sql_type.SqlType
-	// 需要执行 last_insert_id 获取 mysql 的自增id
-	needLastInsertId bool
+	sqlIsQuery             bool
+	sqlType                sql_type.SqlType
+	needLastInsertId       bool // 是否需要执行 last_insert_id
+	lastInsertIdFieldIndex int  // last_insert_id 对应的model字段的 index
+	lastInsertIdFieldIsPtr bool // last_insert_id 对应的model字段 是否是 ptr
 
 	//要执行的sql语句
 	query *strings.Builder
