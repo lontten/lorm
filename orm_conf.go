@@ -140,9 +140,9 @@ var mutex sync.Mutex
 //
 //		主键Id、ID，都转化为id
 //
-// tag== lorm:name  可以自定义名字
 // tag== lrom:-  跳过
 // 过滤掉首字母小写的字段
+// 跳过软删除字段
 // 获取model对应的数据字段名：和其在model中的index下标
 func (c OrmConf) getStructFieldIndexMap(t reflect.Type) (fieldIndexMap, error) {
 	fields, ok := structFieldIndexMapCache[t]
@@ -235,6 +235,7 @@ type compCV struct {
 	modelAllFieldIndexMap fieldIndexMap
 }
 
+// 忽略 软删除 字段
 // 获取 struct 对应的字段名 和 其值
 func (c OrmConf) getStructCV(v reflect.Value) (compCV, error) {
 	t := v.Type()

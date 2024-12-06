@@ -87,9 +87,10 @@ type ormContext struct {
 	columns      []string      // 有效字段列表
 	columnValues []field.Value // 有效字段值
 
-	modelZeroFieldNames []string       // model 零值字段列表
-	modelAllFieldNames  []string       // model 所有字段列表
-	modelFieldIndexMap  map[string]int // model字段名-index
+	modelZeroFieldNames      []string       // model 零值字段列表
+	modelNoSoftDelFieldNames []string       // model 所有字段列表- 忽略软删除字段
+	modelAllFieldNames       []string       // model 所有字段列表
+	modelFieldIndexMap       map[string]int // model字段名-index
 	// ------------------字段名：字段值-end----------------------
 
 	//------------------scan----------------------
@@ -222,7 +223,7 @@ func (ctx *ormContext) initColumnsValue() {
 	ctx.columnValues = cv.columnValues
 
 	ctx.modelZeroFieldNames = cv.modelZeroFieldNames
-
+	ctx.modelNoSoftDelFieldNames = cv.modelAllFieldNames
 	ctx.modelAllFieldNames = cv.modelAllFieldNames
 
 	// 自增主键
