@@ -2,63 +2,9 @@ package lorm
 
 import (
 	"errors"
-	"github.com/lontten/lorm/utils"
 	"reflect"
-	"strings"
 	"sync"
-	"unicode"
 )
-
-// set
-var structFieldsMapCache = make(map[reflect.Type]fieldMap)
-
-type fieldMap map[string]int
-
-var mutex sync.Mutex
-
-func getFieldMap(typ reflect.Type, fieldNamePrefix string) (fieldMap, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	fields, ok := structFieldsMapCache[typ]
-	if ok {
-		return fields, nil
-	}
-	numField := typ.NumField()
-	arr := fieldMap{}
-	var num = 0
-	for i := 0; i < numField; i++ {
-		field := typ.Field(i)
-		name := field.Name
-
-		if name == "ID" {
-			arr["id"] = i
-			num++
-			if len(arr) < num {
-				return arr, errors.New("字段:: id error")
-			}
-			continue
-		}
-
-		// 过滤掉首字母小写的字段
-		if unicode.IsLower([]rune(name)[0]) {
-			continue
-		}
-
-		name = utils.Camel2Case(name)
-		name = strings.TrimPrefix(name, fieldNamePrefix)
-		if tag := field.Tag.Get("ldb"); tag != "" {
-			name = tag
-		}
-		arr[name] = i
-		num++
-		if len(arr) < num {
-			return arr, errors.New("字段::" + name + "error")
-		}
-	}
-
-	structFieldsMapCache[typ] = arr
-	return arr, nil
-}
 
 type StructValidFieldValueMap map[string]any
 

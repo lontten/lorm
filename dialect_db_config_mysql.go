@@ -13,6 +13,7 @@ type MysqlConf struct {
 }
 
 func (c MysqlConf) dialect(ctx *ormContext) Dialecter {
+	ctx.dialectNeedLastInsertId = true
 	return &MysqlDialect{ctx: ctx}
 }
 

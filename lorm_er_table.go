@@ -20,7 +20,12 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 		dest: v,
 	})
 
-	ctx.setModelDest(v)
+	//ctx.setModelDest(v)
+
+	ctx.initModelDest(v)   //初始化参数
+	ctx.initConf()         //初始化表名，主键
+	ctx.initColumnsValue() //初始化cv
+
 	dialect.tableInsertGen()
 	if ctx.hasErr() {
 		return 0, ctx.err
@@ -48,17 +53,11 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 		if err != nil {
 			return 0, err
 		}
-		if id > 0 && len(ctx.autoIncrements) > 0 {
-			// todo 将自增id 赋值到v
-			ci, err := ctx.ormConf.getStructMappingColumns(ctx.destBaseType)
-			if err != nil {
-				return 0, err
+		if id > 0 {
+			ctx.setLastInsertId(id)
+			if ctx.hasErr() {
+				return 0, ctx.err
 			}
-			i := ci[ctx.autoIncrements[0]]
-			field := ctx.destV.Field(i)
-			fmt.Println(field.Kind().String())
-			fmt.Println(field.Type().Name())
-			field.Set(reflect.ValueOf(id))
 		}
 	}
 	return exec.RowsAffected()
@@ -353,7 +352,7 @@ func (orm OrmTableSelectWhere) ScanFirst(v any) (int64, error) {
 	//orm.Limit(1)
 	//orm.base.ctx.initScanDestOne(v)
 	//orm.base.ctx.checkScanDestField()
-	//orm.base.initColumns()
+	//orm.base.getStructField()
 	//
 	//orm.base.initExtra()
 	//return orm.base.doSelect()
@@ -368,7 +367,7 @@ func (orm OrmTableSelectWhere) ScanOne(v any) (int64, error) {
 
 	//orm.base.ctx.initScanDestOne(v)
 	//orm.base.ctx.checkScanDestField()
-	//orm.base.initColumns()
+	//orm.base.getStructField()
 	//
 	//orm.base.initExtra()
 	//return orm.base.doSelect()
@@ -383,7 +382,7 @@ func (orm OrmTableSelectWhere) ScanList(v any) (int64, error) {
 
 	//orm.base.ctx.initScanDestList(v)
 	//orm.base.ctx.checkScanDestField()
-	//orm.base.initColumns()
+	//orm.base.getStructField()
 	//
 	//orm.base.initExtra()
 	//return orm.base.doSelect()

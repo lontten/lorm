@@ -2,7 +2,6 @@ package utils
 
 import (
 	"github.com/lontten/lorm/soft-delete"
-	"github.com/pkg/errors"
 	"reflect"
 	"testing"
 )
@@ -22,14 +21,17 @@ func TestCheckSoftDelType(t *testing.T) {
 }
 
 func TestErr(t *testing.T) {
-	err := kk()
-	t.Log(err)
-	t.Log(err == nil)
+	var kb = &Kb{}                  // 使用指针
+	v := reflect.ValueOf(kb).Elem() // 获取指针指向的值
+
+	f := v.Field(0)
+
+	var num = 10
+
+	f.Set(reflect.ValueOf(&num))
+
 }
 
-var gg error
-
-func kk() (err error) {
-	gg = errors.New("jfda")
-	return gg
+type Kb struct {
+	Id *int
 }

@@ -14,6 +14,7 @@ type PgConf struct {
 }
 
 func (c PgConf) dialect(ctx *ormContext) Dialecter {
+	ctx.dialectNeedLastInsertId = false
 	return &PgDialect{ctx: ctx}
 }
 

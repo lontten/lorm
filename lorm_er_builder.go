@@ -136,7 +136,7 @@ func (b *SqlBuilder) SelectModel(v any) *SqlBuilder {
 	}
 
 	b.core.getCtx().initScanDestOne(v)
-	columns, err := b.core.getCtx().ormConf.initColumns(b.core.getCtx().destBaseType)
+	columns, err := b.core.getCtx().ormConf.getStructField(b.core.getCtx().destBaseType)
 	if err != nil {
 		b.core.getCtx().err = err
 		return b

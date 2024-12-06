@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
-	return_type "github.com/lontten/lorm/return-type"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
@@ -24,9 +23,10 @@ func (d *MysqlDialect) getCtx() *ormContext {
 }
 func (d *MysqlDialect) initContext() *ormContext {
 	d.ctx = &ormContext{
-		ormConf:    d.ctx.ormConf,
-		query:      &strings.Builder{},
-		insertType: insert_type.Err,
+		ormConf:                 d.ctx.ormConf,
+		query:                   &strings.Builder{},
+		insertType:              insert_type.Err,
+		dialectNeedLastInsertId: d.ctx.dialectNeedLastInsertId,
 	}
 	return d.ctx
 }
@@ -113,9 +113,7 @@ func (d *MysqlDialect) tableInsertGen() {
 	}
 	// mysql insert 时，无法直接返回数据，只能借助 last_insert_id
 	ctx.sqlIsQuery = false
-	if ctx.scanIsPtr && ctx.returnType != return_type.None {
-		ctx.needLastInsertId = true
-	}
+
 	extra := ctx.extra
 	set := extra.set
 
@@ -221,19 +219,6 @@ func (d *MysqlDialect) tableInsertGen() {
 	query.WriteString(";")
 }
 
-// 获取struct对应的字段名 有效部分
-func (d *MysqlDialect) initColumns() {
-	if d.ctx.err != nil {
-		return
-	}
-
-	columns, err := d.ctx.ormConf.initColumns(d.ctx.destBaseType)
-	if err != nil {
-		d.ctx.err = err
-		return
-	}
-	d.ctx.columns = columns
-}
 func (d *MysqlDialect) parse(c Clause) (string, error) {
 	sb := strings.Builder{}
 	switch c.Type {

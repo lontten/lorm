@@ -37,7 +37,7 @@ type ormContext struct {
 	scanDest  any
 	scanIsPtr bool
 
-	// dest去除ptr的value
+	// model去除ptr的value
 	destV              reflect.Value
 	destBaseType       reflect.Type
 	destBaseTypeIsComp bool
@@ -87,17 +87,20 @@ type ormContext struct {
 	columns      []string      // 有效字段列表
 	columnValues []field.Value // 有效字段值
 
-	modelZeroFieldNames []string // model 零值字段列表
-	modelAllFieldNames  []string // model 所有字段列表
+	modelZeroFieldNames []string       // model 零值字段列表
+	modelAllFieldNames  []string       // model 所有字段列表
+	modelFieldIndexMap  map[string]int // model字段名-index
 	// ------------------字段名：字段值-end----------------------
 
 	//------------------scan----------------------
 	//true query,false exec
-	sqlIsQuery             bool
-	sqlType                sql_type.SqlType
-	needLastInsertId       bool // 是否需要执行 last_insert_id
-	lastInsertIdFieldIndex int  // last_insert_id 对应的model字段的 index
-	lastInsertIdFieldIsPtr bool // last_insert_id 对应的model字段 是否是 ptr
+	sqlIsQuery                bool
+	sqlType                   sql_type.SqlType
+	dialectNeedLastInsertId   bool         // 数据库是否需要 last_insert_id。例如：mysql等数据库insert无法直接数据需要 last_insert_id
+	needLastInsertId          bool         // 最终执行，是否需要 last_insert_id
+	lastInsertIdFieldIndex    int          // last_insert_id 对应的model字段的 index
+	lastInsertIdFieldIsPtr    bool         // last_insert_id 对应的model字段 是否是 ptr
+	lastInsertIdFieldBaseType reflect.Type // last_insert_id 对应的model字段 type
 
 	//要执行的sql语句
 	query *strings.Builder
@@ -107,6 +110,60 @@ type ormContext struct {
 	started bool
 }
 
+func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
+	var vp reflect.Value
+	switch ctx.lastInsertIdFieldBaseType.Kind() {
+	case reflect.Int8:
+		id := int8(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Int16:
+		id := int16(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Int32:
+		id := int32(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Int64:
+		id := int64(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Int:
+		id := int(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Uint:
+		id := uint(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Uint8:
+		id := uint8(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Uint16:
+		id := uint16(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Uint32:
+		id := uint32(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	case reflect.Uint64:
+		id := uint64(lastInsertId)
+		vp = reflect.ValueOf(&id)
+		break
+	default:
+		ctx.err = errors.New("last_insert_id field type error")
+		return
+	}
+	f := ctx.destV.Field(ctx.lastInsertIdFieldIndex)
+	if ctx.lastInsertIdFieldIsPtr {
+		f.Set(vp)
+	} else {
+		f.Set(reflect.Indirect(vp))
+	}
+}
 func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 	var e *ExtraContext
 	if len(extra) > 0 && extra[0] != nil {
@@ -132,6 +189,7 @@ func (ctx *ormContext) initConf() {
 	if ctx.hasErr() {
 		return
 	}
+
 	v := ctx.destV
 	dest := ctx.scanDest
 	t := ctx.destBaseType
@@ -154,6 +212,7 @@ func (ctx *ormContext) initColumnsValue() {
 	if ctx.hasErr() {
 		return
 	}
+
 	cv, err := ctx.ormConf.getStructCV(ctx.destV)
 	if err != nil {
 		ctx.err = err
@@ -165,6 +224,30 @@ func (ctx *ormContext) initColumnsValue() {
 	ctx.modelZeroFieldNames = cv.modelZeroFieldNames
 
 	ctx.modelAllFieldNames = cv.modelAllFieldNames
+
+	// 自增主键
+	// 用于 mysql sqlite 等无法直接返回的数据库
+	// 需要返回值，scan可以接收数据，设置为 true
+	if ctx.dialectNeedLastInsertId {
+		if len(ctx.autoIncrements) != 1 {
+			ctx.err = errors.New("only one auto_increment field is allowed")
+			return
+		}
+	}
+	ctx.needLastInsertId = ctx.dialectNeedLastInsertId && ctx.scanIsPtr && ctx.returnType != return_type.None
+	if ctx.needLastInsertId {
+		i, ok := cv.modelAllFieldIndexMap[ctx.autoIncrements[0]]
+		if !ok {
+			ctx.err = errors.New("auto_increment field not found")
+			return
+		}
+		ctx.lastInsertIdFieldIndex = i
+
+		structField := ctx.destBaseType.Field(i)
+		isPtr, baseT := basePtrType(structField.Type)
+		ctx.lastInsertIdFieldIsPtr = isPtr
+		ctx.lastInsertIdFieldBaseType = baseT
+	}
 
 	ctx.initColumnsValueSet()
 	ctx.initColumnsValueExtra()
