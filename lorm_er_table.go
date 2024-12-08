@@ -8,7 +8,7 @@ import (
 
 // ------------------------------------Insert--------------------------------------------
 
-// Insert
+// Insert 插入或者根据主键冲突更新
 func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	dialect := db.getDialect()
 	ctx := dialect.initContext()
@@ -23,7 +23,7 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	//ctx.setModelDest(v)
 
 	ctx.initModelDest(v)   //初始化参数
-	ctx.initConf()         //初始化表名，主键
+	ctx.initConf()         //初始化表名，主键，自增id
 	ctx.initColumnsValue() //初始化cv
 
 	dialect.tableInsertGen()
@@ -63,7 +63,8 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	return exec.RowsAffected()
 }
 
-// Insert
+// InsertOrHas 根据条件查询是否已存在，不存在则直接插入
+// 应用场景：例如添加 后台管理员 时，如果名字已存在，返回名字重复，否者正常添加。
 func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	dialect := db.getDialect()
 	ctx := dialect.initContext()
@@ -75,8 +76,16 @@ func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error
 		dest: v,
 	})
 
-	ctx.setModelDest(v)
+	//ctx.setModelDest(v)
+
+	ctx.initModelDest(v)   //初始化参数
+	ctx.initConf()         //初始化表名，主键，自增id
+	ctx.initColumnsValue() //初始化cv
+
 	dialect.tableInsertGen()
+	if ctx.hasErr() {
+		return 0, ctx.err
+	}
 
 	sql := dialect.getSql()
 	if ctx.showSql {
@@ -95,63 +104,19 @@ func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error
 	if err != nil {
 		return 0, err
 	}
+	if ctx.needLastInsertId {
+		id, err := exec.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
+		if id > 0 {
+			ctx.setLastInsertId(id)
+			if ctx.hasErr() {
+				return 0, ctx.err
+			}
+		}
+	}
 	return exec.RowsAffected()
-}
-
-// InsertOrUpdate
-// 1.ptr
-// 2.comp-struct
-func (db *lnDB) InsertOrUpdate(v any) OrmTableCreate {
-	db.core.appendBaseToken(baseToken{
-		typ:  tInsert,
-		dest: v,
-	})
-
-	//db.setModelDest(v)
-	//ldb.initColumnsValue()
-	return OrmTableCreate{base: db.core}
-}
-
-// ByPrimaryKey
-// ptr
-// single / comp复合主键
-func (orm OrmTableCreate) ByPrimaryKey() (int64, error) {
-	//orm.base.initPrimaryKeyName()
-	//orm.base.ctx.initSelfPrimaryKeyValues()
-	//base := orm.base
-	//ctx := base.ctx
-	//if err := ctx.err; err != nil {
-	//	return 0, err
-	//}
-	//
-	//cs := ctx.columns
-	//cvs := ctx.columnValues
-	//tableName := ctx.tableName
-	//idNames := ctx.primaryKeyNames
-	//query, args := base.dialect.insertOrUpdateByPrimaryKey(tableName, idNames, cs, cvs...)
-	//return base.doExec(query, args...)
-	return 0, nil
-}
-
-// ByUnique
-// ptr-comp
-func (orm OrmTableCreate) ByUnique(fs ...string) (int64, error) {
-	//if len(fs) == 0 {
-	//	return 0, errors.New("ByUnique is empty")
-	//}
-	//
-	//base := orm.base
-	//ctx := base.ctx
-	//if err := ctx.err; err != nil {
-	//	return 0, err
-	//}
-	//
-	//cs := ctx.columns
-	//cvs := ctx.columnValues
-	//tableName := ctx.tableName
-	//query, args := base.dialect.insertOrUpdateByUnique(tableName, fs, cs, cvs...)
-	//return base.doExec(query, args...)
-	return 0, nil
 }
 
 //------------------------------------Delete--------------------------------------------

@@ -16,28 +16,23 @@ num,err:=LnUpdate(db,tableName("")
 )
 
 
-UpdateBuilder(db,User{}).
-   .setTableName("user")
-    setModel(user).                             
-    setMap(map).
-    setNull("name").
-    setGreeterSelf("num",-1).
-    setNowDate("create_time").
-    setNowTime("create_time").
-    setNowDateTime("create_time").
-  
-    byModel(user)                              
-    byMap(map)
-    byPrimaryKeys(any)
-    filterPrimaryKeys(any)
-    byWhere(*whereBuider)
-   
-    .exec() //返回受影响的行数 num, err
+//通过遍历插入多个数据，并返回插入的数据的所有null值得字段
+num,err:=Update(db,users,new(ldb.Extra).
+    .shwoSql()  // 打印sql
+    .skipLgDel() //跳过逻辑删除字段
+    .returnLevel(Field.All,Field.Nil,Field.Pk,Field.None) //返回所有字段，；只返回nil字段；只返回主键字段
+    .setTable("")  //覆盖表名
+
+    .setNUll("")
+    .setkv("","")
 
 
-func aaa() {
-    num, err := h().exec()
-    fmt.Println(num, err)
-}
+)
+    .by()
+    .by()
+    .by()
+    .exec()
+
+
 
 ```

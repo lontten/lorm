@@ -9,29 +9,45 @@ users, err:= List[User](db,byModel(model)
     .byMap(map)
     .byPrimaryKeys(id...)
     .byWhere(where)
-)
+
+    new(Extra)
+        .showsSql()
+        .skipSoftDelete()
+        .select("id","name"..)
+        
 
 
-user, err:= GetOrInsert[User](db,&user)
+).orderBy("id desc")
+    .limit(10)
+.offset(10)
+
+
+First
+Has
+Count
+list,err := List[User](db,model)
+    .byModel(model)
+    .byMap(map)
+    .byWhere(where)
+    .orderby("id desc")
+    .limit(10)
+    .offset(10)
+.showsSql()
+.skipSoftDelete()
+.select("id","name"..)
+.exec()
+
+
+user, err:= GetOrInsert[User](db,&user,set().setE)
     byModel(model)
     .byMap(map)
     .byPrimaryKeys(id...)
     .byWhere(where)
-)
 
-has,err:=Has[User](db,User{})
-    byModel(model)
-    .byMap(map)
-    .byPrimaryKeys(id...)
-    .byWhere(where)
-)
-
-num,err:=Count[User](db,User{})
-    byModel(model)
-    .byMap(map)
-    .byPrimaryKeys(id...)
-    .byWhere(where)
-)
+    .showsSql()
+    .skipSoftDelete()
+    .select("id","name"..)
+.query()
 
 
 ```
