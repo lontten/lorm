@@ -331,6 +331,11 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	return b
 }
 
+func (b *SqlBuilder) WhereIng() *SqlBuilder {
+	b.selectStatus = selectDone
+	b.whereStatus = whereSet
+	return b
+}
 func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
 	db := b.db
 	ctx := db.getCtx()
@@ -356,6 +361,47 @@ func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
 	case whereSet:
 		b.otherQuery.WriteString(" AND ")
 		b.otherQuery.WriteString(whereStr)
+	case whereDone:
+		ctx.err = errors.New("where has been done")
+	}
+
+	return b
+}
+
+func (b *SqlBuilder) WhereIn(whereStr string, args ...any) *SqlBuilder {
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
+		return b
+	}
+
+	le := len(args)
+	if le == 0 {
+		return b
+	}
+
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("Where 设置异常：" + whereStr)
+		return b
+	}
+
+	b.args = append(b.args, args...)
+
+	var inArgStr = " (" + gen(le) + ")"
+	whereStr = strings.Replace(whereStr, "?", inArgStr, -1)
+
+	switch b.whereStatus {
+	case whereNoSet:
+		b.whereStatus = whereSet
+		b.otherQuery.WriteString(" WHERE ")
+
+		b.otherQuery.WriteString(whereStr)
+
+	case whereSet:
+		b.otherQuery.WriteString(" AND ")
+
+		b.otherQuery.WriteString(whereStr)
+
 	case whereDone:
 		ctx.err = errors.New("where has been done")
 	}

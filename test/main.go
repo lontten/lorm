@@ -41,6 +41,6 @@ func main() {
 	//Prepare4()
 
 	//TableInsert()
-	//Build1()
-	Build2()
+	Build1()
+	//Build2()
 }

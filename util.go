@@ -9,5 +9,3 @@ func gen(num int) string {
 	}
 	return strings.Join(queryArr, ",")
 }
-
-// todo 下面未重构--------------
