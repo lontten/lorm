@@ -1,8 +1,9 @@
 package ldb
 
-import "github.com/lontten/lorm"
-
-import _ "github.com/go-sql-driver/mysql"
+import (
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/lontten/lorm"
+)
 
 //import _ "github.com/jackc/pgx/v5/stdlib"
 

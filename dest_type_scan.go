@@ -115,8 +115,8 @@ func (ctx *ormContext) initScanDestOneT(dest any) {
 
 	ctx.scanDest = dest
 	ctx.scanIsPtr = true
-	ctx.destV = v
 
+	ctx.destV = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
 

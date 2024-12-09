@@ -1,4 +1,4 @@
-package soft_delete
+package soft_del
 
 import (
 	"github.com/gofrs/uuid"

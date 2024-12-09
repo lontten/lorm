@@ -3,20 +3,21 @@ package lorm
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 )
 
-// todo 下面未重构--------------
-func (db *lnDB) Builder() *SqlBuilder {
+func SelectBuilder(db Engine) *SqlBuilder {
 	return &SqlBuilder{
-		core:        db.core,
+		db:          db,
 		selectQuery: &strings.Builder{},
 		otherQuery:  &strings.Builder{},
 	}
 }
 
 type SqlBuilder struct {
-	core corer
+	db Engine
 
 	query string
 	args  []any
@@ -37,32 +38,17 @@ type SqlBuilder struct {
 }
 
 const (
-	selectNone = iota
-	selectIng
+	selectNoSet = iota
+	selectSet
+
 	selectDone
 )
 
 const (
-	whereNone = iota
-	whereIng
+	whereNoSet = iota
+	whereSet
 	whereDone
 )
-
-func (b *SqlBuilder) updStatus() {
-	if b.selectStatus == selectNone {
-		b.selectStatus = selectIng
-		return
-	}
-	if b.selectStatus == selectIng {
-		b.selectStatus = selectDone
-		return
-	}
-
-	if b.whereStatus == whereIng {
-		b.whereStatus = whereDone
-		return
-	}
-}
 
 func (b *SqlBuilder) initSelectSql() {
 	b.selectQuery.WriteString("SELECT ")
@@ -77,8 +63,9 @@ func (b *SqlBuilder) initSelectSql() {
 //	b.args = b.otherArgs
 //}
 
+// 添加一个 arg，多个断言
 func (b *SqlBuilder) AppendArg(arg any, condition ...bool) *SqlBuilder {
-	if b.core.hasErr() {
+	if b.db.getCtx().hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -86,7 +73,7 @@ func (b *SqlBuilder) AppendArg(arg any, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	if b.selectStatus == selectIng {
+	if b.selectStatus == selectNoSet {
 		b.selectArgs = append(b.selectArgs, arg)
 	} else {
 		b.otherArgs = append(b.otherArgs, arg)
@@ -94,16 +81,19 @@ func (b *SqlBuilder) AppendArg(arg any, condition ...bool) *SqlBuilder {
 	return b
 }
 
+// 添加sql语句
 func (b *SqlBuilder) AppendSql(sql string) *SqlBuilder {
 	b.otherQuery.WriteString(sql)
 	return b
 }
 
+// 添加 多个参数
 func (b *SqlBuilder) AppendArgs(args ...any) *SqlBuilder {
-	if b.core.hasErr() {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
-	if b.selectStatus == selectIng {
+	if b.selectStatus == selectNoSet {
 		b.selectArgs = append(b.selectArgs, args...)
 	} else {
 		b.otherArgs = append(b.otherArgs, args...)
@@ -111,8 +101,10 @@ func (b *SqlBuilder) AppendArgs(args ...any) *SqlBuilder {
 	return b
 }
 
+// 添加一个 select 字段，多个断言
 func (b *SqlBuilder) Select(arg string, condition ...bool) *SqlBuilder {
-	if b.core.hasErr() {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -121,43 +113,50 @@ func (b *SqlBuilder) Select(arg string, condition ...bool) *SqlBuilder {
 		}
 	}
 
-	b.updStatus()
+	b.selectStatus = selectSet
 	b.selectTokens = append(b.selectTokens, arg)
 
 	return b
 }
 
+// 添加 多个 select 字段，从 model中
 func (b *SqlBuilder) SelectModel(v any) *SqlBuilder {
-	if b.core.hasErr() {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	if v == nil {
 		return b
 	}
 
-	b.core.getCtx().initScanDestOne(v)
-	columns, err := b.core.getCtx().ormConf.getStructField(b.core.getCtx().destBaseType)
+	ctx.initScanDestOne(v)
+	columns, err := ctx.ormConf.getStructField(ctx.destBaseType)
 	if err != nil {
-		b.core.getCtx().err = err
+		ctx.err = err
 		return b
 	}
 
-	b.updStatus()
+	b.selectStatus = selectSet
 	b.selectTokens = append(b.selectTokens, columns...)
 	return b
 }
 
+// from 表名
+// 状态从 selectNoSet 变成 selectSet
 func (b *SqlBuilder) From(name string) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
-	b.updStatus()
+	b.selectStatus = selectDone
 	b.otherQuery.WriteString(" FROM " + name)
 	return b
 }
 
+// join 联表
 func (b *SqlBuilder) Join(name string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -165,13 +164,13 @@ func (b *SqlBuilder) Join(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.updStatus()
 	b.otherQuery.WriteString(" JOIN " + name)
 	return b
 }
 
 func (b *SqlBuilder) Arg(arg any, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -184,7 +183,8 @@ func (b *SqlBuilder) Arg(arg any, condition ...bool) *SqlBuilder {
 }
 
 func (b *SqlBuilder) Args(args ...any) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	b.AppendArgs(args...)
@@ -192,7 +192,8 @@ func (b *SqlBuilder) Args(args ...any) *SqlBuilder {
 }
 
 func (b *SqlBuilder) LeftJoin(name string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -200,7 +201,6 @@ func (b *SqlBuilder) LeftJoin(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.updStatus()
 	b.otherQuery.WriteString("\n")
 	b.otherQuery.WriteString("LEFT JOIN " + name)
 	b.otherQuery.WriteString("\n")
@@ -209,7 +209,8 @@ func (b *SqlBuilder) LeftJoin(name string, condition ...bool) *SqlBuilder {
 }
 
 func (b *SqlBuilder) RightJoin(name string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -217,13 +218,13 @@ func (b *SqlBuilder) RightJoin(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.updStatus()
 	b.otherQuery.WriteString(" RIGHT JOIN " + name)
 	return b
 }
 
 func (b *SqlBuilder) OrderBy(name string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -231,13 +232,13 @@ func (b *SqlBuilder) OrderBy(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.updStatus()
 	b.otherQuery.WriteString(" ORDER BY " + name)
 	return b
 }
 
 func (b *SqlBuilder) Native(sql string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -245,7 +246,6 @@ func (b *SqlBuilder) Native(sql string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.updStatus()
 	b.otherQuery.WriteString(" ")
 	b.otherQuery.WriteString(sql)
 	b.otherQuery.WriteString(" ")
@@ -253,7 +253,8 @@ func (b *SqlBuilder) Native(sql string, condition ...bool) *SqlBuilder {
 }
 
 func (b *SqlBuilder) OrderDescBy(name string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -261,13 +262,13 @@ func (b *SqlBuilder) OrderDescBy(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.updStatus()
 	b.otherQuery.WriteString(" ORDER BY " + name + " DESC")
 	return b
 }
 
 func (b *SqlBuilder) Limit(num int64, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	for _, c := range condition {
@@ -275,55 +276,55 @@ func (b *SqlBuilder) Limit(num int64, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.updStatus()
-	b.otherQuery.WriteString(" LIMIT ? ")
-	b.AppendArg(num)
+	b.otherQuery.WriteString(" LIMIT " + strconv.FormatInt(num, 10))
 	return b
 }
 
 func (b *SqlBuilder) Offset(num int64, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
+
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-	b.updStatus()
-	b.otherQuery.WriteString(" OFFSET ? ")
-	b.AppendArg(num)
+	b.otherQuery.WriteString(" OFFSET " + strconv.FormatInt(num, 10))
 	return b
 }
 
 func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	ctx := b.db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
 	if w == nil {
 		return b
 	}
-	//sql, err := w.toSql(b.core.dialect.parse)
-	//if err != nil {
-	//	b.core.getCtx().err = err
-	//	return b
-	//}
-	//if sql == "" {
-	//	return b
-	//}
+	sqlStr, err := w.toSql(b.db.getDialect().parse)
+	if err != nil {
+		b.db.getCtx().err = err
+		return b
+	}
+	if sqlStr == "" {
+		return b
+	}
 
-	b.updStatus()
-
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("未完成 select 设置")
+	}
 	switch b.whereStatus {
-	case whereNone:
-		b.whereStatus = whereIng
+	case whereNoSet:
+		b.whereStatus = whereSet
 		b.otherQuery.WriteString(" WHERE ")
-		//b.otherQuery.WriteString(sql)
-	case whereIng:
+		b.otherQuery.WriteString(sqlStr)
+	case whereSet:
 		b.otherQuery.WriteString(" AND ")
-		//b.otherQuery.WriteString(sql)
+		b.otherQuery.WriteString(sqlStr)
 	case whereDone:
-		b.core.getCtx().err = errors.New("where has been done")
+		b.db.getCtx().err = errors.New("where has been done")
 	}
 
 	b.AppendArgs(w.args...)
@@ -331,79 +332,96 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 }
 
 func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
-	if b.core.getCtx().err != nil {
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
 		return b
 	}
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("Where 设置异常：" + whereStr)
+		return b
+	}
+
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
 
-	b.updStatus()
-
 	switch b.whereStatus {
-	case whereNone:
-		b.whereStatus = whereIng
+	case whereNoSet:
+		b.whereStatus = whereSet
 		b.otherQuery.WriteString(" WHERE ")
 		b.otherQuery.WriteString(whereStr)
-	case whereIng:
+	case whereSet:
 		b.otherQuery.WriteString(" AND ")
 		b.otherQuery.WriteString(whereStr)
 	case whereDone:
-		b.core.getCtx().err = errors.New("where has been done")
+		ctx.err = errors.New("where has been done")
 	}
 
 	return b
 }
 
 func (b *SqlBuilder) ScanOne(dest any) (rowsNum int64, err error) {
-	if err = b.core.getCtx().err; err != nil {
-		return 0, err
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
+		return 0, ctx.err
 	}
-	b.updStatus()
-	b.core.getCtx().initScanDestOne(dest)
-	if b.core.getCtx().destIsSlice {
-		return 0, errors.New("not support GetOne for slice")
-	}
-	b.core.getCtx().checkScanDestField()
-	if err = b.core.getCtx().err; err != nil {
-		return 0, err
-	}
-	b.initSelectSql()
-	rows, err := b.core.doQuery(b.query, b.args...)
+	b.selectStatus = selectDone
+	b.whereStatus = whereDone
 
+	ctx.initScanDestOne(dest)
+	if ctx.err != nil {
+		return 0, ctx.err
+	}
+
+	b.initSelectSql()
+	query := b.query
+	args := b.args
+	fmt.Println(query, args)
+
+	rows, err := db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return b.core.getCtx().ScanLnT(rows)
+	return ctx.ScanLnT(rows)
 }
 
 func (b *SqlBuilder) ScanList(dest any) (rowsNum int64, err error) {
-	if err = b.core.getCtx().err; err != nil {
-		return 0, err
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
+		return 0, ctx.err
 	}
-	b.updStatus()
-	b.core.getCtx().initScanDestList(dest)
-	b.core.getCtx().checkScanDestField()
+	b.selectStatus = selectDone
+	b.whereStatus = whereDone
 
-	if err = b.core.getCtx().err; err != nil {
-		return 0, err
+	ctx.initScanDestList(dest)
+	if ctx.err != nil {
+		return 0, ctx.err
 	}
 	b.initSelectSql()
-	rows, err := b.core.doQuery(b.query, b.args...)
 
+	query := b.query
+	args := b.args
+
+	rows, err := db.query(query, args...)
 	if err != nil {
 		return 0, err
 	}
-	return b.core.getCtx().ScanT(rows)
+	return ctx.ScanT(rows)
 }
 
 func (b *SqlBuilder) Exec() (sql.Result, error) {
-	b.updStatus()
-	if err := b.core.getCtx().err; err != nil {
-		return nil, err
+	db := b.db
+	ctx := db.getCtx()
+	b.selectStatus = selectDone
+	b.whereStatus = whereDone
+	if ctx.hasErr() {
+		return nil, ctx.err
 	}
 	b.initSelectSql()
-	return b.core.doExec(b.query, b.args...)
+	return db.exec(b.query, b.args...)
 }

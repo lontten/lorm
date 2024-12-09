@@ -75,7 +75,7 @@ type ormContext struct {
 
 	insertType     insert_type.InsertType
 	returnType     return_type.ReturnType
-	softDeleteType soft_delete.SoftDelType
+	softDeleteType soft_del.SoftDelType
 	skipSoftDelete bool   // 跳过软删除
 	tableName      string //当前表名
 	checkParam     bool   // 是否检查参数
@@ -91,6 +91,7 @@ type ormContext struct {
 	modelNoSoftDelFieldNames []string       // model 所有字段列表- 忽略软删除字段
 	modelAllFieldNames       []string       // model 所有字段列表
 	modelFieldIndexMap       map[string]int // model字段名-index
+	modelSelectFieldNames    []string       // model select 字段列表
 	// ------------------字段名：字段值-end----------------------
 
 	//------------------scan----------------------
@@ -109,6 +110,9 @@ type ormContext struct {
 	args []any
 
 	started bool
+
+	whereTokens   []string // where条件 使用时，用 and 相连
+	extraWhereSql string   // 附加where 条件 使用时，用 and 相连
 }
 
 func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
@@ -308,14 +312,14 @@ func (ctx *ormContext) initColumnsValueSoftDel() {
 
 	switch ctx.sqlType {
 	case sql_type.Insert:
-		value, has := soft_delete.SoftDelTypeNoFVMap[ctx.softDeleteType]
+		value, has := soft_del.SoftDelTypeNoFVMap[ctx.softDeleteType]
 		if has && value.Type != field.None {
 			ctx.columns = append(ctx.columns, value.Name)
 			ctx.columnValues = append(ctx.columnValues, value.ToValue())
 		}
 		break
 	case sql_type.Delete:
-		value, has := soft_delete.SoftDelTypeYesFVMap[ctx.softDeleteType]
+		value, has := soft_del.SoftDelTypeYesFVMap[ctx.softDeleteType]
 		if has && value.Type != field.None {
 			ctx.columns = append(ctx.columns, value.Name)
 			ctx.columnValues = append(ctx.columnValues, value.ToValue())

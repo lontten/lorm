@@ -217,6 +217,53 @@ func (orm OrmTableUpdate) ByWhere(wb *WhereBuilder) OrmTableUpdate {
 
 //------------------------------------Select--------------------------------------------
 
+// First 根据条件获取第一个
+func First[T any](db Engine, by *ByContext, extra ...*ExtraContext) (t *T, err error) {
+	dialect := db.getDialect()
+	ctx := dialect.initContext()
+
+	dest := new(T)
+
+	ctx.initScanDestOneT(dest) //初始化参数
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+
+	ctx.initExtra(extra...)
+	ctx.sqlType = sql_type.Select
+	ctx.sqlIsQuery = true
+	dialect.appendBaseToken(baseToken{
+		typ:  tInsert,
+		dest: dest,
+	})
+
+	ctx.initConf()         //初始化表名，主键，自增id
+	ctx.initColumnsValue() //初始化cv
+
+	dialect.tableInsertGen()
+	if ctx.hasErr() {
+		return nil, ctx.err
+	}
+
+	sql := ctx.doSelect()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return nil, err
+	}
+	num, err := ctx.ScanLnT(rows)
+	if err != nil {
+		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
+	}
+	return dest, nil
+}
+
 func (db *lnDB) Select(v any) OrmTableSelect {
 	core := db.core
 	core.getCtx().tableSqlType = dSelect

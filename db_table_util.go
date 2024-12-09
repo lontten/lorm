@@ -5,6 +5,7 @@ import (
 	"github.com/lontten/lorm/field"
 	"github.com/pkg/errors"
 	"reflect"
+	"strings"
 )
 
 // todo 下面未重构--------------
@@ -23,7 +24,7 @@ func (db *lnDB) doUpdate() (int64, error) {
 	bb.WriteString(tableName)
 	bb.WriteString(" SET ")
 	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
-	bb.Write(db.genWhereSqlByToken())
+	bb.WriteString(ctx.genWhereSqlByToken())
 
 	//return ldb.core.doExec(bb.String(), append(ctx.columnValues, ldb.args...)...)
 	return 0, nil
@@ -54,29 +55,26 @@ func (db *lnDB) doUpdate() (int64, error) {
 //}
 
 // update
-//func (ldb coreDb) doSelect() (int64, error) {
-//	var bb bytes.Buffer
-//
-//	ctx := ldb.getCtx()
-//	tableName := ctx.tableName
-//	columns := ctx.columns
-//
-//	bb.WriteString("SELECT ")
-//	for i, column := range columns {
-//		if i == 0 {
-//			bb.WriteString(column)
-//		} else {
-//			bb.WriteString(" , ")
-//			bb.WriteString(column)
-//		}
-//	}
-//	bb.WriteString(" FROM ")
-//	bb.WriteString(tableName)
-//bb.Write(ldb.genWhereSqlByToken())
-//
-//return ldb.query(bb.String(), ldb.args...)
-//return 0, nil
-//}
+func (ctx *ormContext) doSelect() string {
+	var sb strings.Builder
+
+	tableName := ctx.tableName
+
+	sb.WriteString("SELECT ")
+	for i, column := range ctx.modelSelectFieldNames {
+		if i == 0 {
+			sb.WriteString(column)
+		} else {
+			sb.WriteString(" , ")
+			sb.WriteString(column)
+		}
+	}
+	sb.WriteString(" FROM ")
+	sb.WriteString(tableName)
+	sb.WriteString(ctx.genWhereSqlByToken())
+
+	return sb.String()
+}
 
 // has
 //func (ldb coreDb) doHas() (bool, error) {
@@ -175,7 +173,7 @@ func (d *MysqlDialect) initExtra() {
 	//	ldb.args = append(ldb.args, ldb.ctx.ormConf.TenantIdValueFun())
 	//}
 	//
-	//var sb strings.Builder
+	//var sb strings.SelectBuilder
 	//sb.WriteString(ldb.extraWhereSql)
 	//
 	//if len(ldb.orderByTokens) > 0 {
@@ -237,55 +235,21 @@ func getCompValueCV(v reflect.Value, c *OrmConf) ([]string, []field.Value, error
 	return cv.columns, cv.columnValues, nil
 }
 
-// ------------------------query--------------------------
-func (db *lnDB) query(query string, args ...any) (int64, error) {
-	//rows, err := ldb.doQuery(query, args...)
-	//if err != nil {
-	//	return 0, err
-	//}
-	//if ldb.ctx.scanIsSlice {
-	//	return ldb.ctx.Scan(rows)
-	//}
-	//return ldb.ctx.ScanLn(rows)
-	return 0, nil
-}
-
-func (db *lnDB) queryBatch(query string, args [][]any) (int64, error) {
-	//query = ldb.dialect.queryBatch(query)
-	//
-	//stmt, err := ldb.doPrepare(query)
-	//if err != nil {
-	//	return 0, err
-	//}
-	//
-	//rowss := make([]*sql.Rows, 0)
-	//for _, arg := range args {
-	//	rows, err := stmt.Query(arg...)
-	//	if err != nil {
-	//		return 0, err
-	//	}
-	//	rowss = append(rowss, rows)
-	//}
-	//return ldb.ctx.ScanBatch(rowss)
-	return 0, nil
-}
-
 //------------------------gen-sql---------------------------
 
 // 根据whereTokens生成的where sql
-func (db *lnDB) genWhereSqlByToken() []byte {
-	//if len(ldb.whereTokens) == 0 && ldb.extraWhereSql == "" {
-	//	return nil
-	//}
-	//var buf bytes.Buffer
-	//buf.WriteString(" WHERE ")
-	//for i, token := range ldb.whereTokens {
-	//	if i > 0 {
-	//		buf.WriteString(" AND ")
-	//	}
-	//	buf.WriteString(token)
-	//}
-	//buf.WriteString(ldb.extraWhereSql)
-	//return buf.Bytes()
-	return nil
+func (ctx *ormContext) genWhereSqlByToken() string {
+	if len(ctx.whereTokens) == 0 && ctx.extraWhereSql == "" {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString(" WHERE ")
+	for i, token := range ctx.whereTokens {
+		if i > 0 {
+			sb.WriteString(" AND ")
+		}
+		sb.WriteString(token)
+	}
+	sb.WriteString(ctx.extraWhereSql)
+	return sb.String()
 }
