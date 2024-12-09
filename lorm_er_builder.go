@@ -93,10 +93,10 @@ func (b *SqlBuilder) AppendArgs(args ...any) *SqlBuilder {
 	if ctx.hasErr() {
 		return b
 	}
-	if b.selectStatus == selectNoSet {
-		b.selectArgs = append(b.selectArgs, args...)
-	} else {
+	if b.selectStatus == selectDone {
 		b.otherArgs = append(b.otherArgs, args...)
+	} else {
+		b.selectArgs = append(b.selectArgs, args...)
 	}
 	return b
 }
@@ -388,7 +388,7 @@ func (b *SqlBuilder) WhereIn(whereStr string, args ...any) *SqlBuilder {
 		return b
 	}
 
-	b.args = append(b.args, args...)
+	b.AppendArgs(args...)
 
 	var inArgStr = " (" + gen(length) + ")"
 	whereStr = strings.Replace(whereStr, "?", inArgStr, -1)
