@@ -375,8 +375,11 @@ func (b *SqlBuilder) WhereIn(whereStr string, args ...any) *SqlBuilder {
 		return b
 	}
 
-	le := len(args)
-	if le == 0 {
+	if args == nil {
+		return b
+	}
+	length := len(args)
+	if length == 0 {
 		return b
 	}
 
@@ -387,7 +390,7 @@ func (b *SqlBuilder) WhereIn(whereStr string, args ...any) *SqlBuilder {
 
 	b.args = append(b.args, args...)
 
-	var inArgStr = " (" + gen(le) + ")"
+	var inArgStr = " (" + gen(length) + ")"
 	whereStr = strings.Replace(whereStr, "?", inArgStr, -1)
 
 	switch b.whereStatus {
