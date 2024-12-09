@@ -173,7 +173,7 @@ func (d *MysqlDialect) initExtra() {
 	//	ldb.args = append(ldb.args, ldb.ctx.ormConf.TenantIdValueFun())
 	//}
 	//
-	//var sb strings.SelectBuilder
+	//var sb strings.QueryBuild
 	//sb.WriteString(ldb.extraWhereSql)
 	//
 	//if len(ldb.orderByTokens) > 0 {

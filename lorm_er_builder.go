@@ -8,30 +8,35 @@ import (
 	"strings"
 )
 
-func SelectBuilder(db Engine) *SqlBuilder {
+func QueryBuild(db Engine) *SqlBuilder {
 	return &SqlBuilder{
-		db:          db,
-		selectQuery: &strings.Builder{},
-		otherQuery:  &strings.Builder{},
+		db:              db,
+		selectQuery:     &strings.Builder{},
+		otherSqlBuilder: &strings.Builder{},
 	}
 }
 
 type SqlBuilder struct {
 	db Engine
-
+	// 最终执行sql
 	query string
-	args  []any
+	// 最终参数列表
+	args []any
+
+	// set 部分
+	setTokens []string
 
 	// select部分
+	selectStatus int8
+
 	selectTokens []string
 	selectQuery  *strings.Builder
 	selectArgs   []any
-	selectStatus int8
 
 	// 其他部分
-	otherQuery  *strings.Builder
-	otherArgs   []any
-	whereStatus int8
+	otherSqlBuilder *strings.Builder
+	otherSqlArgs    []any
+	whereStatus     int8
 
 	// page
 	other any
@@ -53,15 +58,21 @@ const (
 func (b *SqlBuilder) initSelectSql() {
 	b.selectQuery.WriteString("SELECT ")
 	b.selectQuery.WriteString(strings.Join(b.selectTokens, ","))
-	b.query = b.selectQuery.String() + " " + b.otherQuery.String()
-	b.args = append(b.selectArgs, b.otherArgs...)
+	b.query = b.selectQuery.String() + " " + b.otherSqlBuilder.String()
+	b.args = append(b.selectArgs, b.otherSqlArgs...)
 }
 
 //
 //func (b *SqlBuilder) initQuerySql() {
-//	b.query = b.otherQuery.String()
-//	b.args = b.otherArgs
+//	b.query = b.otherSqlBuilder.String()
+//	b.args = b.otherSqlArgs
 //}
+
+// 显示sql
+func (b *SqlBuilder) ShowSql() *SqlBuilder {
+	b.db.getCtx().showSql = true
+	return b
+}
 
 // 添加一个 arg，多个断言
 func (b *SqlBuilder) AppendArg(arg any, condition ...bool) *SqlBuilder {
@@ -76,14 +87,14 @@ func (b *SqlBuilder) AppendArg(arg any, condition ...bool) *SqlBuilder {
 	if b.selectStatus == selectNoSet {
 		b.selectArgs = append(b.selectArgs, arg)
 	} else {
-		b.otherArgs = append(b.otherArgs, arg)
+		b.otherSqlArgs = append(b.otherSqlArgs, arg)
 	}
 	return b
 }
 
 // 添加sql语句
 func (b *SqlBuilder) AppendSql(sql string) *SqlBuilder {
-	b.otherQuery.WriteString(sql)
+	b.otherSqlBuilder.WriteString(sql)
 	return b
 }
 
@@ -94,7 +105,7 @@ func (b *SqlBuilder) AppendArgs(args ...any) *SqlBuilder {
 		return b
 	}
 	if b.selectStatus == selectDone {
-		b.otherArgs = append(b.otherArgs, args...)
+		b.otherSqlArgs = append(b.otherSqlArgs, args...)
 	} else {
 		b.selectArgs = append(b.selectArgs, args...)
 	}
@@ -149,7 +160,7 @@ func (b *SqlBuilder) From(name string) *SqlBuilder {
 		return b
 	}
 	b.selectStatus = selectDone
-	b.otherQuery.WriteString(" FROM " + name)
+	b.otherSqlBuilder.WriteString(" FROM " + name)
 	return b
 }
 
@@ -164,7 +175,7 @@ func (b *SqlBuilder) Join(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString(" JOIN " + name)
+	b.otherSqlBuilder.WriteString(" JOIN " + name)
 	return b
 }
 
@@ -201,9 +212,9 @@ func (b *SqlBuilder) LeftJoin(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString("\n")
-	b.otherQuery.WriteString("LEFT JOIN " + name)
-	b.otherQuery.WriteString("\n")
+	b.otherSqlBuilder.WriteString("\n")
+	b.otherSqlBuilder.WriteString("LEFT JOIN " + name)
+	b.otherSqlBuilder.WriteString("\n")
 
 	return b
 }
@@ -218,7 +229,7 @@ func (b *SqlBuilder) RightJoin(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString(" RIGHT JOIN " + name)
+	b.otherSqlBuilder.WriteString(" RIGHT JOIN " + name)
 	return b
 }
 
@@ -232,7 +243,7 @@ func (b *SqlBuilder) OrderBy(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString(" ORDER BY " + name)
+	b.otherSqlBuilder.WriteString(" ORDER BY " + name)
 	return b
 }
 
@@ -246,9 +257,9 @@ func (b *SqlBuilder) Native(sql string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString(" ")
-	b.otherQuery.WriteString(sql)
-	b.otherQuery.WriteString(" ")
+	b.otherSqlBuilder.WriteString(" ")
+	b.otherSqlBuilder.WriteString(sql)
+	b.otherSqlBuilder.WriteString(" ")
 	return b
 }
 
@@ -262,7 +273,7 @@ func (b *SqlBuilder) OrderDescBy(name string, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString(" ORDER BY " + name + " DESC")
+	b.otherSqlBuilder.WriteString(" ORDER BY " + name + " DESC")
 	return b
 }
 
@@ -276,7 +287,7 @@ func (b *SqlBuilder) Limit(num int64, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString(" LIMIT " + strconv.FormatInt(num, 10))
+	b.otherSqlBuilder.WriteString(" LIMIT " + strconv.FormatInt(num, 10))
 	return b
 }
 
@@ -291,7 +302,7 @@ func (b *SqlBuilder) Offset(num int64, condition ...bool) *SqlBuilder {
 			return b
 		}
 	}
-	b.otherQuery.WriteString(" OFFSET " + strconv.FormatInt(num, 10))
+	b.otherSqlBuilder.WriteString(" OFFSET " + strconv.FormatInt(num, 10))
 	return b
 }
 
@@ -318,11 +329,11 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	switch b.whereStatus {
 	case whereNoSet:
 		b.whereStatus = whereSet
-		b.otherQuery.WriteString(" WHERE ")
-		b.otherQuery.WriteString(sqlStr)
+		b.otherSqlBuilder.WriteString(" WHERE ")
+		b.otherSqlBuilder.WriteString(sqlStr)
 	case whereSet:
-		b.otherQuery.WriteString(" AND ")
-		b.otherQuery.WriteString(sqlStr)
+		b.otherSqlBuilder.WriteString(" AND ")
+		b.otherSqlBuilder.WriteString(sqlStr)
 	case whereDone:
 		b.db.getCtx().err = errors.New("where has been done")
 	}
@@ -356,11 +367,11 @@ func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
 	switch b.whereStatus {
 	case whereNoSet:
 		b.whereStatus = whereSet
-		b.otherQuery.WriteString(" WHERE ")
-		b.otherQuery.WriteString(whereStr)
+		b.otherSqlBuilder.WriteString(" WHERE ")
+		b.otherSqlBuilder.WriteString(whereStr)
 	case whereSet:
-		b.otherQuery.WriteString(" AND ")
-		b.otherQuery.WriteString(whereStr)
+		b.otherSqlBuilder.WriteString(" AND ")
+		b.otherSqlBuilder.WriteString(whereStr)
 	case whereDone:
 		ctx.err = errors.New("where has been done")
 	}
@@ -391,19 +402,63 @@ func (b *SqlBuilder) WhereIn(whereStr string, args ...any) *SqlBuilder {
 	b.AppendArgs(args...)
 
 	var inArgStr = " (" + gen(length) + ")"
+	whereStr = whereStr + " IN" + inArgStr
+
+	switch b.whereStatus {
+	case whereNoSet:
+		b.whereStatus = whereSet
+		b.otherSqlBuilder.WriteString(" WHERE ")
+
+		b.otherSqlBuilder.WriteString(whereStr)
+
+	case whereSet:
+		b.otherSqlBuilder.WriteString(" AND ")
+
+		b.otherSqlBuilder.WriteString(whereStr)
+
+	case whereDone:
+		ctx.err = errors.New("where has been done")
+	}
+
+	return b
+}
+
+func (b *SqlBuilder) WhereSqlIn(whereStr string, args ...any) *SqlBuilder {
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
+		return b
+	}
+
+	if args == nil {
+		return b
+	}
+	length := len(args)
+	if length == 0 {
+		return b
+	}
+
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("Where 设置异常：" + whereStr)
+		return b
+	}
+
+	b.AppendArgs(args...)
+
+	var inArgStr = " (" + gen(length) + ")"
 	whereStr = strings.Replace(whereStr, "?", inArgStr, -1)
 
 	switch b.whereStatus {
 	case whereNoSet:
 		b.whereStatus = whereSet
-		b.otherQuery.WriteString(" WHERE ")
+		b.otherSqlBuilder.WriteString(" WHERE ")
 
-		b.otherQuery.WriteString(whereStr)
+		b.otherSqlBuilder.WriteString(whereStr)
 
 	case whereSet:
-		b.otherQuery.WriteString(" AND ")
+		b.otherSqlBuilder.WriteString(" AND ")
 
-		b.otherQuery.WriteString(whereStr)
+		b.otherSqlBuilder.WriteString(whereStr)
 
 	case whereDone:
 		ctx.err = errors.New("where has been done")
@@ -429,7 +484,9 @@ func (b *SqlBuilder) ScanOne(dest any) (rowsNum int64, err error) {
 	b.initSelectSql()
 	query := b.query
 	args := b.args
-	fmt.Println(query, args)
+	if ctx.showSql {
+		fmt.Println(query, args)
+	}
 
 	rows, err := db.query(query, args...)
 	if err != nil {
@@ -456,6 +513,9 @@ func (b *SqlBuilder) ScanList(dest any) (rowsNum int64, err error) {
 	query := b.query
 	args := b.args
 
+	if ctx.showSql {
+		fmt.Println(query, args)
+	}
 	rows, err := db.query(query, args...)
 	if err != nil {
 		return 0, err
@@ -472,5 +532,8 @@ func (b *SqlBuilder) Exec() (sql.Result, error) {
 		return nil, ctx.err
 	}
 	b.initSelectSql()
+	if ctx.showSql {
+		fmt.Println(b.query, b.args)
+	}
 	return db.exec(b.query, b.args...)
 }
