@@ -31,15 +31,15 @@ type PageResult struct {
 	Total    int64 `json:"total"`
 }
 
-// PageScan 查询分页
-func (b *SqlBuilder) PageScan(dest any) (rowsNum int64, dto PageResult, err error) {
+// ScanPage 查询分页
+func (b *SqlBuilder) ScanPage(dest any) (rowsNum int64, dto PageResult, err error) {
 	db := b.db
 	ctx := db.getCtx()
 	if err = ctx.err; err != nil {
 		return
 	}
 	if b.other == nil {
-		err = errors.New("PageConfig is nil")
+		err = errors.New("no set pageConfig")
 		return
 	}
 	var total int64

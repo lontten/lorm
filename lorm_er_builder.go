@@ -379,6 +379,37 @@ func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
 	return b
 }
 
+func (b *SqlBuilder) BoolWhere(condition bool, whereStr string, args ...any) *SqlBuilder {
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
+		return b
+	}
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("Where 设置异常：" + whereStr)
+		return b
+	}
+
+	if !condition {
+		return b
+	}
+
+	b.AppendArgs(args...)
+	switch b.whereStatus {
+	case whereNoSet:
+		b.whereStatus = whereSet
+		b.otherSqlBuilder.WriteString(" WHERE ")
+		b.otherSqlBuilder.WriteString(whereStr)
+	case whereSet:
+		b.otherSqlBuilder.WriteString(" AND ")
+		b.otherSqlBuilder.WriteString(whereStr)
+	case whereDone:
+		ctx.err = errors.New("where has been done")
+	}
+
+	return b
+}
+
 func (b *SqlBuilder) WhereIn(whereStr string, args ...any) *SqlBuilder {
 	db := b.db
 	ctx := db.getCtx()
@@ -423,6 +454,8 @@ func (b *SqlBuilder) WhereIn(whereStr string, args ...any) *SqlBuilder {
 	return b
 }
 
+// WhereSqlIn
+// in ? 当参数列表长度为0时，跳过这个where
 func (b *SqlBuilder) WhereSqlIn(whereStr string, args ...any) *SqlBuilder {
 	db := b.db
 	ctx := db.getCtx()
