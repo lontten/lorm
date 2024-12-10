@@ -16,7 +16,7 @@ func Build1() {
 `).
 		Where("id > 1").
 		Page(10, 1).
-		PageScan(&u)
+		ScanPage(&u)
 	fmt.Println(num, dto, err)
 	bytes, err := json.Marshal(dto)
 	fmt.Println(string(bytes))

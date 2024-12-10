@@ -100,7 +100,7 @@ type ormContext struct {
 	sqlType                   sql_type.SqlType
 	dialectNeedLastInsertId   bool         // 数据库是否需要 last_insert_id。例如：mysql等数据库insert无法直接数据需要 last_insert_id
 	needLastInsertId          bool         // 最终执行，是否需要 last_insert_id
-	lastInsertIdFieldIndex    int          // last_insert_id 对应的model字段的 index
+	lastInsertIdFieldName     string       // last_insert_id 对应的model字段的 名字
 	lastInsertIdFieldIsPtr    bool         // last_insert_id 对应的model字段 是否是 ptr
 	lastInsertIdFieldBaseType reflect.Type // last_insert_id 对应的model字段 type
 
@@ -162,7 +162,7 @@ func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
 		ctx.err = errors.New("last_insert_id field type error")
 		return
 	}
-	f := ctx.destV.Field(ctx.lastInsertIdFieldIndex)
+	f := ctx.destV.FieldByName(ctx.lastInsertIdFieldName)
 	if ctx.lastInsertIdFieldIsPtr {
 		f.Set(vp)
 	} else {
@@ -241,14 +241,14 @@ func (ctx *ormContext) initColumnsValue() {
 	}
 	ctx.needLastInsertId = ctx.dialectNeedLastInsertId && ctx.scanIsPtr && ctx.returnType != return_type.None
 	if ctx.needLastInsertId {
-		i, ok := cv.modelAllFieldIndexMap[ctx.autoIncrements[0]]
+		fieldName, ok := cv.modelAllFieldNameMap[ctx.autoIncrements[0]]
 		if !ok {
 			ctx.err = errors.New("auto_increment field not found")
 			return
 		}
-		ctx.lastInsertIdFieldIndex = i
+		ctx.lastInsertIdFieldName = fieldName
 
-		structField := ctx.destBaseType.Field(i)
+		structField, _ := ctx.destBaseType.FieldByName(fieldName)
 		isPtr, baseT := basePtrType(structField.Type)
 		ctx.lastInsertIdFieldIsPtr = isPtr
 		ctx.lastInsertIdFieldBaseType = baseT

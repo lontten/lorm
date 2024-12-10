@@ -25,7 +25,7 @@ import (
 //	if err != nil {
 //		return
 //	}
-//	cfm, err := ctx.ormConf.getColFieldIndexMap(columns, t)
+//	cfm, err := ctx.ormConf.getColIndex2FieldNameMap(columns, t)
 //	if err != nil {
 //		return
 //	}
@@ -46,7 +46,7 @@ import (
 //	return
 //}
 
-// ScanLn
+// ScanLnT
 // 接收一行结果
 // 1.ptr single/comp
 // 2.slice- single
@@ -65,9 +65,9 @@ func (ctx ormContext) ScanLnT(rows *sql.Rows) (num int64, err error) {
 		return
 	}
 
-	cfm := ColFieldIndexMap{}
+	cfm := ColIndex2FieldNameMap{}
 	if ctx.destBaseTypeIsComp {
-		cfm, err = ctx.ormConf.getColFieldIndexMap(columns, t)
+		cfm, err = ctx.ormConf.getColIndex2FieldNameMap(columns, t)
 		if err != nil {
 			return
 		}
@@ -108,7 +108,7 @@ func (ctx ormContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		cfm, err := ctx.ormConf.getColFieldIndexMap(columns, t)
+		cfm, err := ctx.ormConf.getColIndex2FieldNameMap(columns, t)
 		if err != nil {
 			return 0, err
 		}
@@ -149,7 +149,7 @@ func (ctx ormContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 //	if err != nil {
 //		return 0, err
 //	}
-//	cfm, err := ctx.ormConf.getColFieldIndexMap(columns, t)
+//	cfm, err := ctx.ormConf.getColIndex2FieldNameMap(columns, t)
 //	if err != nil {
 //		return 0, err
 //	}
@@ -171,9 +171,8 @@ func (ctx ormContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 //	return num, nil
 //}
 
-// Scan
+// ScanT
 // 接收多行结果
-// 1.[]- *
 func (ctx ormContext) ScanT(rows *sql.Rows) (int64, error) {
 	defer func(rows *sql.Rows) {
 		utils.PanicErr(rows.Close())
@@ -188,7 +187,7 @@ func (ctx ormContext) ScanT(rows *sql.Rows) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	cfm, err := ctx.ormConf.getColFieldIndexMap(columns, t)
+	cfm, err := ctx.ormConf.getColIndex2FieldNameMap(columns, t)
 	if err != nil {
 		return 0, err
 	}

@@ -10,6 +10,5 @@ func Test_commit(t *testing.T) {
 
 }
 
-func aa[T any]()  {
-	reflect.
+func aa[T any]() {
 }

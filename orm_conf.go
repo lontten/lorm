@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/utils"
-	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 	"sync"
@@ -28,9 +27,6 @@ type OrmConf struct {
 	//TableNameFun >  tag > TableNamePrefix
 	TableNamePrefix string
 	TableNameFun    func(t reflect.Value, dest any) string
-
-	//字段名
-	FieldNamePrefix string
 
 	//主键 默认为id
 	PrimaryKeyNames   []string
@@ -119,10 +115,7 @@ func (c OrmConf) autoIncrements(v reflect.Value) []string {
 // 可以缓存
 // 获取model字段对应的 db name
 func (c OrmConf) getStructField(t reflect.Type) (columns []string, err error) {
-	fiMap, err := c.getStructFieldIndexMap(t)
-	if err != nil {
-		return columns, err
-	}
+	fiMap := getStructColName2fieldNameMap(t)
 	arr := make([]string, len(fiMap))
 	for f := range fiMap {
 		arr = append(arr, f)
@@ -130,36 +123,35 @@ func (c OrmConf) getStructField(t reflect.Type) (columns []string, err error) {
 	return arr, nil
 }
 
-var structFieldIndexMapCache = make(map[reflect.Type]fieldIndexMap)
+var colName2fieldNameMapCache = make(map[reflect.Type]colName2fieldNameMap)
 
-type fieldIndexMap map[string]int // model 的 字段名字：字段index
+type colName2fieldNameMap map[string]string
 
 var mutex sync.Mutex
 
 //	 可以缓存
 //
-//		主键Id、ID，都转化为id
+//		主键ID，转化为id
 //
 // tag== lrom:-  跳过
 // 过滤掉首字母小写的字段
 // 跳过软删除字段
-// 获取model对应的数据字段名：和其在model中的index下标
-func (c OrmConf) getStructFieldIndexMap(t reflect.Type) (fieldIndexMap, error) {
-	fields, ok := structFieldIndexMapCache[t]
+// 获取model对应的数据字段名：和其在model中的字段名
+func getStructColName2fieldNameMap(t reflect.Type) colName2fieldNameMap {
+	fields, ok := colName2fieldNameMapCache[t]
 	if ok {
-		return fields, nil
+		return fields
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
-	fields, ok = structFieldIndexMapCache[t]
+	fields, ok = colName2fieldNameMapCache[t]
 	if ok {
-		return fields, nil
+		return fields
 	}
 
-	fiMap := fieldIndexMap{}
+	cfMap := colName2fieldNameMap{}
 
 	numField := t.NumField()
-	var num = 0
 	for i := 0; i < numField; i++ {
 		structField := t.Field(i)
 		// 跳过软删除字段
@@ -173,50 +165,25 @@ func (c OrmConf) getStructFieldIndexMap(t reflect.Type) (fieldIndexMap, error) {
 			continue
 		}
 
-		if name == "ID" {
-			fiMap["id"] = i
-			num++
-			if len(fiMap) < num {
-				return fiMap, errors.New("字段::id" + "error")
-			}
-			continue
-		}
-
-		name = utils.Camel2Case(name)
-
 		tag := structField.Tag.Get("lorm")
 		if tag == "-" {
 			continue
 		}
 
+		if name == "ID" {
+			cfMap["id"] = "ID"
+			continue
+		}
+
 		if tag != "" {
-			name = tag
-			fiMap[name] = i
-			num++
-			if len(fiMap) < num {
-				return fiMap, errors.New("字段::" + "error")
-			}
+			cfMap[tag] = name
 			continue
 		}
 
-		fieldNamePrefix := c.FieldNamePrefix
-		if fieldNamePrefix != "" {
-			fiMap[fieldNamePrefix+name] = i
-			num++
-			if len(fiMap) < num {
-				return fiMap, errors.New("字段::" + "error")
-			}
-			continue
-		}
-
-		fiMap[name] = i
-		num++
-		if len(fiMap) < num {
-			return fiMap, errors.New("字段::" + "error")
-		}
+		cfMap[utils.Camel2Case(name)] = name
 	}
 
-	return fiMap, nil
+	return cfMap
 }
 
 type compCV struct {
@@ -231,8 +198,8 @@ type compCV struct {
 	//所有字段列表
 	modelAllFieldNames []string
 
-	//所有字段 dbname:index
-	modelAllFieldIndexMap fieldIndexMap
+	//所有字段 dbName:fieldName
+	modelAllFieldNameMap colName2fieldNameMap
 }
 
 // 忽略 软删除 字段
@@ -245,14 +212,11 @@ func (c OrmConf) getStructCV(v reflect.Value) (compCV, error) {
 		modelZeroFieldNames: make([]string, 0),
 		modelAllFieldNames:  make([]string, 0),
 	}
-	structFieldIndexMap, err := c.getStructFieldIndexMap(t)
-	if err != nil {
-		return cv, err
-	}
-	cv.modelAllFieldIndexMap = structFieldIndexMap
+	structFieldIndexMap := getStructColName2fieldNameMap(t)
+	cv.modelAllFieldNameMap = structFieldIndexMap
 
 	for column, i := range structFieldIndexMap {
-		fieldV := v.Field(i)
+		fieldV := v.FieldByName(i)
 		inter := getFieldInterZero(fieldV)
 		cv.modelAllFieldNames = append(cv.modelAllFieldNames, column)
 		if inter != nil {
@@ -287,34 +251,31 @@ func getMapCV(v reflect.Value) (compCV, error) {
 	return cv, nil
 }
 
-// 获取 rows 返回数据，每个字段 对应 struct 的字段 下标
-func (c OrmConf) getColFieldIndexMap(columns []string, t reflect.Type) (ColFieldIndexMap, error) {
+// 获取 rows 返回数据，每个字段index 对应 struct 的字段 名字
+func (c OrmConf) getColIndex2FieldNameMap(columns []string, t reflect.Type) (ColIndex2FieldNameMap, error) {
 	if isValuerType(t) {
-		return ColFieldIndexMap{}, nil
+		return ColIndex2FieldNameMap{}, nil
 	}
 
 	colNum := len(columns)
-	cfm := make([]int, colNum)
-	fi, err := c.getStructFieldIndexMap(t)
-	if err != nil {
-		return nil, err
-	}
+	ci2fm := make([]string, colNum)
+	cf := getStructColName2fieldNameMap(t)
 
 	validNum := 0
 	for i, column := range columns {
-		index, ok := fi[column]
+		fieldName, ok := cf[column]
 		if !ok {
-			cfm[i] = -1
+			ci2fm[i] = ""
 			continue
 		}
-		cfm[i] = index
+		ci2fm[i] = fieldName
 		validNum++
 	}
 
 	if colNum == 1 && validNum == 0 {
-		return ColFieldIndexMap{}, nil
+		return ColIndex2FieldNameMap{}, nil
 	}
-	return cfm, nil
+	return ci2fm, nil
 }
 
 // tableName表名

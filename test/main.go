@@ -34,13 +34,13 @@ func main() {
 	//QueryOneT2()
 	//QueryListT2()
 	//
-	//QueryOne1()
+	QueryOne1()
 	//QueryList()
 	//QueryList2()
 	//
 	//Prepare4()
 
 	//TableInsert()
-	Build1()
+	//Build1()
 	//Build2()
 }
