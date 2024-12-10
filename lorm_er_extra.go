@@ -8,32 +8,31 @@ import (
 	"reflect"
 )
 
-func (b *SqlBuilder) Page(size int64, current int64) *SqlBuilder {
-	if size < 1 || current < 1 {
-		b.db.getCtx().err = errors.New("size,current must be greater than 0")
+func (b *SqlBuilder) Page(pageSize int64, current int64) *SqlBuilder {
+	if pageSize < 1 || current < 1 {
+		b.db.getCtx().err = errors.New("pageSize,current must be greater than 0")
 	}
 	b.other = PageConfig{
-		size:    size,
-		current: current,
+		pageSize: pageSize,
+		current:  current,
 	}
 	return b
 }
 
 type PageConfig struct {
-	size    int64
-	current int64
+	pageSize int64
+	current  int64
 }
 
-type Page struct {
-	Records any   `json:"records"`
-	Size    int64 `json:"size"`
-	Current int64 `json:"current"`
-	Total   int64 `json:"total"`
-	Pages   int64 `json:"pages"`
+type PageResult struct {
+	List     any   `json:"list"`
+	PageSize int64 `json:"pageSize"`
+	Current  int64 `json:"current"`
+	Total    int64 `json:"total"`
 }
 
 // PageScan 查询分页
-func (b *SqlBuilder) PageScan(dest any) (rowsNum int64, dto Page, err error) {
+func (b *SqlBuilder) PageScan(dest any) (rowsNum int64, dto PageResult, err error) {
 	db := b.db
 	ctx := db.getCtx()
 	if err = ctx.err; err != nil {
@@ -44,7 +43,7 @@ func (b *SqlBuilder) PageScan(dest any) (rowsNum int64, dto Page, err error) {
 		return
 	}
 	var total int64
-	var size = b.other.(PageConfig).size
+	var size = b.other.(PageConfig).pageSize
 	var current = b.other.(PageConfig).current
 
 	ctx.initScanDestList(dest)
@@ -95,19 +94,11 @@ func (b *SqlBuilder) PageScan(dest any) (rowsNum int64, dto Page, err error) {
 	if num == 0 {
 		dest = make([]any, 0)
 	}
-	dto = Page{
-		Records: dest,
-		Size:    size,
-		Current: current,
-		Total:   total,
-		Pages:   pageNum(total, size),
+	dto = PageResult{
+		List:     dest,
+		PageSize: size,
+		Current:  current,
+		Total:    total,
 	}
 	return num, dto, nil
-}
-func pageNum(total int64, size int64) int64 {
-	num := total / size
-	if total%size > 0 {
-		return num + 1
-	}
-	return num
 }
