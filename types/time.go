@@ -21,7 +21,7 @@ func NowTimeP() *Time {
 }
 
 func (t Time) ToString() string {
-	return t.Time.Format(`"15:04:05"`)
+	return t.Time.Format(`15:04:05`)
 }
 
 func (t Time) MarshalJSON() ([]byte, error) {
@@ -129,7 +129,7 @@ func NowDateP() *Date {
 }
 
 func (t Date) ToString() string {
-	return t.Format(`"2006-01-02"`)
+	return t.Format(`2006-01-02`)
 }
 
 func (t Date) MarshalJSON() ([]byte, error) {
@@ -231,7 +231,7 @@ func NowDateTimeP() *DateTime {
 }
 
 func (t DateTime) ToString() string {
-	return t.Format(`"2006-01-02 15:04:05"`)
+	return t.Format(`2006-01-02 15:04:05`)
 }
 
 func (t DateTime) MarshalJSON() ([]byte, error) {
