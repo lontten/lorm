@@ -10,8 +10,9 @@ import (
 
 // Insert 插入或者根据主键冲突更新
 func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
+	db = db.init()
 	dialect := db.getDialect()
-	ctx := dialect.initContext()
+	ctx := dialect.getCtx()
 	ctx.initExtra(extra...)
 	ctx.sqlType = sql_type.Insert
 	ctx.sqlIsQuery = true
@@ -66,8 +67,9 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 // InsertOrHas 根据条件查询是否已存在，不存在则直接插入
 // 应用场景：例如添加 后台管理员 时，如果名字已存在，返回名字重复，否者正常添加。
 func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
+	db = db.init()
 	dialect := db.getDialect()
-	ctx := dialect.initContext()
+	ctx := dialect.getCtx()
 	ctx.initExtra(extra...)
 	ctx.sqlType = sql_type.Insert
 	ctx.sqlIsQuery = true
@@ -220,7 +222,7 @@ func (orm OrmTableUpdate) ByWhere(wb *WhereBuilder) OrmTableUpdate {
 // First 根据条件获取第一个
 func First[T any](db Engine, by *ByContext, extra ...*ExtraContext) (t *T, err error) {
 	dialect := db.getDialect()
-	ctx := dialect.initContext()
+	ctx := dialect.getCtx()
 
 	dest := new(T)
 

@@ -27,8 +27,8 @@ func QueryOne1() {
 }
 
 func QueryList() {
-	var list []Ka
-	num, err := lorm.QueryScan(ldb.DB, "select * from t_ka where id>1").ScanList(list)
+	var list []User
+	num, err := lorm.QueryScan(ldb.DB, "select * from t_user where id>1 limit 1").ScanList(&list)
 	if err != nil {
 		panic(err)
 	}
@@ -41,8 +41,8 @@ func QueryList() {
 }
 
 func QueryList2() {
-	var list []Ka
-	num, err := lorm.QueryScan(ldb.DB, "select * from t_ka where id>1").ScanList(&list)
+	var list []User
+	num, err := lorm.QueryScan(ldb.DB, "select * from t_user where id>1").ScanList(&list)
 	if err != nil {
 		panic(err)
 	}

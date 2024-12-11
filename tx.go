@@ -11,6 +11,12 @@ type coreTX struct {
 	dialect Dialecter
 }
 
+func (db *coreTX) init() Engine {
+	return &coreTX{
+		tx:      db.tx,
+		dialect: db.dialect.initContext(),
+	}
+}
 func (db *coreTX) ping() error {
 	return errors.New("this is tx")
 }

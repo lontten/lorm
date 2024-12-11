@@ -24,6 +24,7 @@ type DbConfig interface {
 }
 
 type Stmter interface {
+	init() Stmter
 	getCtx() *ormContext
 	getDialect() Dialecter
 
@@ -34,6 +35,7 @@ type Stmter interface {
 	QueryScan(args ...any) *NativePrepare
 }
 type Engine interface {
+	init() Engine
 	ping() error
 	getCtx() *ormContext
 	getDialect() Dialecter
@@ -129,7 +131,7 @@ PgDialect
 type Dialecter interface {
 	// 获取coreDb,coreTx 里面的 ctx
 	getCtx() *ormContext
-	initContext() *ormContext
+	initContext() Dialecter
 	hasErr() bool
 	getErr() error
 

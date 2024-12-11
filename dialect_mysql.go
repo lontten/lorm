@@ -21,14 +21,14 @@ type MysqlDialect struct {
 func (d *MysqlDialect) getCtx() *ormContext {
 	return d.ctx
 }
-func (d *MysqlDialect) initContext() *ormContext {
+func (d *MysqlDialect) initContext() Dialecter {
 	d.ctx = &ormContext{
 		ormConf:                 d.ctx.ormConf,
 		query:                   &strings.Builder{},
 		insertType:              insert_type.Err,
 		dialectNeedLastInsertId: d.ctx.dialectNeedLastInsertId,
 	}
-	return d.ctx
+	return d
 }
 func (d *MysqlDialect) hasErr() bool {
 	return d.ctx.err != nil
@@ -221,7 +221,7 @@ func (d *MysqlDialect) tableInsertGen() {
 
 		// 从上面分析可知，DUPLICATE KEY UPDATE 时，软删除字段不进行更新是最差方案，会出现 不符合预期情况。
 		// 软删除字段进行更新 时，如果 唯一索引设置正确，是完美执行；如果 唯一索引 错误，也可以达到 基本复合预期的效果。
-	
+
 		for i, name := range set.fieldNames {
 			if i > 0 {
 				query.WriteString(", ")

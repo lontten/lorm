@@ -21,13 +21,13 @@ type PgDialect struct {
 func (d *PgDialect) getCtx() *ormContext {
 	return d.ctx
 }
-func (d *PgDialect) initContext() *ormContext {
+func (d *PgDialect) initContext() Dialecter {
 	d.ctx = &ormContext{
 		ormConf:    d.ctx.ormConf,
 		query:      &strings.Builder{},
 		insertType: insert_type.Err,
 	}
-	return d.ctx
+	return d
 }
 func (d *PgDialect) hasErr() bool {
 	return d.ctx.err != nil

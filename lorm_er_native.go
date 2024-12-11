@@ -13,7 +13,7 @@ num,err:=Exec(ldb,"",id)
 */
 
 func StmtQueryOne[T any](db Stmter, args ...any) (*T, error) {
-	db.getDialect().initContext()
+	db = db.init()
 	ctx := db.getCtx()
 
 	dest := new(T)
@@ -35,7 +35,7 @@ func StmtQueryOne[T any](db Stmter, args ...any) (*T, error) {
 }
 
 func StmtQueryList[T any](db Stmter, args ...any) ([]T, error) {
-	db.getDialect().initContext()
+	db = db.init()
 	ctx := db.getCtx()
 
 	var dest = &[]T{}
@@ -59,7 +59,7 @@ func StmtQueryList[T any](db Stmter, args ...any) ([]T, error) {
 }
 
 func StmtQueryListP[T any](db Stmter, args ...any) ([]*T, error) {
-	db.getDialect().initContext()
+	db = db.init()
 	ctx := db.getCtx()
 
 	var dest = &[]*T{}
@@ -83,7 +83,7 @@ func StmtQueryListP[T any](db Stmter, args ...any) ([]*T, error) {
 }
 
 func QueryOne[T any](db Engine, query string, args ...any) (*T, error) {
-	db.getDialect().initContext()
+	db = db.init()
 	ctx := db.getCtx()
 
 	dest := new(T)
@@ -105,7 +105,7 @@ func QueryOne[T any](db Engine, query string, args ...any) (*T, error) {
 }
 
 func QueryList[T any](db Engine, query string, args ...any) ([]T, error) {
-	db.getDialect().initContext()
+	db = db.init()
 	ctx := db.getCtx()
 
 	var dest = &[]T{}
@@ -129,7 +129,7 @@ func QueryList[T any](db Engine, query string, args ...any) ([]T, error) {
 }
 
 func QueryListP[T any](db Engine, query string, args ...any) ([]*T, error) {
-	db.getDialect().initContext()
+	db = db.init()
 	ctx := db.getCtx()
 
 	var dest = &[]*T{}
@@ -153,7 +153,7 @@ func QueryListP[T any](db Engine, query string, args ...any) ([]*T, error) {
 }
 
 func Exec(db Engine, query string, args ...any) (int64, error) {
-	db.getDialect().initContext()
+	db = db.init()
 	exec, err := db.exec(query, args...)
 	if err != nil {
 		return 0, err
@@ -169,7 +169,7 @@ type NativeQuery struct {
 
 func QueryScan(db Engine, query string, args ...any) NativeQuery {
 	return NativeQuery{
-		db:    db,
+		db:    db.init(),
 		query: query,
 		args:  args,
 	}

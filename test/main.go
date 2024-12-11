@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/lontten/lorm"
 	soft_del "github.com/lontten/lorm/soft-delete"
+	"time"
 )
 
 type Ka struct {
@@ -35,11 +36,10 @@ func main() {
 	//QueryListT2()
 	//
 	QueryOne1()
-	//QueryList()
-	//QueryList2()
+	QueryList2()
 	//
 	//Prepare4()
-
+	time.Sleep(1 * time.Hour)
 	//TableInsert()
 	//Build1()
 	//Build2()

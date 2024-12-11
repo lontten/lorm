@@ -11,6 +11,13 @@ type coreDB struct {
 	dialect Dialecter
 }
 
+func (db *coreDB) init() Engine {
+	return &coreDB{
+		db:      db.db,
+		dialect: db.dialect.initContext(),
+	}
+}
+
 func (db *coreDB) ping() error {
 	return db.db.Ping()
 }

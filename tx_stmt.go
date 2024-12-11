@@ -9,6 +9,12 @@ type coreTXStmt struct {
 	dialect Dialecter
 }
 
+func (db *coreTXStmt) init() Stmter {
+	return &coreTXStmt{
+		tx:      db.tx,
+		dialect: db.dialect.initContext(),
+	}
+}
 func (db *coreTXStmt) getCtx() *ormContext {
 	return db.dialect.getCtx()
 }

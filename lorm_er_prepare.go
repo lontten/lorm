@@ -10,7 +10,7 @@ type Stmt struct {
 }
 
 func Prepare(db Engine, query string) (Stmter, error) {
-	return db.prepare(query)
+	return db.init().prepare(query)
 }
 
 type NativePrepare struct {
