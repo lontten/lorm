@@ -218,7 +218,7 @@ func (ctx *ormContext) initColumnsValue() {
 		return
 	}
 
-	cv, err := ctx.ormConf.getStructCV(ctx.destV)
+	cv, err := getStructCV(ctx.destV)
 	if err != nil {
 		ctx.err = err
 		return
@@ -507,7 +507,7 @@ func (ctx *ormContext) initPrimaryKeyValues(v []any) {
 				return
 			}
 
-			columns, values, err := getCompValueCV(value, ctx.ormConf)
+			columns, values, err := getCompValueCV(value)
 			if err != nil {
 				ctx.err = err
 				return

@@ -212,11 +212,11 @@ func getCompCV(v any, c *OrmConf) ([]string, []field.Value, error) {
 		return nil, nil, err
 	}
 
-	return getCompValueCV(value, c)
+	return getCompValueCV(value)
 }
 
 // 排除 nil 字段
-func getCompValueCV(v reflect.Value, c *OrmConf) ([]string, []field.Value, error) {
+func getCompValueCV(v reflect.Value) ([]string, []field.Value, error) {
 	if !isCompType(v.Type()) {
 		return nil, nil, errors.New("getvcv not comp")
 	}
@@ -225,7 +225,7 @@ func getCompValueCV(v reflect.Value, c *OrmConf) ([]string, []field.Value, error
 		return nil, nil, err
 	}
 
-	cv, err := c.getStructCV(v)
+	cv, err := getStructCV(v)
 	if err != nil {
 		return nil, nil, err
 	}

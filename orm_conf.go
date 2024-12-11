@@ -204,7 +204,7 @@ type compCV struct {
 
 // 忽略 软删除 字段
 // 获取 struct 对应的字段名 和 其值
-func (c OrmConf) getStructCV(v reflect.Value) (compCV, error) {
+func getStructCV(v reflect.Value) (compCV, error) {
 	t := v.Type()
 	cv := compCV{
 		columns:             make([]string, 0),

@@ -13,6 +13,7 @@ type ExtraContext struct {
 	showSql        bool
 	skipSoftDelete bool
 	tableName      string
+	selectColumns  []string // select 的 字段名，空为返回所有字段
 
 	columns      []string
 	columnValues []field.Value
@@ -51,6 +52,11 @@ func (e *ExtraContext) SkipSoftDelete() *ExtraContext {
 
 func (e *ExtraContext) TableName(name string) *ExtraContext {
 	e.tableName = name
+	return e
+}
+
+func (e *ExtraContext) Select(name ...string) *ExtraContext {
+	e.selectColumns = name
 	return e
 }
 
