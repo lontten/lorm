@@ -9,6 +9,7 @@ import (
 )
 
 func QueryBuild(db Engine) *SqlBuilder {
+	db.getDialect().initContext()
 	return &SqlBuilder{
 		db:              db,
 		selectQuery:     &strings.Builder{},
