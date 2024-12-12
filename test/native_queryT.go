@@ -8,7 +8,7 @@ import (
 )
 
 func QueryOneT() {
-	ka, err := lorm.QueryOne[Ka](ldb.DB, "select * from t_ka where id=?", 2)
+	ka, err := lorm.QueryOne[User](ldb.DB, "select * from t_user where id=?", 2)
 	if err != nil {
 		panic(err)
 	}

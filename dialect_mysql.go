@@ -22,13 +22,12 @@ func (d *MysqlDialect) getCtx() *ormContext {
 	return d.ctx
 }
 func (d *MysqlDialect) initContext() Dialecter {
-	d.ctx = &ormContext{
+	return &MysqlDialect{ctx: &ormContext{
 		ormConf:                 d.ctx.ormConf,
 		query:                   &strings.Builder{},
 		insertType:              insert_type.Err,
 		dialectNeedLastInsertId: d.ctx.dialectNeedLastInsertId,
-	}
-	return d
+	}}
 }
 func (d *MysqlDialect) hasErr() bool {
 	return d.ctx.err != nil
