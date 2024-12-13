@@ -458,6 +458,31 @@ func (ctx *ormContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
+func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
+	if wb == nil {
+		return
+	}
+	ctx.primaryKeyValues = ctx.initPrimaryKeyValues(wb.primaryKeyValue)
+	builderAnd := Wb()
+	for _, value := range ctx.primaryKeyValues {
+		builder := Wb()
+		for i, name := range ctx.primaryKeyNames {
+			builder.Eq(name, value[i].Value)
+		}
+		builderAnd.Or(builder)
+	}
+	wb.And(builderAnd)
+	ctx.filterPrimaryKeyValues = ctx.initPrimaryKeyValues(wb.filterPrimaryKeyValue)
+	builderAnd = Wb()
+	for _, value := range ctx.filterPrimaryKeyValues {
+		builder := Wb()
+		for i, name := range ctx.primaryKeyNames {
+			builder.Neq(name, value[i].Value)
+		}
+		builderAnd.Or(builder)
+	}
+	wb.And(builderAnd)
+}
 func (ctx *ormContext) initPrimaryKeyValues(v []any) (idValuess [][]field.Value) {
 	if ctx.hasErr() {
 		return

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/lontten/lorm"
 	"github.com/lontten/lorm/softdelete"
 	"github.com/lontten/lorm/types"
@@ -20,7 +21,7 @@ func (k Ka) TableConf() *lorm.TableConf {
 }
 
 func (u User) TableConf() *lorm.TableConf {
-	return new(lorm.TableConf).
+	return new(lorm.TableConf).PrimaryKeys("id", "name").
 		Table("t_user").AutoIncrements("id")
 }
 
@@ -50,10 +51,14 @@ func main() {
 		Name: types.NewString("xxx"),
 		Age:  types.NewInt(1),
 	}
+	fmt.Println(u)
 	var m = make(map[string]any)
 	m["a"] = 1
 	m["b"] = "bb"
 	m["c"] = nil
 
-	lorm.Delete[User](ldb.DB, lorm.Wb().Eq("name", "tom").Model(u).Map(m))
+	lorm.Delete[User](ldb.DB, lorm.Wb().PrimaryKey(User{
+		Id:   types.NewInt(1),
+		Name: types.NewString("a"),
+	}, 2, 3).FilterPrimaryKey(2, 2, 2))
 }

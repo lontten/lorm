@@ -31,12 +31,25 @@ type WhereBuilder struct {
 	primaryKeyValue       []any // 主键值列表
 	filterPrimaryKeyValue []any // 主键值列表,过滤
 
+	// 所有的and 组合成一个or放在 andWheres
+	// 原因：当 and or 组合时，每条or都是独立的，and是组合使用的，有些反逻辑，为了使最后组成的sql更加已读，
+	// 这里把所有and组合成一个or，和其他or联合使用。
 	wheres []whereToken
 	args   []any
+
+	andWheres []whereToken
+	andArgs   []any
 }
 
 func Wb() *WhereBuilder {
-	return &WhereBuilder{}
+
+	return &WhereBuilder{
+		wheres: []whereToken{{
+			Type:   or,
+			wheres: nil,
+		}},
+		args: make([]any, 0),
+	}
 }
 
 type parseFun func(c Clause) (string, error)
@@ -58,7 +71,7 @@ func (w *WhereBuilder) toSql(f parseFun) (string, error) {
 
 func parse(wts []whereToken, f parseFun) (string, error) {
 	sb := strings.Builder{}
-	isStart := false
+	start := true
 	for _, wt := range wts {
 		switch wt.Type {
 		case native:
@@ -66,19 +79,24 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 			if err != nil {
 				return "", errors.Wrap(err, "parse native where")
 			}
-			if isStart {
+			if !start {
 				sb.WriteString(" AND ")
 			}
+			if start {
+				start = false
+			}
 			sb.WriteString(result)
-			isStart = true
 		case and:
 			result, err := parse(wt.wheres, f)
 			if err != nil {
 				return "", errors.Wrap(err, "parse native where")
 			}
 
-			if isStart {
+			if !start {
 				sb.WriteString(" AND ")
+			}
+			if start {
+				start = false
 			}
 			isMore := len(wt.wheres) > 1
 			if isMore {
@@ -93,8 +111,11 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 			if err != nil {
 				return "", errors.Wrap(err, "parse native where")
 			}
-			if isStart {
+			if !start {
 				sb.WriteString(" OR ")
+			}
+			if start {
+				start = false
 			}
 			isMore := len(wt.wheres) > 1
 			if isMore {
@@ -528,6 +549,9 @@ func (w *WhereBuilder) NotBetween(query string, arg1, arg2 any, condition ...boo
 	return w
 }
 
+// Neq
+// 不等于
+// 当 arg 为 nil 时，不添加条件
 func (w *WhereBuilder) Neq(query string, arg any, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
