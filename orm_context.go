@@ -69,7 +69,7 @@ type ormContext struct {
 	//主键名-列表,这里考虑到多主键-排除
 	filterPrimaryKeyNames []string
 	//主键值-列表-排除
-	filterPrimaryKeyValues [][]any
+	filterPrimaryKeyValues [][]field.Value
 
 	// ------------------conf----------------------
 
@@ -458,7 +458,7 @@ func (ctx *ormContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (ctx *ormContext) initPrimaryKeyValues(v []any) {
+func (ctx *ormContext) initPrimaryKeyValues(v []any) (idValuess [][]field.Value) {
 	if ctx.hasErr() {
 		return
 	}
@@ -470,8 +470,6 @@ func (ctx *ormContext) initPrimaryKeyValues(v []any) {
 	}
 	pkLen := len(ctx.primaryKeyNames)
 
-	idValuess := make([][]field.Value, 0)
-
 	if pkLen == 1 { //单主键
 		for _, i := range v {
 			value := reflect.ValueOf(i)
@@ -481,9 +479,11 @@ func (ctx *ormContext) initPrimaryKeyValues(v []any) {
 				return
 			}
 
-			if !isValuerType(value.Type()) {
-				ctx.err = errors.New("ByPrimaryKey typ err,not single")
-				return
+			if ctx.checkParam {
+				if !isValuerType(value.Type()) {
+					ctx.err = errors.New("ByPrimaryKey typ err,not single")
+					return
+				}
 			}
 
 			idValues := make([]field.Value, 1)
@@ -502,9 +502,12 @@ func (ctx *ormContext) initPrimaryKeyValues(v []any) {
 				ctx.err = err
 				return
 			}
-			if !isCompType(value.Type()) {
-				ctx.err = errors.New("ByPrimaryKey typ err,not comp")
-				return
+
+			if ctx.checkParam {
+				if !isCompType(value.Type()) {
+					ctx.err = errors.New("ByPrimaryKey typ err,not comp")
+					return
+				}
 			}
 
 			columns, values, err := getCompValueCV(value)
@@ -512,9 +515,12 @@ func (ctx *ormContext) initPrimaryKeyValues(v []any) {
 				ctx.err = err
 				return
 			}
-			if len(columns) != pkLen {
-				ctx.err = errors.New("复合主键，filed数量 len err")
-				return
+
+			if ctx.checkParam {
+				if len(columns) != pkLen {
+					ctx.err = errors.New("复合主键，filed数量 len err")
+					return
+				}
 			}
 
 			idValues := make([]field.Value, 0)
@@ -522,42 +528,7 @@ func (ctx *ormContext) initPrimaryKeyValues(v []any) {
 			idValuess = append(idValuess, idValues)
 		}
 	}
-
-	ctx.primaryKeyValues = idValuess
-}
-
-func (ctx *ormContext) initSelfPrimaryKeyValues() {
-	if ctx.hasErr() {
-		return
-	}
-
-	keyNum := len(ctx.primaryKeyNames)
-	idValues := make([]field.Value, 0)
-	columns, values, err := getCompCV(ctx.scanDest, ctx.ormConf)
-	if err != nil {
-		ctx.err = err
-		return
-	}
-	//只要主键字段
-	for _, key := range ctx.primaryKeyNames {
-		for i, c := range columns {
-			if c == key {
-				idValues = append(idValues, values[i])
-				continue
-			}
-		}
-	}
-	idLen := len(idValues)
-	if idLen == 0 {
-		ctx.err = errors.New("no pk")
-		return
-	}
-	if keyNum != idLen {
-		ctx.err = errors.New("comp pk num err")
-		return
-	}
-
-	ctx.primaryKeyValues = append(ctx.primaryKeyValues, idValues)
+	return
 }
 
 func (ctx *ormContext) hasErr() bool {

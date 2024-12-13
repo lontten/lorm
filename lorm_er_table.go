@@ -138,6 +138,9 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 
 	ctx.initConf() //初始化表名，主键，自增id
 
+	ctx.primaryKeyValues = ctx.initPrimaryKeyValues(wb.primaryKeyValue)
+	ctx.filterPrimaryKeyValues = ctx.initPrimaryKeyValues(wb.filterPrimaryKeyValue)
+
 	whereStr, err := wb.toSql(dialect.parse)
 	if err != nil {
 		return 0, err
@@ -203,43 +206,6 @@ func (db *lnDB) Update(v any) OrmTableUpdate {
 	//ldb.initColumnsValue()
 
 	return OrmTableUpdate{base: core}
-}
-
-func (orm OrmTableUpdate) ByPrimaryKey(v ...any) OrmTableUpdate {
-	orm.base.appendBaseToken(baseToken{
-		typ: tPrimaryKey,
-		pk:  v,
-	})
-
-	//orm.base.initPrimaryKeyName()
-	//orm.base.ctx.initSelfPrimaryKeyValues()
-	//orm.base.initByPrimaryKey()
-	//orm.base.initExtra()
-
-	return orm
-}
-
-func (orm OrmTableUpdate) ByModel(v any) OrmTableUpdate {
-	orm.base.appendBaseToken(baseToken{
-		typ: tWhereModel,
-		v:   reflect.ValueOf(v),
-	})
-
-	//orm.base.initByModel(v)
-	//orm.base.initExtra()
-	return orm
-}
-
-func (orm OrmTableUpdate) ByWhere(wb *WhereBuilder) OrmTableUpdate {
-	orm.base.appendBaseToken(baseToken{
-		typ: tWhereBuilder,
-		wb:  wb,
-	})
-
-	//orm.base.initByWhere(w)
-	//orm.base.initExtra()
-
-	return orm
 }
 
 //------------------------------------Select--------------------------------------------
