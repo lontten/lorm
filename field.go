@@ -61,7 +61,7 @@ func getFieldInterZero(v reflect.Value) any {
 	return v.Interface()
 }
 
-// 零值为 nil
+// 返回值类型有 None,Null,Val,三种
 func getFieldInter(v reflect.Value) field.Value {
 	if !v.IsValid() {
 		return field.Value{

@@ -204,6 +204,7 @@ type compCV struct {
 
 // 忽略 软删除 字段
 // 获取 struct 对应的字段名 和 其值
+// 返回值类型有 Val,一种
 func getStructCV(v reflect.Value) (compCV, error) {
 	t := v.Type()
 	cv := compCV{
@@ -233,7 +234,8 @@ func getStructCV(v reflect.Value) (compCV, error) {
 	return cv, nil
 }
 
-// 获取map[string]any 对应的字段名 和 其值
+// 获取map[string]any
+// 返回值类型有 None,Null,Val,三种
 func getMapCV(v reflect.Value) (compCV, error) {
 	cv := compCV{
 		columns:             make([]string, 0),
@@ -252,7 +254,7 @@ func getMapCV(v reflect.Value) (compCV, error) {
 }
 
 // 获取 rows 返回数据，每个字段index 对应 struct 的字段 名字
-func (c OrmConf) getColIndex2FieldNameMap(columns []string, t reflect.Type) (ColIndex2FieldNameMap, error) {
+func getColIndex2FieldNameMap(columns []string, t reflect.Type) (ColIndex2FieldNameMap, error) {
 	if isValuerType(t) {
 		return ColIndex2FieldNameMap{}, nil
 	}

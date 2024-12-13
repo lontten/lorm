@@ -1,6 +1,7 @@
 package lorm
 
 import (
+	"github.com/lontten/lorm/field"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -27,6 +28,9 @@ type Clause struct {
 }
 
 type WhereBuilder struct {
+	primaryKeyValue       []any // 主键值列表
+	filterPrimaryKeyValue []any // 主键值列表,过滤
+
 	wheres []whereToken
 	args   []any
 }
@@ -147,7 +151,86 @@ func (w *WhereBuilder) Or(wb *WhereBuilder, condition ...bool) *WhereBuilder {
 	return w
 }
 
-//------------------------------------
+//------------------model/map/id------------------
+
+func (w *WhereBuilder) Model(v any, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	cv, err := getStructCV(reflect.ValueOf(v))
+	if err != nil {
+		return w
+	}
+	for i, column := range cv.columns {
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  Eq,
+				query: column,
+			},
+		})
+		w.args = append(w.args, cv.columnValues[i].Value)
+	}
+	return w
+}
+
+func (w *WhereBuilder) Map(v any, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	cv, err := getMapCV(reflect.ValueOf(v))
+	if err != nil {
+		return w
+	}
+	for i, column := range cv.columns {
+		value := cv.columnValues[i]
+		switch value.Type {
+		case field.None:
+			break
+		case field.Null:
+			w.wheres = append(w.wheres, whereToken{
+				Type: native,
+				clause: Clause{
+					Type:  IsNull,
+					query: column,
+				},
+			})
+			break
+		case field.Val:
+			w.wheres = append(w.wheres, whereToken{
+				Type: native,
+				clause: Clause{
+					Type:  Eq,
+					query: column,
+				},
+			})
+			w.args = append(w.args, value.Value)
+			break
+		default:
+			break
+		}
+	}
+	return w
+}
+
+func (w *WhereBuilder) PrimaryKey(v ...any) *WhereBuilder {
+	w.primaryKeyValue = v
+	return w
+}
+
+func (w *WhereBuilder) FilterPrimaryKey(v ...any) *WhereBuilder {
+	w.filterPrimaryKeyValue = v
+	return w
+}
+
+//------------------model/map/id-end------------------
+//------------------eq------------------
 
 func (w *WhereBuilder) Eq(query string, arg any, condition ...bool) *WhereBuilder {
 	for _, b := range condition {

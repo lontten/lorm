@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/lontten/lorm"
 	"github.com/lontten/lorm/softdelete"
+	"github.com/lontten/lorm/types"
+	"test/ldb"
 )
 
 type Ka struct {
@@ -34,7 +36,7 @@ func main() {
 	//QueryOneT2()
 	//QueryListT2()
 	//
-	QueryOneT()
+	//QueryOneT()
 	//QueryList2()
 	//
 	//Prepare4()
@@ -43,5 +45,15 @@ func main() {
 	//Build1()
 	//Build2()
 
-	//lorm.Del[User](ldb.engine, By(1))
+	var u = User{
+		Id:   nil,
+		Name: types.NewString("xxx"),
+		Age:  types.NewInt(1),
+	}
+	var m = make(map[string]any)
+	m["a"] = 1
+	m["b"] = "bb"
+	m["c"] = nil
+
+	lorm.Delete[User](ldb.DB, lorm.Wb().Eq("name", "tom").Model(u).Map(m))
 }

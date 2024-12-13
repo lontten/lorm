@@ -8,9 +8,9 @@ import (
 type ByContext struct {
 	fieldNames []string
 
-	primaryKeyValue []any // 主键值列表
+	primaryKeyValue       []any // 主键值列表
+	filterPrimaryKeyValue []any // 主键值列表,过滤
 
-	// model 需要 ormContext 才能解析
 	model any
 	wb    *WhereBuilder
 
@@ -78,36 +78,4 @@ func (ctx ormContext) name(v ...any) {
 			idValuess = append(idValuess, idValues)
 		}
 	}
-}
-func By(v ...any) *ByContext {
-	return &ByContext{
-		primaryKeyValue: v,
-		wb:              Wb(),
-	}
-}
-func (b *ByContext) Field(name ...string) *ByContext {
-	b.fieldNames = append(b.fieldNames, name...)
-	return b
-}
-
-func (b *ByContext) Map(v map[string]any) *ByContext {
-	cv, err := getMapCV(reflect.ValueOf(v))
-	if err != nil {
-		b.err = err
-		return b
-	}
-	for i, column := range cv.columns {
-		b.wb.Eq(column, cv.columnValues[i])
-	}
-	return b
-}
-
-func (b *ByContext) Model(v any) *ByContext {
-	b.model = v
-	return b
-}
-
-func (b *ByContext) Where(wb *WhereBuilder) *ByContext {
-	b.wb.And(wb)
-	return b
 }

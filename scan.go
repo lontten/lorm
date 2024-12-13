@@ -67,7 +67,7 @@ func (ctx ormContext) ScanLnT(rows *sql.Rows) (num int64, err error) {
 
 	cfm := ColIndex2FieldNameMap{}
 	if ctx.destBaseTypeIsComp {
-		cfm, err = ctx.ormConf.getColIndex2FieldNameMap(columns, t)
+		cfm, err = getColIndex2FieldNameMap(columns, t)
 		if err != nil {
 			return
 		}
@@ -108,7 +108,7 @@ func (ctx ormContext) ScanBatch(rowss []*sql.Rows) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		cfm, err := ctx.ormConf.getColIndex2FieldNameMap(columns, t)
+		cfm, err := getColIndex2FieldNameMap(columns, t)
 		if err != nil {
 			return 0, err
 		}
@@ -187,7 +187,7 @@ func (ctx ormContext) ScanT(rows *sql.Rows) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	cfm, err := ctx.ormConf.getColIndex2FieldNameMap(columns, t)
+	cfm, err := getColIndex2FieldNameMap(columns, t)
 	if err != nil {
 		return 0, err
 	}

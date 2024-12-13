@@ -22,8 +22,6 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 		dest: v,
 	})
 
-	//ctx.setModelDest(v)
-
 	ctx.initModelDest(v)   //初始化参数
 	ctx.initConf()         //初始化表名，主键，自增id
 	ctx.initColumnsValue() //初始化cv
@@ -124,7 +122,7 @@ func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error
 
 //------------------------------------Delete--------------------------------------------
 
-func Delete[T any](db Engine, by *ByContext, extra ...*ExtraContext) (int64, error) {
+func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, error) {
 	db = db.init()
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
@@ -139,6 +137,12 @@ func Delete[T any](db Engine, by *ByContext, extra ...*ExtraContext) (int64, err
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
+
+	whereStr, err := wb.toSql(dialect.parse)
+	if err != nil {
+		return 0, err
+	}
+	fmt.Println(whereStr)
 
 	dialect.tableInsertGen()
 	if ctx.hasErr() {
@@ -179,22 +183,6 @@ func (orm OrmTableDelete) ByPrimaryKey(v ...any) OrmTableDelete {
 	orm.base.appendBaseToken(baseToken{
 		typ: tPrimaryKey,
 		pk:  v,
-	})
-	return orm
-}
-
-func (orm OrmTableDelete) ByModel(v any) OrmTableDelete {
-	orm.base.appendBaseToken(baseToken{
-		typ: tWhereModel,
-		v:   reflect.ValueOf(v),
-	})
-	return orm
-}
-
-func (orm OrmTableDelete) ByWhere(wb *WhereBuilder) OrmTableDelete {
-	orm.base.appendBaseToken(baseToken{
-		typ: tWhereBuilder,
-		wb:  wb,
 	})
 	return orm
 }
