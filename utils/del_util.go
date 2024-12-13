@@ -1,25 +1,25 @@
 package utils
 
 import (
-	soft_del "github.com/lontten/lorm/soft-delete"
+	"github.com/lontten/lorm/softdelete"
 	"reflect"
 )
 
-func GetSoftDelType(t reflect.Type) soft_del.SoftDelType {
+func GetSoftDelType(t reflect.Type) softdelete.SoftDelType {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		if field.Anonymous {
-			delType, has := soft_del.SoftDelTypeMap[field.Type]
+			delType, has := softdelete.SoftDelTypeMap[field.Type]
 			if has {
 				return delType
 			}
 			return GetSoftDelType(field.Type)
 		}
 	}
-	return soft_del.None
+	return softdelete.None
 }
 
 func IsSoftDelFieldType(t reflect.Type) bool {
-	_, has := soft_del.SoftDelTypeMap[t]
+	_, has := softdelete.SoftDelTypeMap[t]
 	return has
 }

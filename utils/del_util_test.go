@@ -1,13 +1,13 @@
 package utils
 
 import (
-	"github.com/lontten/lorm/soft-delete"
+	"github.com/lontten/lorm/softdelete"
 	"reflect"
 	"testing"
 )
 
 type TestSoftDel1 struct {
-	soft_delete.DeleteGormMilli
+	softdelete.DeleteGormMilli
 }
 
 type TestSoftDel2 struct {

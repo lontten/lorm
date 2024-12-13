@@ -1,4 +1,4 @@
-package sql_type
+package sqltype
 
 type SqlType int
 

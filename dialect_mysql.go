@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
+	"github.com/lontten/lorm/softdelete"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
@@ -235,6 +236,96 @@ func (d *MysqlDialect) tableInsertGen() {
 	default:
 		break
 	}
+
+	query.WriteString(";")
+}
+
+// del 生成
+func (d *MysqlDialect) tableDelGen() {
+	ctx := d.ctx
+	if ctx.hasErr() {
+		return
+	}
+
+	//extra := ctx.extra
+	//set := extra.set
+
+	columns := ctx.columns
+	values := ctx.columnValues
+	var query = d.ctx.query
+
+	tableName := ctx.tableName
+
+	w := ctx.genWhereSqlByToken()
+
+	//  没有软删除 或者 跳过软删除 ，执行物理删除
+	if ctx.softDeleteType == softdelete.None || ctx.skipSoftDelete {
+
+		query.WriteString("DELETE FROM ")
+		query.WriteString(tableName)
+		query.WriteString(w)
+
+	} else {
+		query.WriteString("UPDATE ")
+		query.WriteString(tableName)
+		query.WriteString(" SET ")
+
+		switch ctx.softDeleteType {
+		case softdelete.DelTimeNil:
+			query.WriteString(" and deleted_at  ")
+			break
+		default:
+
+			break
+		}
+
+		query.WriteString(w)
+
+	}
+
+	for i, v := range values {
+		if i > 0 {
+			query.WriteString(" , ")
+		}
+		switch v.Type {
+		case field.None:
+			break
+		case field.Null:
+			query.WriteString("NULL")
+			break
+		case field.Now:
+			query.WriteString("NOW()")
+			break
+		case field.UnixSecond:
+			query.WriteString(strconv.Itoa(time.Now().Second()))
+			break
+		case field.UnixMilli:
+			query.WriteString(strconv.FormatInt(time.Now().UnixMilli(), 10))
+			break
+		case field.UnixNano:
+			query.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
+			break
+		case field.Val:
+			query.WriteString(" ? ")
+			ctx.args = append(ctx.args, v.Value)
+			break
+		case field.Increment:
+			query.WriteString(columns[i] + " + ? ")
+			ctx.args = append(ctx.args, v.Value)
+			break
+		case field.Expression:
+			query.WriteString(v.Value.(string))
+			break
+		case field.ID:
+			if len(ctx.primaryKeyNames) > 0 {
+				ctx.err = errors.New("软删除标记为主键id，需要单主键")
+				return
+			}
+			query.WriteString(ctx.primaryKeyNames[0])
+			break
+		}
+	}
+	query.WriteString(" ) ")
 
 	query.WriteString(";")
 }

@@ -71,24 +71,6 @@ func (db *coreDB) Rollback() error {
 
 //todo 下面未重构--------------
 
-//----------LnDB-------------
-
-type Result struct {
-	num int64
-	err error
-}
-type Resulter interface {
-	Result() (int64, error) //sql执行影响了多少行数时和err
-	Err() error             //当用户不在意，sql执行影响了多少行数时，可以使用这个直接获取err，不用再想之前一样还要用_接受
-}
-
-func (r Result) Err() error {
-	return r.err
-}
-func (r Result) Result() (int64, error) {
-	return r.num, r.err
-}
-
 func (db *lnDB) tDelete(t baseToken) {
 	db.setNameDest(t.dest)
 }

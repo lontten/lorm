@@ -4,8 +4,8 @@ import (
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
 	"github.com/lontten/lorm/return-type"
-	"github.com/lontten/lorm/soft-delete"
-	"github.com/lontten/lorm/sql-type"
+	"github.com/lontten/lorm/softdelete"
+	"github.com/lontten/lorm/sqltype"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
 	"reflect"
@@ -75,7 +75,7 @@ type ormContext struct {
 
 	insertType     insert_type.InsertType
 	returnType     return_type.ReturnType
-	softDeleteType soft_del.SoftDelType
+	softDeleteType softdelete.SoftDelType
 	skipSoftDelete bool   // 跳过软删除
 	tableName      string //当前表名
 	checkParam     bool   // 是否检查参数
@@ -97,7 +97,7 @@ type ormContext struct {
 	//------------------scan----------------------
 	//true query,false exec
 	sqlIsQuery                bool
-	sqlType                   sql_type.SqlType
+	sqlType                   sqltype.SqlType
 	dialectNeedLastInsertId   bool         // 数据库是否需要 last_insert_id。例如：mysql等数据库insert无法直接数据需要 last_insert_id
 	needLastInsertId          bool         // 最终执行，是否需要 last_insert_id
 	lastInsertIdFieldName     string       // last_insert_id 对应的model字段的 名字
@@ -189,7 +189,7 @@ func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 	ctx.tableName = e.tableName
 }
 
-// 初始化 表名,主键
+// 初始化 表名,主键，自增id
 func (ctx *ormContext) initConf() {
 	if ctx.hasErr() {
 		return
@@ -311,15 +311,15 @@ func (ctx *ormContext) initColumnsValueSoftDel() {
 	}
 
 	switch ctx.sqlType {
-	case sql_type.Insert:
-		value, has := soft_del.SoftDelTypeNoFVMap[ctx.softDeleteType]
+	case sqltype.Insert:
+		value, has := softdelete.SoftDelTypeNoFVMap[ctx.softDeleteType]
 		if has && value.Type != field.None {
 			ctx.columns = append(ctx.columns, value.Name)
 			ctx.columnValues = append(ctx.columnValues, value.ToValue())
 		}
 		break
-	case sql_type.Delete:
-		value, has := soft_del.SoftDelTypeYesFVMap[ctx.softDeleteType]
+	case sqltype.Delete:
+		value, has := softdelete.SoftDelTypeYesFVMap[ctx.softDeleteType]
 		if has && value.Type != field.None {
 			ctx.columns = append(ctx.columns, value.Name)
 			ctx.columnValues = append(ctx.columnValues, value.ToValue())

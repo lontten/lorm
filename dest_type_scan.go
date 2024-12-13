@@ -99,6 +99,7 @@ func (ctx *ormContext) initScanDestOne(dest any) {
 	ctx.destSliceItemIsPtr = false
 }
 
+// dest 类型 struct 、所有 valuer 类型
 func (ctx *ormContext) initScanDestOneT(dest any) {
 	if ctx.hasErr() {
 		return

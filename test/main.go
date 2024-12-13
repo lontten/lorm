@@ -2,14 +2,14 @@ package main
 
 import (
 	"github.com/lontten/lorm"
-	soft_del "github.com/lontten/lorm/soft-delete"
+	"github.com/lontten/lorm/softdelete"
 )
 
 type Ka struct {
 	Id   *int    `ldb:"id"`
 	Name *string `ldb:"name"`
 
-	soft_del.DeleteGormMilli
+	softdelete.DeleteGormMilli
 }
 
 func (k Ka) TableConf() *lorm.TableConf {
@@ -27,7 +27,7 @@ type User struct {
 	Name *string
 	Age  *int
 
-	soft_del.DeleteGormMilli
+	softdelete.DeleteGormMilli
 }
 
 func main() {
@@ -42,4 +42,6 @@ func main() {
 	//TableInsert()
 	//Build1()
 	//Build2()
+
+	//lorm.Del[User](ldb.engine, By(1))
 }

@@ -32,7 +32,6 @@ func QueryListT() {
 		fmt.Println(*ka.Id)
 		fmt.Println(*ka.Name)
 	}
-
 }
 
 func QueryListT2() {

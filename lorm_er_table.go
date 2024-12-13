@@ -2,7 +2,8 @@ package lorm
 
 import (
 	"fmt"
-	"github.com/lontten/lorm/sql-type"
+	"github.com/lontten/lorm/softdelete"
+	"github.com/lontten/lorm/sqltype"
 	"reflect"
 )
 
@@ -14,7 +15,7 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
 	ctx.initExtra(extra...)
-	ctx.sqlType = sql_type.Insert
+	ctx.sqlType = sqltype.Insert
 	ctx.sqlIsQuery = true
 	dialect.appendBaseToken(baseToken{
 		typ:  tInsert,
@@ -71,7 +72,7 @@ func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
 	ctx.initExtra(extra...)
-	ctx.sqlType = sql_type.Insert
+	ctx.sqlType = sqltype.Insert
 	ctx.sqlIsQuery = true
 	dialect.appendBaseToken(baseToken{
 		typ:  tInsert,
@@ -123,14 +124,55 @@ func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error
 
 //------------------------------------Delete--------------------------------------------
 
-func (db *lnDB) Delete(v any) OrmTableDelete {
-	core := db.core
-	core.getCtx().tableSqlType = dDelete
-	core.appendBaseToken(baseToken{
-		typ: tTableName,
-		t:   reflect.TypeOf(v),
-	})
-	return OrmTableDelete{base: core}
+func Delete[T any](db Engine, by *ByContext, extra ...*ExtraContext) (int64, error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...)
+	ctx.sqlType = sqltype.Delete
+	ctx.sqlIsQuery = false
+
+	dest := new(T)
+	ctx.initScanDestOneT(dest)
+	if ctx.err != nil {
+		return 0, ctx.err
+	}
+
+	ctx.initConf() //初始化表名，主键，自增id
+
+	dialect.tableInsertGen()
+	if ctx.hasErr() {
+		return 0, ctx.err
+	}
+
+	//  没有软删除 或者 跳过软删除 ，执行物理删除
+	if ctx.softDeleteType == softdelete.None || ctx.skipSoftDelete {
+		//var bb bytes.Buffer
+		//tableName := ldb.getCtx().tableName
+		//w := ldb.genWhereSqlByToken()
+		//
+		//if ldb.getCtx().ormConf.LogicDeleteSetSql == "" {
+		//	bb.WriteString("DELETE FROM ")
+		//	bb.WriteString(tableName)
+		//	bb.Write(w)
+		//} else {
+		//	bb.WriteString("UPDATE ")
+		//	bb.WriteString(tableName)
+		//	bb.WriteString(" SET ")
+		//	bb.WriteString(ldb.getCtx().ormConf.LogicDeleteSetSql)
+		//	bb.Write(w)
+		//}
+	}
+
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+	exec, err := db.exec(sql, ctx.args...)
+	if err != nil {
+		return 0, err
+	}
+	return exec.RowsAffected()
 }
 
 func (orm OrmTableDelete) ByPrimaryKey(v ...any) OrmTableDelete {
@@ -155,11 +197,6 @@ func (orm OrmTableDelete) ByWhere(wb *WhereBuilder) OrmTableDelete {
 		wb:  wb,
 	})
 	return orm
-}
-
-func (orm OrmTableDelete) Exec(w *WhereBuilder) Resulter {
-	//return orm.base.getCtx()
-	return nil
 }
 
 //------------------------------------Update--------------------------------------------
@@ -232,7 +269,7 @@ func First[T any](db Engine, by *ByContext, extra ...*ExtraContext) (t *T, err e
 	}
 
 	ctx.initExtra(extra...)
-	ctx.sqlType = sql_type.Select
+	ctx.sqlType = sqltype.Select
 	ctx.sqlIsQuery = true
 	dialect.appendBaseToken(baseToken{
 		typ:  tInsert,

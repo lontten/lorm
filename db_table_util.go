@@ -30,30 +30,6 @@ func (db *lnDB) doUpdate() (int64, error) {
 	return 0, nil
 }
 
-// del
-//func (ldb coreDb) doDel() (int64, error) {
-//if err := ldb.getCtx().err; err != nil {
-//	return 0, err
-//}
-//var bb bytes.Buffer
-//tableName := ldb.getCtx().tableName
-//w := ldb.genWhereSqlByToken()
-//
-//if ldb.getCtx().ormConf.LogicDeleteSetSql == "" {
-//	bb.WriteString("DELETE FROM ")
-//	bb.WriteString(tableName)
-//	bb.Write(w)
-//} else {
-//	bb.WriteString("UPDATE ")
-//	bb.WriteString(tableName)
-//	bb.WriteString(" SET ")
-//	bb.WriteString(ldb.getCtx().ormConf.LogicDeleteSetSql)
-//	bb.Write(w)
-//}
-//return ldb.doExec(bb.String(), ldb.args...)
-//return 0, nil
-//}
-
 // update
 func (ctx *ormContext) doSelect() string {
 	var sb strings.Builder
@@ -190,16 +166,6 @@ func (d *MysqlDialect) initExtra() {
 	//}
 	//ldb.extraWhereSql = sb.String()
 
-}
-
-// 初始化逻辑删除
-func (db *lnDB) initLgDel() {
-	//if err := ldb.ctx.err; err != nil {
-	//	return
-	//}
-	//if ldb.ctx.ormConf.LogicDeleteYesSql != "" {
-	//	ldb.extraWhereSql = ldb.ctx.ormConf.LogicDeleteYesSql
-	//}
 }
 
 // -------------------------utils------------------------

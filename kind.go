@@ -333,7 +333,6 @@ func checkPackValue(v reflect.Value) (PackTyp, error) {
 //--------------------------------------------------
 
 // --------------------
-// v03
 // 数据原子性
 // atom composite
 // 检查是 atom 还是 composite
@@ -348,7 +347,6 @@ const (
 	Composite
 )
 
-// v03
 func checkAtomValue(v reflect.Value) atomType {
 	is := isValuerType(v.Type())
 	if is {
@@ -367,7 +365,6 @@ func checkAtomValue(v reflect.Value) atomType {
 	return Invalid
 }
 
-// v03
 func checkAtomType(t reflect.Type) atomType {
 	is := isValuerType(t)
 	if is {
