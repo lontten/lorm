@@ -87,15 +87,15 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	ctx.initConf() //初始化表名，主键，自增id
 	ctx.initColumnsValueSoftDel()
 
+	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
-	ctx.initPrimaryKeyByWhere()
-
-	whereStr, err := wb.toSql(dialect.parse)
+	whereStr, args, err := ctx.wb.toSql(dialect.parse)
 	if err != nil {
 		return 0, err
 	}
 	ctx.extraWhereSql = whereStr
+	ctx.args = append(ctx.args, args...)
 
 	dialect.tableDelGen()
 	if ctx.hasErr() {

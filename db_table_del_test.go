@@ -9,7 +9,7 @@ package lorm
 //
 // )
 type User struct {
-	Id   int64 `lorm:"pk" tableName:"t_user"`
+	Id   int64
 	Name string
 }
 

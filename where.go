@@ -69,9 +69,13 @@ func (w *WhereBuilder) toWhereToken() ([]whereToken, []any) {
 所以，生成具体sql的方法 toSql 直接接受 外界传过来的 parseFun 处理函数，代码结构比较简单，
 不然，whereBuilder 里面要有 dialecter 的两种实现，代码结构复杂
 */
-func (w *WhereBuilder) toSql(f parseFun) (string, error) {
-	tokens, _ := w.toWhereToken()
-	return parse(tokens, f)
+func (w *WhereBuilder) toSql(f parseFun) (string, []any, error) {
+	tokens, args := w.toWhereToken()
+	sql, err := parse(tokens, f)
+	if err != nil {
+		return "", nil, err
+	}
+	return sql, args, nil
 }
 
 func parse(wts []whereToken, f parseFun) (string, error) {

@@ -468,8 +468,7 @@ func (ctx *ormContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (ctx *ormContext) initPrimaryKeyByWhere() {
-	wb := ctx.wb
+func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
 	ctx.primaryKeyValues = ctx.initPrimaryKeyValues(wb.primaryKeyValue)
 	if ctx.hasErr() {
 		return

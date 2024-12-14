@@ -212,19 +212,17 @@ func (d *MysqlDialect) tableDelGen() {
 		query.WriteString("DELETE FROM ")
 		query.WriteString(tableName)
 
-		w := ctx.genWhereSqlByToken()
-		query.WriteString(w)
+		query.WriteString(" WHERE ")
+		query.WriteString(ctx.extraWhereSql)
 	} else {
 		query.WriteString("UPDATE ")
 		query.WriteString(tableName)
+
 		query.WriteString(" SET ")
-
-		// set
 		ctx.genSetSqlBycolumnValues()
-		// where
-		w := ctx.genWhereSqlByToken()
-		query.WriteString(w)
 
+		query.WriteString(" WHERE ")
+		query.WriteString(ctx.extraWhereSql)
 	}
 
 	query.WriteString(";")

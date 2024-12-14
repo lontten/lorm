@@ -314,7 +314,7 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	if w == nil {
 		return b
 	}
-	sqlStr, err := w.toSql(b.db.getDialect().parse)
+	sqlStr, args, err := w.toSql(b.db.getDialect().parse)
 	if err != nil {
 		b.db.getCtx().err = err
 		return b
@@ -338,7 +338,7 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 		b.db.getCtx().err = errors.New("where has been done")
 	}
 
-	b.AppendArgs(w.args...)
+	b.AppendArgs(args...)
 	return b
 }
 

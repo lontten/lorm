@@ -1,58 +1,12 @@
 package lorm
 
 import (
-	"bytes"
 	"github.com/lontten/lorm/field"
 	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
-	"strings"
 	"time"
 )
-
-// todo 下面未重构--------------
-// update
-func (db *lnDB) doUpdate() (int64, error) {
-	if err := db.core.getCtx().err; err != nil {
-		return 0, err
-	}
-	var bb bytes.Buffer
-
-	ctx := db.core.getCtx()
-	tableName := ctx.tableName
-	cs := ctx.columns
-
-	bb.WriteString("UPDATE ")
-	bb.WriteString(tableName)
-	bb.WriteString(" SET ")
-	bb.WriteString(ctx.tableUpdateArgs2SqlStr(cs))
-	bb.WriteString(ctx.genWhereSqlByToken())
-
-	//return ldb.core.doExec(bb.String(), append(ctx.columnValues, ldb.args...)...)
-	return 0, nil
-}
-
-// update
-func (ctx *ormContext) doSelect() string {
-	var sb strings.Builder
-
-	tableName := ctx.tableName
-
-	sb.WriteString("SELECT ")
-	for i, column := range ctx.modelSelectFieldNames {
-		if i == 0 {
-			sb.WriteString(column)
-		} else {
-			sb.WriteString(" , ")
-			sb.WriteString(column)
-		}
-	}
-	sb.WriteString(" FROM ")
-	sb.WriteString(tableName)
-	sb.WriteString(ctx.genWhereSqlByToken())
-
-	return sb.String()
-}
 
 // has
 //func (ldb coreDb) doHas() (bool, error) {
@@ -204,14 +158,6 @@ func getCompValueCV(v reflect.Value) ([]string, []field.Value, error) {
 }
 
 //------------------------gen-sql---------------------------
-
-// 根据whereTokens生成的where sql
-func (ctx *ormContext) genWhereSqlByToken() string {
-	var sb strings.Builder
-	sb.WriteString(" WHERE ")
-	sb.WriteString(ctx.extraWhereSql)
-	return sb.String()
-}
 
 // 根据whereTokens生成的where sql
 func (ctx *ormContext) genSetSqlBycolumnValues() {
