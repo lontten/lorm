@@ -4,7 +4,9 @@ import (
 	"github.com/lontten/lorm/field"
 	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type whereTokenType int
@@ -180,6 +182,81 @@ func (w *WhereBuilder) Or(wb *WhereBuilder, condition ...bool) *WhereBuilder {
 	w.args = append(w.args, args...)
 	return w
 }
+func (w *WhereBuilder) fieldValue(name string, v field.Value, condition ...bool) *WhereBuilder {
+	for _, b := range condition {
+		if !b {
+			return w
+		}
+	}
+
+	switch v.Type {
+	case field.None:
+		break
+	case field.Null:
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  IsNull,
+				query: name,
+			},
+		})
+		break
+	case field.Now:
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  Eq,
+				query: name,
+			},
+		})
+		w.args = append(w.args, time.Now())
+		break
+	case field.UnixSecond:
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  Eq,
+				query: name,
+			},
+		})
+		w.args = append(w.args, strconv.Itoa(time.Now().Second()))
+		break
+
+	case field.UnixMilli:
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  Eq,
+				query: name,
+			},
+		})
+		w.args = append(w.args, strconv.FormatInt(time.Now().UnixMilli(), 10))
+		break
+	case field.UnixNano:
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  Eq,
+				query: name,
+			},
+		})
+		w.args = append(w.args, strconv.FormatInt(time.Now().UnixNano(), 10))
+		break
+	case field.Val:
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  Eq,
+				query: name,
+			},
+		})
+		w.args = append(w.args, v.Value)
+		break
+	default:
+		break
+	}
+	return w
+}
 
 //------------------model/map/id------------------
 
@@ -195,14 +272,7 @@ func (w *WhereBuilder) Model(v any, condition ...bool) *WhereBuilder {
 		return w
 	}
 	for i, column := range cv.columns {
-		w.wheres = append(w.wheres, whereToken{
-			Type: native,
-			clause: Clause{
-				Type:  Eq,
-				query: column,
-			},
-		})
-		w.args = append(w.args, cv.columnValues[i].Value)
+		w.fieldValue(column, cv.columnValues[i])
 	}
 	return w
 }
@@ -219,32 +289,7 @@ func (w *WhereBuilder) Map(v any, condition ...bool) *WhereBuilder {
 		return w
 	}
 	for i, column := range cv.columns {
-		value := cv.columnValues[i]
-		switch value.Type {
-		case field.None:
-			break
-		case field.Null:
-			w.wheres = append(w.wheres, whereToken{
-				Type: native,
-				clause: Clause{
-					Type:  IsNull,
-					query: column,
-				},
-			})
-			break
-		case field.Val:
-			w.wheres = append(w.wheres, whereToken{
-				Type: native,
-				clause: Clause{
-					Type:  Eq,
-					query: column,
-				},
-			})
-			w.args = append(w.args, value.Value)
-			break
-		default:
-			break
-		}
+		w.fieldValue(column, cv.columnValues[i])
 	}
 	return w
 }

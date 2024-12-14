@@ -2,13 +2,11 @@ package lorm
 
 import (
 	"errors"
-	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
 	"github.com/lontten/lorm/return-type"
 	"github.com/lontten/lorm/utils"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type PgDialect struct {
@@ -26,6 +24,7 @@ func (d *PgDialect) initContext() Dialecter {
 		ctx: &ormContext{
 			ormConf:    d.ctx.ormConf,
 			query:      &strings.Builder{},
+			wb:         Wb(),
 			insertType: insert_type.Err,
 		},
 	}
@@ -81,7 +80,6 @@ func (d *PgDialect) tableInsertGen() {
 	set := extra.set
 
 	columns := ctx.columns
-	values := ctx.columnValues
 	var query = d.ctx.query
 
 	query.WriteString("INSERT INTO ")
@@ -93,48 +91,7 @@ func (d *PgDialect) tableInsertGen() {
 	query.WriteString(") ")
 	query.WriteString("VALUES")
 	query.WriteString("(")
-	for i, v := range values {
-		if i > 0 {
-			query.WriteString(", ")
-		}
-		switch v.Type {
-		case field.None:
-			break
-		case field.Null:
-			query.WriteString("NULL")
-			break
-		case field.Now:
-			query.WriteString("NOW()")
-			break
-		case field.UnixSecond:
-			query.WriteString(strconv.Itoa(time.Now().Second()))
-			break
-		case field.UnixMilli:
-			query.WriteString(strconv.FormatInt(time.Now().UnixMilli(), 10))
-			break
-		case field.UnixNano:
-			query.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
-			break
-		case field.Val:
-			query.WriteString("? ")
-			ctx.args = append(ctx.args, v.Value)
-			break
-		case field.Increment:
-			query.WriteString(columns[i] + "+ ? ")
-			ctx.args = append(ctx.args, v.Value)
-			break
-		case field.Expression:
-			query.WriteString(v.Value.(string))
-			break
-		case field.ID:
-			if len(ctx.primaryKeyNames) > 0 {
-				ctx.err = errors.New("软删除标记为主键id，需要单主键")
-				return
-			}
-			query.WriteString(ctx.primaryKeyNames[0])
-			break
-		}
-	}
+	ctx.genSetSqlBycolumnValues()
 	query.WriteString(") ")
 
 	if ctx.insertType == insert_type.Ignore || ctx.insertType == insert_type.Update {

@@ -5,7 +5,9 @@ import (
 	"github.com/lontten/lorm/field"
 	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // todo 下面未重构--------------
@@ -205,17 +207,58 @@ func getCompValueCV(v reflect.Value) ([]string, []field.Value, error) {
 
 // 根据whereTokens生成的where sql
 func (ctx *ormContext) genWhereSqlByToken() string {
-	if len(ctx.whereTokens) == 0 && ctx.extraWhereSql == "" {
-		return ""
-	}
 	var sb strings.Builder
 	sb.WriteString(" WHERE ")
-	for i, token := range ctx.whereTokens {
-		if i > 0 {
-			sb.WriteString(" AND ")
-		}
-		sb.WriteString(token)
-	}
 	sb.WriteString(ctx.extraWhereSql)
 	return sb.String()
+}
+
+// 根据whereTokens生成的where sql
+func (ctx *ormContext) genSetSqlBycolumnValues() {
+	columns := ctx.columns
+	values := ctx.columnValues
+	var query = ctx.query
+
+	for i, v := range values {
+		if i > 0 {
+			query.WriteString(" , ")
+		}
+		switch v.Type {
+		case field.None:
+			break
+		case field.Null:
+			query.WriteString("NULL")
+			break
+		case field.Now:
+			query.WriteString("NOW()")
+			break
+		case field.UnixSecond:
+			query.WriteString(strconv.Itoa(time.Now().Second()))
+			break
+		case field.UnixMilli:
+			query.WriteString(strconv.FormatInt(time.Now().UnixMilli(), 10))
+			break
+		case field.UnixNano:
+			query.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
+			break
+		case field.Val:
+			query.WriteString(" ? ")
+			ctx.args = append(ctx.args, v.Value)
+			break
+		case field.Increment:
+			query.WriteString(columns[i] + " + ? ")
+			ctx.args = append(ctx.args, v.Value)
+			break
+		case field.Expression:
+			query.WriteString(v.Value.(string))
+			break
+		case field.ID:
+			if len(ctx.primaryKeyNames) > 0 {
+				ctx.err = errors.New("软删除标记为主键id，需要单主键")
+				return
+			}
+			query.WriteString(ctx.primaryKeyNames[0])
+			break
+		}
+	}
 }

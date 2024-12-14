@@ -111,8 +111,8 @@ type ormContext struct {
 
 	started bool
 
-	whereTokens   []string // where条件 使用时，用 and 相连
-	extraWhereSql string   // 附加where 条件 使用时，用 and 相连
+	wb            *WhereBuilder
+	extraWhereSql string // 附加where 条件 使用时，用 and 相连
 }
 
 func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
@@ -313,17 +313,27 @@ func (ctx *ormContext) initColumnsValueSoftDel() {
 	switch ctx.sqlType {
 	case sqltype.Insert:
 		value, has := softdelete.SoftDelTypeNoFVMap[ctx.softDeleteType]
-		if has && value.Type != field.None {
+		if has {
 			ctx.columns = append(ctx.columns, value.Name)
 			ctx.columnValues = append(ctx.columnValues, value.ToValue())
 		}
 		break
 	case sqltype.Delete:
-		value, has := softdelete.SoftDelTypeYesFVMap[ctx.softDeleteType]
-		if has && value.Type != field.None {
-			ctx.columns = append(ctx.columns, value.Name)
-			ctx.columnValues = append(ctx.columnValues, value.ToValue())
+		if ctx.softDeleteType != softdelete.None {
+			// set
+			value, has := softdelete.SoftDelTypeYesFVMap[ctx.softDeleteType]
+			if has {
+				ctx.columns = append(ctx.columns, value.Name)
+				ctx.columnValues = append(ctx.columnValues, value.ToValue())
+			}
+
+			// where
+			value, has = softdelete.SoftDelTypeNoFVMap[ctx.softDeleteType]
+			if has {
+				ctx.wb.Eq(value.Name, value.ToValue())
+			}
 		}
+
 		break
 	default:
 		break
@@ -458,10 +468,8 @@ func (ctx *ormContext) tableUpdateArgs2SqlStr(args []string) string {
 	return sb.String()
 }
 
-func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
-	if wb == nil {
-		return
-	}
+func (ctx *ormContext) initPrimaryKeyByWhere() {
+	wb := ctx.wb
 	ctx.primaryKeyValues = ctx.initPrimaryKeyValues(wb.primaryKeyValue)
 	if ctx.hasErr() {
 		return
