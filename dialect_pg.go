@@ -199,7 +199,11 @@ func (d *PgDialect) tableInsertGen() {
 	query.WriteString(";")
 }
 
-func (p *PgDialect) execBatch(query string, args [][]any) (string, [][]any) {
+// del 生成
+func (d *PgDialect) tableDelGen() {
+
+}
+func (d *PgDialect) execBatch(query string, args [][]any) (string, [][]any) {
 	query = toPgSql(query)
 	//var num int64 = 0
 	//stmt, err := m.ldb.Prepare(query)
@@ -226,8 +230,8 @@ func (p *PgDialect) execBatch(query string, args [][]any) (string, [][]any) {
 // ===----------------------------------------------------------------------===//
 // 工具
 // ===----------------------------------------------------------------------===//
-func (p *PgDialect) appendBaseToken(token baseToken) {
-	p.ctx.baseTokens = append(p.ctx.baseTokens, token)
+func (d *PgDialect) appendBaseToken(token baseToken) {
+	d.ctx.baseTokens = append(d.ctx.baseTokens, token)
 }
 func toPgSql(sql string) string {
 	var i = 1
@@ -245,12 +249,12 @@ func toPgSql(sql string) string {
 // ===----------------------------------------------------------------------===//
 // 中间服务
 // ===----------------------------------------------------------------------===//
-func (p *PgDialect) toSqlInsert() (string, []any) {
-	tableName := p.ctx.tableName
+func (d *PgDialect) toSqlInsert() (string, []any) {
+	tableName := d.ctx.tableName
 	return tableName, nil
 }
 
-func (p *PgDialect) parse(c Clause) (string, error) {
+func (d *PgDialect) parse(c Clause) (string, error) {
 	sb := strings.Builder{}
 	switch c.Type {
 	case Eq:

@@ -463,6 +463,9 @@ func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
 		return
 	}
 	ctx.primaryKeyValues = ctx.initPrimaryKeyValues(wb.primaryKeyValue)
+	if ctx.hasErr() {
+		return
+	}
 	builderAnd := Wb()
 	for _, value := range ctx.primaryKeyValues {
 		builder := Wb()
@@ -473,6 +476,9 @@ func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
 	}
 	wb.And(builderAnd)
 	ctx.filterPrimaryKeyValues = ctx.initPrimaryKeyValues(wb.filterPrimaryKeyValue)
+	if ctx.hasErr() {
+		return
+	}
 	builderAnd = Wb()
 	for _, value := range ctx.filterPrimaryKeyValues {
 		builder := Wb()
@@ -485,6 +491,9 @@ func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
 }
 func (ctx *ormContext) initPrimaryKeyValues(v []any) (idValuess [][]field.Value) {
 	if ctx.hasErr() {
+		return
+	}
+	if len(v) == 0 {
 		return
 	}
 

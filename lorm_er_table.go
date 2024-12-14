@@ -2,7 +2,6 @@ package lorm
 
 import (
 	"fmt"
-	"github.com/lontten/lorm/softdelete"
 	"github.com/lontten/lorm/sqltype"
 	"reflect"
 )
@@ -144,34 +143,14 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	if err != nil {
 		return 0, err
 	}
-	fmt.Println(whereStr)
+	fmt.Println("whereStr", whereStr)
 	ctx.whereTokens = append(ctx.whereTokens, whereStr)
 	ctx.args = append(ctx.args, ctx.args...)
 
-	dialect.tableInsertGen()
+	dialect.tableDelGen()
 	if ctx.hasErr() {
 		return 0, ctx.err
 	}
-
-	//  没有软删除 或者 跳过软删除 ，执行物理删除
-	if ctx.softDeleteType == softdelete.None || ctx.skipSoftDelete {
-		//var bb bytes.Buffer
-		//tableName := ldb.getCtx().tableName
-		//w := ldb.genWhereSqlByToken()
-		//
-		//if ldb.getCtx().ormConf.LogicDeleteSetSql == "" {
-		//	bb.WriteString("DELETE FROM ")
-		//	bb.WriteString(tableName)
-		//	bb.Write(w)
-		//} else {
-		//	bb.WriteString("UPDATE ")
-		//	bb.WriteString(tableName)
-		//	bb.WriteString(" SET ")
-		//	bb.WriteString(ldb.getCtx().ormConf.LogicDeleteSetSql)
-		//	bb.Write(w)
-		//}
-	}
-
 	sql := dialect.getSql()
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)

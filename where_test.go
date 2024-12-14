@@ -20,12 +20,15 @@ func TestWhereBuilder_toSql(t *testing.T) {
 	}
 
 	w1 := Wb().Eq("a", 1)
-	w2 := Wb().Eq("b", 2)
+	w2 := Wb().Eq("x", 3)
 
-	w11 := Wb().Or(w1).Or(w2).And(w1)
-	w22 := Wb().Or(w1).Or(w2)
+	w11 := Wb().Or(w1).And(w1).Or(w2).And(w1)
+	w22 := Wb().Or(w1)
+	w22 = w22.Or(w2)
 
-	builder := Wb().And(w11).And(w22)
+	builder := Wb().
+		And(w11).
+		And(w22)
 	sql, err := builder.toSql(db.getDialect().parse)
 	fmt.Println(err)
 	fmt.Println(sql)

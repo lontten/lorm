@@ -247,9 +247,6 @@ func (d *MysqlDialect) tableDelGen() {
 		return
 	}
 
-	//extra := ctx.extra
-	//set := extra.set
-
 	columns := ctx.columns
 	values := ctx.columnValues
 	var query = d.ctx.query
@@ -325,7 +322,6 @@ func (d *MysqlDialect) tableDelGen() {
 			break
 		}
 	}
-	query.WriteString(" ) ")
 
 	query.WriteString(";")
 }

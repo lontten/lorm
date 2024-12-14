@@ -30,7 +30,7 @@ type User struct {
 	Name *string
 	Age  *int
 
-	softdelete.DeleteGormMilli
+	//softdelete.DeleteGormMilli
 }
 
 func main() {
@@ -57,8 +57,13 @@ func main() {
 	m["b"] = "bb"
 	m["c"] = nil
 
-	lorm.Delete[User](ldb.DB, lorm.Wb().PrimaryKey(User{
-		Id:   types.NewInt(1),
-		Name: types.NewString("a"),
-	}, 2, 3).FilterPrimaryKey(2, 2, 2))
+	num, err := lorm.Delete[User](ldb.DB, lorm.Wb().PrimaryKey(User{
+		Id:   types.NewInt(2),
+		Name: types.NewString("b"),
+	}, User{
+		Id:   types.NewInt(3),
+		Name: types.NewString("c"),
+	}), lorm.Extra().ShowSql())
+	fmt.Println(num)
+	fmt.Println(err)
 }

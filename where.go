@@ -15,6 +15,9 @@ const (
 	native
 )
 
+// and(wheres)
+// or(wheres)
+// and(clause)
 type whereToken struct {
 	Type   whereTokenType
 	wheres []whereToken
@@ -42,20 +45,19 @@ type WhereBuilder struct {
 }
 
 func Wb() *WhereBuilder {
-
-	return &WhereBuilder{
-		wheres: []whereToken{{
-			Type:   or,
-			wheres: nil,
-		}},
-		args: make([]any, 0),
-	}
+	return &WhereBuilder{}
 }
 
 type parseFun func(c Clause) (string, error)
 
 func (w *WhereBuilder) toWhereToken() ([]whereToken, []any) {
-	return w.wheres, w.args
+	if len(w.andWheres) == 0 {
+		return w.wheres, w.args
+	}
+	return append(w.wheres, whereToken{
+		Type:   or,
+		wheres: w.andWheres,
+	}), append(w.args, w.andArgs...)
 }
 
 /*
@@ -66,7 +68,8 @@ func (w *WhereBuilder) toWhereToken() ([]whereToken, []any) {
 不然，whereBuilder 里面要有 dialecter 的两种实现，代码结构复杂
 */
 func (w *WhereBuilder) toSql(f parseFun) (string, error) {
-	return parse(w.wheres, f)
+	tokens, _ := w.toWhereToken()
+	return parse(tokens, f)
 }
 
 func parse(wts []whereToken, f parseFun) (string, error) {
@@ -87,6 +90,9 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 			}
 			sb.WriteString(result)
 		case and:
+			if len(wt.wheres) == 0 {
+				continue
+			}
 			result, err := parse(wt.wheres, f)
 			if err != nil {
 				return "", errors.Wrap(err, "parse native where")
@@ -107,6 +113,9 @@ func parse(wts []whereToken, f parseFun) (string, error) {
 				sb.WriteString(")")
 			}
 		case or:
+			if len(wt.wheres) == 0 {
+				continue
+			}
 			result, err := parse(wt.wheres, f)
 			if err != nil {
 				return "", errors.Wrap(err, "parse native where")
@@ -145,11 +154,11 @@ func (w *WhereBuilder) And(wb *WhereBuilder, condition ...bool) *WhereBuilder {
 	}
 	tokens, args := wb.toWhereToken()
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type:   and,
 		wheres: tokens,
 	})
-	w.args = append(w.args, args...)
+	w.andArgs = append(w.andArgs, args...)
 	return w
 }
 
@@ -263,14 +272,14 @@ func (w *WhereBuilder) Eq(query string, arg any, condition ...bool) *WhereBuilde
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Eq,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -562,14 +571,14 @@ func (w *WhereBuilder) Neq(query string, arg any, condition ...bool) *WhereBuild
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Neq,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -583,14 +592,14 @@ func (w *WhereBuilder) Like(query string, arg *string, condition ...bool) *Where
 		return w
 	}
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Like,
 			query: query,
 		},
 	})
-	w.args = append(w.args, *arg)
+	w.andArgs = append(w.andArgs, *arg)
 	return w
 }
 
@@ -604,13 +613,13 @@ func (w *WhereBuilder) NoLike(query string, arg *string, condition ...bool) *Whe
 		return w
 	}
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  NotLike,
 			query: query,
 		},
 	})
-	w.args = append(w.args, *arg)
+	w.andArgs = append(w.andArgs, *arg)
 	return w
 }

@@ -150,5 +150,6 @@ type Dialecter interface {
 	parse(c Clause) (string, error)
 
 	tableInsertGen()
+	tableDelGen()
 	getSql() string
 }
