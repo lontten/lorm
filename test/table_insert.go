@@ -16,6 +16,7 @@ func TableInsert() {
 		Age:  types.NewInt(66),
 	}
 	num, err := lorm.Insert(ldb.DB, &user, lorm.Extra().
+		SetNull("abc").
 		TableName("t_user").
 		ReturnType(return_type.PrimaryKey).
 		WhenDuplicateKey("name").DoUpdate().

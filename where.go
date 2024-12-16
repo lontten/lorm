@@ -197,7 +197,7 @@ func (w *WhereBuilder) fieldValue(name string, v field.Value, condition ...bool)
 	case field.None:
 		break
 	case field.Null:
-		w.wheres = append(w.wheres, whereToken{
+		w.andWheres = append(w.andWheres, whereToken{
 			Type: native,
 			clause: Clause{
 				Type:  IsNull,
@@ -206,65 +206,65 @@ func (w *WhereBuilder) fieldValue(name string, v field.Value, condition ...bool)
 		})
 		break
 	case field.Now:
-		w.wheres = append(w.wheres, whereToken{
+		w.andWheres = append(w.andWheres, whereToken{
 			Type: native,
 			clause: Clause{
 				Type:  Eq,
 				query: name,
 			},
 		})
-		w.args = append(w.args, time.Now())
+		w.andArgs = append(w.andArgs, time.Now())
 		break
 	case field.UnixSecond:
-		w.wheres = append(w.wheres, whereToken{
+		w.andWheres = append(w.andWheres, whereToken{
 			Type: native,
 			clause: Clause{
 				Type:  Eq,
 				query: name,
 			},
 		})
-		w.args = append(w.args, strconv.Itoa(time.Now().Second()))
+		w.andArgs = append(w.andArgs, strconv.Itoa(time.Now().Second()))
 		break
 
 	case field.UnixMilli:
-		w.wheres = append(w.wheres, whereToken{
+		w.andWheres = append(w.andWheres, whereToken{
 			Type: native,
 			clause: Clause{
 				Type:  Eq,
 				query: name,
 			},
 		})
-		w.args = append(w.args, strconv.FormatInt(time.Now().UnixMilli(), 10))
+		w.andArgs = append(w.andArgs, strconv.FormatInt(time.Now().UnixMilli(), 10))
 		break
 	case field.UnixNano:
-		w.wheres = append(w.wheres, whereToken{
+		w.andWheres = append(w.andWheres, whereToken{
 			Type: native,
 			clause: Clause{
 				Type:  Eq,
 				query: name,
 			},
 		})
-		w.args = append(w.args, strconv.FormatInt(time.Now().UnixNano(), 10))
+		w.andArgs = append(w.andArgs, strconv.FormatInt(time.Now().UnixNano(), 10))
 		break
 	case field.Val:
-		w.wheres = append(w.wheres, whereToken{
+		w.andWheres = append(w.andWheres, whereToken{
 			Type: native,
 			clause: Clause{
 				Type:  Eq,
 				query: name,
 			},
 		})
-		w.args = append(w.args, v.Value)
+		w.andArgs = append(w.andArgs, v.Value)
 		break
 	case field.Expression:
-		w.wheres = append(w.wheres, whereToken{
+		w.andWheres = append(w.andWheres, whereToken{
 			Type: native,
 			clause: Clause{
 				Type:  Eq,
 				query: name,
 			},
 		})
-		w.args = append(w.args, v.Value)
+		w.andArgs = append(w.andArgs, v.Value)
 		break
 	default:
 		break

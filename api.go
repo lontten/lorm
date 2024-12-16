@@ -135,8 +135,6 @@ type Dialecter interface {
 	hasErr() bool
 	getErr() error
 
-	appendBaseToken(token baseToken)
-
 	//对执行语句进行方言处理
 	//toSqlInsert()
 

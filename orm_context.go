@@ -50,8 +50,6 @@ type ormContext struct {
 
 	tableSqlType tableSqlType //单表，sql类型crud
 
-	baseTokens []baseToken
-
 	isLgDel bool //是否启用了逻辑删除
 	isTen   bool //是否启用了多租户
 
@@ -254,8 +252,10 @@ func (ctx *ormContext) initColumnsValue() {
 		ctx.lastInsertIdFieldBaseType = baseT
 	}
 
+	// extra 中的 额外 set
 	ctx.initColumnsValueSet()
 	ctx.initColumnsValueExtra()
+	// 软删除
 	ctx.initColumnsValueSoftDel()
 	return
 }

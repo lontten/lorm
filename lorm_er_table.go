@@ -16,10 +16,6 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	ctx.initExtra(extra...)
 	ctx.sqlType = sqltype.Insert
 	ctx.sqlIsQuery = true
-	dialect.appendBaseToken(baseToken{
-		typ:  tInsert,
-		dest: v,
-	})
 
 	ctx.initModelDest(v)   //初始化参数
 	ctx.initConf()         //初始化表名，主键，自增id
@@ -94,7 +90,6 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	if err != nil {
 		return 0, err
 	}
-	fmt.Println(whereStr, args)
 	ctx.extraWhereSql = whereStr
 	ctx.args = append(ctx.args, args...)
 

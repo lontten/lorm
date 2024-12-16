@@ -82,9 +82,6 @@ func (d *MysqlDialect) execBatch(query string, args [][]any) (string, [][]any) {
 // ===----------------------------------------------------------------------===//
 // 工具
 // ===----------------------------------------------------------------------===//
-func (d *MysqlDialect) appendBaseToken(token baseToken) {
-	d.ctx.baseTokens = append(d.ctx.baseTokens, token)
-}
 
 // ===----------------------------------------------------------------------===//
 // 中间服务

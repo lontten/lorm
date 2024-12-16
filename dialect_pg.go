@@ -187,9 +187,7 @@ func (d *PgDialect) execBatch(query string, args [][]any) (string, [][]any) {
 // ===----------------------------------------------------------------------===//
 // 工具
 // ===----------------------------------------------------------------------===//
-func (d *PgDialect) appendBaseToken(token baseToken) {
-	d.ctx.baseTokens = append(d.ctx.baseTokens, token)
-}
+
 func toPgSql(sql string) string {
 	var i = 1
 	for {
