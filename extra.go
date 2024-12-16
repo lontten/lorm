@@ -26,7 +26,7 @@ type ExtraContext struct {
 	err error
 }
 
-func Extra() *ExtraContext {
+func E() *ExtraContext {
 	return &ExtraContext{
 		set: Set(),
 	}

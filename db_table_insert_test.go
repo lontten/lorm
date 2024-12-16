@@ -27,7 +27,7 @@ func TestCreate(t *testing.T) {
 		Id:   types.NewInt(2),
 		Name: types.NewString("up"),
 	}
-	num, err := Insert(engine, &user, Extra().ShowSql())
+	num, err := Insert(engine, &user, E().ShowSql())
 	as.Nil(err)
 	as.Equal(int64(1), num)
 	as.Equal(88, *user.Id)

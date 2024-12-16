@@ -15,7 +15,7 @@ func TableInsert() {
 		Name: types.NewString(time.Now().String()),
 		Age:  types.NewInt(66),
 	}
-	num, err := lorm.Insert(ldb.DB, &user, lorm.Extra().
+	num, err := lorm.Insert(ldb.DB, &user, lorm.E().
 		SetNull("abc").
 		TableName("t_user").
 		ReturnType(return_type.PrimaryKey).

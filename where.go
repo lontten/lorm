@@ -46,7 +46,7 @@ type WhereBuilder struct {
 	andArgs   []any
 }
 
-func Wb() *WhereBuilder {
+func W() *WhereBuilder {
 	return &WhereBuilder{}
 }
 

@@ -24,7 +24,7 @@ func (d *PgDialect) initContext() Dialecter {
 		ctx: &ormContext{
 			ormConf:    d.ctx.ormConf,
 			query:      &strings.Builder{},
-			wb:         Wb(),
+			wb:         W(),
 			insertType: insert_type.Err,
 		},
 	}

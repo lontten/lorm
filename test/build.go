@@ -29,13 +29,13 @@ func Build1() {
 }
 
 func Build2() {
-	neq := lorm.Wb().Neq("id", 7)
+	neq := lorm.W().Neq("id", 7)
 	var u User
 	num, err := lorm.QueryBuild(ldb.DB).
 		Select("id").Select("name").
 		From("t_user").
 		Where("id = 2").
-		WhereBuilder(lorm.Wb().
+		WhereBuilder(lorm.W().
 			Eq("id", 3).
 			Eq("id", 5).
 			Or(neq)).

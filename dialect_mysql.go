@@ -23,7 +23,7 @@ func (d *MysqlDialect) initContext() Dialecter {
 	return &MysqlDialect{ctx: &ormContext{
 		ormConf:                 d.ctx.ormConf,
 		query:                   &strings.Builder{},
-		wb:                      Wb(),
+		wb:                      W(),
 		insertType:              insert_type.Err,
 		dialectNeedLastInsertId: d.ctx.dialectNeedLastInsertId,
 	}}

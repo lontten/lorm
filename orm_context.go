@@ -172,7 +172,7 @@ func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 	if len(extra) > 0 && extra[0] != nil {
 		e = extra[0]
 	} else {
-		e = Extra()
+		e = E()
 	}
 	// err 上抛到 ormContext
 	if e.GetErr() != nil {
@@ -473,9 +473,9 @@ func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
 	if ctx.hasErr() {
 		return
 	}
-	builderAnd := Wb()
+	builderAnd := W()
 	for _, value := range ctx.primaryKeyValues {
-		builder := Wb()
+		builder := W()
 		for i, name := range ctx.primaryKeyNames {
 			builder.Eq(name, value[i].Value)
 		}
@@ -486,9 +486,9 @@ func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
 	if ctx.hasErr() {
 		return
 	}
-	builderAnd = Wb()
+	builderAnd = W()
 	for _, value := range ctx.filterPrimaryKeyValues {
-		builder := Wb()
+		builder := W()
 		for i, name := range ctx.primaryKeyNames {
 			builder.Neq(name, value[i].Value)
 		}
