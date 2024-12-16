@@ -146,6 +146,11 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 	if ctx.lastSql == "" {
 		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
 	}
+
+	ctx.initColumnsAll()
+	if len(ctx.modelSelectFieldNames) == 0 {
+		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
+	}
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
@@ -195,6 +200,10 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
+	ctx.initColumnsAll()
+	if len(ctx.modelSelectFieldNames) == 0 {
+		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
+	}
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
@@ -244,6 +253,10 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
+	ctx.initColumnsAll()
+	if len(ctx.modelSelectFieldNames) == 0 {
+		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
+	}
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
@@ -282,7 +295,7 @@ func Has[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t bool, er
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
 	ctx.initExtra(extra...)
-	ctx.columns = []string{"1"}
+	ctx.modelSelectFieldNames = []string{"1"}
 
 	dest := new(T)
 	ctx.initScanDestOneT(dest)
@@ -325,7 +338,7 @@ func Count[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t int64,
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
 	ctx.initExtra(extra...)
-	ctx.columns = []string{"count(*)"}
+	ctx.modelSelectFieldNames = []string{"count(*)"}
 
 	dest := new(T)
 	ctx.initScanDestOneT(dest)

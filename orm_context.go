@@ -189,6 +189,8 @@ func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 	ctx.skipSoftDelete = e.skipSoftDelete
 	ctx.tableName = e.tableName
 
+	ctx.modelSelectFieldNames = e.selectColumns
+
 	if len(e.orderByTokens) > 0 {
 		ctx.lastSql += " ORDER BY " + strings.Join(e.orderByTokens, ",")
 	}
@@ -268,6 +270,19 @@ func (ctx *ormContext) initColumnsValue() {
 	ctx.initColumnsValueExtra()
 	// 软删除
 	ctx.initColumnsValueSoftDel()
+	return
+}
+func (ctx *ormContext) initColumnsAll() {
+	if ctx.hasErr() {
+		return
+	}
+	columns, err := ctx.ormConf.getStructAllField(ctx.destBaseType)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+	ctx.modelAllFieldNames = columns
+	ctx.modelSelectFieldNames = columns
 	return
 }
 func (ctx *ormContext) initColumnsValueSet() {

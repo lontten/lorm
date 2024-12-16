@@ -237,8 +237,8 @@ func (d *MysqlDialect) tableSelectGen() {
 
 	tableName := ctx.tableName
 	query.WriteString("SELECT ")
-	query.WriteString(strings.Join(ctx.columns, ","))
-	query.WriteString("FROM ")
+	query.WriteString(strings.Join(ctx.modelSelectFieldNames, ","))
+	query.WriteString(" FROM ")
 	query.WriteString(tableName)
 
 	query.WriteString(" WHERE ")

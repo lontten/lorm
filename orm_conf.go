@@ -113,10 +113,21 @@ func (c OrmConf) autoIncrements(v reflect.Value) []string {
 }
 
 // 可以缓存
-// 获取model字段对应的 db name
+// 获取model字段对应的 db name，没有软删除
 func (c OrmConf) getStructField(t reflect.Type) (columns []string, err error) {
 	fiMap := getStructColName2fieldNameMap(t)
 	arr := make([]string, len(fiMap))
+	for f := range fiMap {
+		arr = append(arr, f)
+	}
+	return arr, nil
+}
+
+// 可以缓存
+// 获取model字段对应的 db name，包含软删除
+func (c OrmConf) getStructAllField(t reflect.Type) (columns []string, err error) {
+	fiMap := getStructColName2fieldNameAllMap(t)
+	arr := make([]string, 0)
 	for f := range fiMap {
 		arr = append(arr, f)
 	}
