@@ -4,6 +4,7 @@ import (
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
 	"github.com/lontten/lorm/return-type"
+	"github.com/lontten/lorm/types"
 )
 
 // ExtraContext 扩展参数
@@ -14,8 +15,8 @@ type ExtraContext struct {
 	skipSoftDelete bool
 	tableName      string
 	selectColumns  []string // select 的 字段名，空为返回所有字段
-	limit          int64
-	offset         int64
+	limit          *int64
+	offset         *int64
 	orderByTokens  []string // 排序
 
 	columns      []string
@@ -89,7 +90,7 @@ func (e *ExtraContext) Limit(num int64, condition ...bool) *ExtraContext {
 			return e
 		}
 	}
-	e.limit = num
+	e.limit = types.NewInt64(num)
 	return e
 }
 
@@ -99,7 +100,7 @@ func (e *ExtraContext) Offset(num int64, condition ...bool) *ExtraContext {
 			return e
 		}
 	}
-	e.offset = num
+	e.offset = types.NewInt64(num)
 	return e
 }
 

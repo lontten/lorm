@@ -3,7 +3,9 @@ package lorm
 import (
 	"fmt"
 	"github.com/lontten/lorm/sqltype"
+	"github.com/lontten/lorm/types"
 	"reflect"
+	"strings"
 )
 
 // ------------------------------------Insert--------------------------------------------
@@ -126,92 +128,205 @@ func (db *lnDB) Update(v any) OrmTableUpdate {
 //------------------------------------Select--------------------------------------------
 
 // First 根据条件获取第一个
-func First[T any](db Engine, by *ByContext, extra ...*ExtraContext) (t *T, err error) {
-	return nil, err
+func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, err error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...)
+	ctx.limit = types.NewInt64(1)
+
+	dest := new(T)
+	ctx.initScanDestOneT(dest)
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+
+	ctx.initConf() //初始化表名，主键，自增id
+	if ctx.lastSql == "" {
+		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
+	}
+	ctx.initColumnsValueSoftDel()
+
+	ctx.initPrimaryKeyByWhere(wb)
+	ctx.wb.And(wb)
+
+	whereStr, args, err := ctx.wb.toSql(dialect.parse)
+	if err != nil {
+		return nil, err
+	}
+	ctx.whereSql = whereStr
+	ctx.args = append(ctx.args, args...)
+
+	dialect.tableSelectGen()
+	if ctx.hasErr() {
+		return nil, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return nil, err
+	}
+	_, err = ctx.ScanLnT(rows)
+	if err != nil {
+		return nil, err
+	}
+	return dest, nil
 }
 
-//------------------------------------has--------------------------------------------
+func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T, err error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...)
+	ctx.limit = types.NewInt64(1)
 
-func (db *lnDB) Has(v any) OrmTableHas {
-	core := db.core
-	core.getCtx().tableSqlType = dHas
-	core.appendBaseToken(baseToken{
-		typ:  tTableNameDestValue,
-		t:    reflect.TypeOf(v),
-		dest: v,
-		v:    reflect.ValueOf(v),
-	})
+	var dest = &[]T{}
+	v := reflect.ValueOf(dest).Elem()
+	t := reflect.TypeFor[T]()
 
-	db.setNameDest(v)
-	return OrmTableHas{base: core}
+	ctx.initScanDestListT(dest, v, t, false)
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+
+	ctx.initConf() //初始化表名，主键，自增id
+	if ctx.lastSql == "" {
+		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
+	}
+	ctx.initColumnsValueSoftDel()
+
+	ctx.initPrimaryKeyByWhere(wb)
+	ctx.wb.And(wb)
+
+	whereStr, args, err := ctx.wb.toSql(dialect.parse)
+	if err != nil {
+		return nil, err
+	}
+	ctx.whereSql = whereStr
+	ctx.args = append(ctx.args, args...)
+
+	dialect.tableSelectGen()
+	if ctx.hasErr() {
+		return nil, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return nil, err
+	}
+	_, err = ctx.ScanLnT(rows)
+	if err != nil {
+		return nil, err
+	}
+	return *dest, nil
 }
 
-// ByPrimaryKey
-// v0.8
-func (orm OrmTableHas) ByPrimaryKey(v ...any) OrmTableHas {
-	orm.base.appendBaseToken(baseToken{
-		typ: tPrimaryKey,
-		pk:  v,
-	})
+func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*T, err error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...)
+	ctx.limit = types.NewInt64(1)
 
-	//orm.base.initPrimaryKeyName()
-	//orm.base.ctx.initPrimaryKeyValues(v)
-	//orm.base.initByPrimaryKey()
-	//orm.base.initExtra()
-	return orm
+	var dest = &[]*T{}
+	v := reflect.ValueOf(dest).Elem()
+	t := reflect.TypeFor[T]()
+
+	ctx.initScanDestListT(dest, v, t, false)
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+
+	ctx.initConf() //初始化表名，主键，自增id
+	if ctx.lastSql == "" {
+		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
+	}
+	ctx.initColumnsValueSoftDel()
+
+	ctx.initPrimaryKeyByWhere(wb)
+	ctx.wb.And(wb)
+
+	whereStr, args, err := ctx.wb.toSql(dialect.parse)
+	if err != nil {
+		return nil, err
+	}
+	ctx.whereSql = whereStr
+	ctx.args = append(ctx.args, args...)
+
+	dialect.tableSelectGen()
+	if ctx.hasErr() {
+		return nil, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return nil, err
+	}
+	_, err = ctx.ScanLnT(rows)
+	if err != nil {
+		return nil, err
+	}
+	return *dest, nil
 }
 
-// ptr-comp
-func (orm OrmTableHas) ByModel(v any) OrmTableHas {
-	orm.base.appendBaseToken(baseToken{
-		typ: tWhereModel,
-		v:   reflect.ValueOf(v),
-	})
+// Has
+func Has[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t bool, err error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...)
+	ctx.columns = []string{"1"}
 
-	//orm.base.initByModel(v)
-	//orm.base.initExtra()
-	return orm
-}
+	dest := new(T)
+	ctx.initScanDestOneT(dest)
+	if ctx.err != nil {
+		return false, ctx.err
+	}
 
-func (orm OrmTableHas) ByWhere(wb *WhereBuilder) OrmTableHas {
-	orm.base.appendBaseToken(baseToken{
-		typ: tWhereBuilder,
-		wb:  wb,
-	})
+	ctx.initConf() //初始化表名，主键，自增id
+	if ctx.lastSql == "" {
+		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
+	}
+	ctx.initColumnsValueSoftDel()
 
-	//orm.base.initByWhere(wb)
-	//orm.base.initExtra()
-	return orm
-}
+	ctx.initPrimaryKeyByWhere(wb)
+	ctx.wb.And(wb)
 
-//-----------------------------------------------------------
+	whereStr, args, err := ctx.wb.toSql(dialect.parse)
+	if err != nil {
+		return false, err
+	}
+	ctx.whereSql = whereStr
+	ctx.args = append(ctx.args, args...)
 
-type OrmTableCreate struct {
-	base corer
-}
+	dialect.tableSelectGen()
+	if ctx.hasErr() {
+		return false, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
 
-type OrmTableSelect struct {
-	base corer
-
-	query string
-	args  []any
-}
-
-type OrmTableHas struct {
-	base corer
-
-	query string
-	args  []any
-}
-
-type OrmTableSelectWhere struct {
-	base corer
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return false, err
+	}
+	return rows.Next(), nil
 }
 
 type OrmTableUpdate struct {
-	base corer
-}
-
-type OrmTableDelete struct {
 	base corer
 }

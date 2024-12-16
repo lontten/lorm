@@ -160,6 +160,12 @@ func (d *PgDialect) tableInsertGen() {
 func (d *PgDialect) tableDelGen() {
 
 }
+
+// select 生成
+func (d *PgDialect) tableSelectGen() {
+
+}
+
 func (d *PgDialect) execBatch(query string, args [][]any) (string, [][]any) {
 	query = toPgSql(query)
 	//var num int64 = 0

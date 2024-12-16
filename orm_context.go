@@ -112,6 +112,8 @@ type ormContext struct {
 	wb       *WhereBuilder
 	whereSql string // WhereBuilder 生成的 where sql
 	lastSql  string // 最后拼接的sql
+	limit    *int64
+	offset   *int64
 }
 
 func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
@@ -186,6 +188,14 @@ func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 	ctx.showSql = e.showSql
 	ctx.skipSoftDelete = e.skipSoftDelete
 	ctx.tableName = e.tableName
+
+	if len(e.orderByTokens) > 0 {
+		ctx.lastSql += " ORDER BY " + strings.Join(e.orderByTokens, ",")
+	}
+	if ctx.limit == nil {
+		ctx.limit = e.limit
+	}
+	ctx.offset = e.offset
 }
 
 // 初始化 表名,主键，自增id

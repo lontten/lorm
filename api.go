@@ -52,22 +52,6 @@ type Engine interface {
 	Rollback() error
 }
 
-type DBer interface {
-	//用db开启tx事务
-	BeginTx(ctx context.Context, opts *sql.TxOptions) TXer
-
-	//lorm扩展方法
-	Delete(v any) OrmTableDelete
-}
-
-type TXer interface {
-	Commit() error
-	Rollback() error
-
-	//lorm扩展方法
-	Delete(v any) OrmTableDelete
-}
-
 /*
 *
 直属lnDb
@@ -149,5 +133,6 @@ type Dialecter interface {
 
 	tableInsertGen()
 	tableDelGen()
+	tableSelectGen()
 	getSql() string
 }

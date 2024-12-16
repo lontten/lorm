@@ -5,6 +5,7 @@ import (
 	"github.com/lontten/lorm/insert-type"
 	"github.com/lontten/lorm/softdelete"
 	"github.com/lontten/lorm/utils"
+	"strconv"
 	"strings"
 )
 
@@ -220,6 +221,36 @@ func (d *MysqlDialect) tableDelGen() {
 
 		query.WriteString(" WHERE ")
 		query.WriteString(ctx.whereSql)
+	}
+
+	query.WriteString(";")
+}
+
+// select 生成
+func (d *MysqlDialect) tableSelectGen() {
+	ctx := d.ctx
+	if ctx.hasErr() {
+		return
+	}
+
+	var query = d.ctx.query
+
+	tableName := ctx.tableName
+	query.WriteString("SELECT ")
+	query.WriteString(strings.Join(ctx.columns, ","))
+	query.WriteString("FROM ")
+	query.WriteString(tableName)
+
+	query.WriteString(" WHERE ")
+	query.WriteString(ctx.whereSql)
+	query.WriteString(ctx.lastSql)
+	if ctx.limit != nil {
+		query.WriteString(" LIMIT ")
+		query.WriteString(strconv.FormatInt(*ctx.limit, 10))
+	}
+	if ctx.offset != nil {
+		query.WriteString(" OFFSET ")
+		query.WriteString(strconv.FormatInt(*ctx.offset, 10))
 	}
 
 	query.WriteString(";")
