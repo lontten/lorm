@@ -109,8 +109,9 @@ type ormContext struct {
 
 	started bool
 
-	wb            *WhereBuilder
-	extraWhereSql string // 附加where 条件 使用时，用 and 相连
+	wb       *WhereBuilder
+	whereSql string // WhereBuilder 生成的 where sql
+	lastSql  string // 最后拼接的sql
 }
 
 func (ctx *ormContext) setLastInsertId(lastInsertId int64) {

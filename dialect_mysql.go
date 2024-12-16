@@ -210,7 +210,7 @@ func (d *MysqlDialect) tableDelGen() {
 		query.WriteString(tableName)
 
 		query.WriteString(" WHERE ")
-		query.WriteString(ctx.extraWhereSql)
+		query.WriteString(ctx.whereSql)
 	} else {
 		query.WriteString("UPDATE ")
 		query.WriteString(tableName)
@@ -219,7 +219,7 @@ func (d *MysqlDialect) tableDelGen() {
 		ctx.genSetSqlBycolumnValues()
 
 		query.WriteString(" WHERE ")
-		query.WriteString(ctx.extraWhereSql)
+		query.WriteString(ctx.whereSql)
 	}
 
 	query.WriteString(";")

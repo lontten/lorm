@@ -90,7 +90,7 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	if err != nil {
 		return 0, err
 	}
-	ctx.extraWhereSql = whereStr
+	ctx.whereSql = whereStr
 	ctx.args = append(ctx.args, args...)
 
 	dialect.tableDelGen()
@@ -106,14 +106,6 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 		return 0, err
 	}
 	return exec.RowsAffected()
-}
-
-func (orm OrmTableDelete) ByPrimaryKey(v ...any) OrmTableDelete {
-	orm.base.appendBaseToken(baseToken{
-		typ: tPrimaryKey,
-		pk:  v,
-	})
-	return orm
 }
 
 //------------------------------------Update--------------------------------------------
@@ -136,109 +128,6 @@ func (db *lnDB) Update(v any) OrmTableUpdate {
 // First 根据条件获取第一个
 func First[T any](db Engine, by *ByContext, extra ...*ExtraContext) (t *T, err error) {
 	return nil, err
-}
-
-func (db *lnDB) Select(v any) OrmTableSelect {
-	core := db.core
-	core.getCtx().tableSqlType = dSelect
-	core.appendBaseToken(baseToken{
-		typ:  tTableNameDestValue,
-		t:    reflect.TypeOf(v),
-		dest: v,
-		v:    reflect.ValueOf(v),
-	})
-
-	db.setNameDest(v)
-	return OrmTableSelect{base: core}
-}
-
-func (orm OrmTableSelectWhere) OrderBy(name string, condition ...bool) OrmTableSelectWhere {
-
-	for _, b := range condition {
-		if !b {
-			return OrmTableSelectWhere{base: orm.base}
-		}
-	}
-
-	//orm.base.orderByTokens = append(orm.base.orderByTokens, name)
-	return OrmTableSelectWhere{base: orm.base}
-}
-
-func (orm OrmTableSelectWhere) OrderDescBy(name string, condition ...bool) OrmTableSelectWhere {
-	for _, b := range condition {
-		if !b {
-			return OrmTableSelectWhere{base: orm.base}
-		}
-	}
-
-	//orm.base.orderByTokens = append(orm.base.orderByTokens, name+" desc")
-	return OrmTableSelectWhere{base: orm.base}
-}
-
-func (orm OrmTableSelectWhere) Limit(num int64, condition ...bool) OrmTableSelectWhere {
-	for _, b := range condition {
-		if !b {
-			return OrmTableSelectWhere{base: orm.base}
-		}
-	}
-	//orm.base.limit = num
-	return OrmTableSelectWhere{base: orm.base}
-}
-
-func (orm OrmTableSelectWhere) Offset(num int64, condition ...bool) OrmTableSelectWhere {
-	for _, b := range condition {
-		if !b {
-			return OrmTableSelectWhere{base: orm.base}
-		}
-	}
-	//orm.base.offset = num
-	return OrmTableSelectWhere{base: orm.base}
-}
-
-func (orm OrmTableSelectWhere) ScanFirst(v any) (int64, error) {
-	orm.base.appendBaseToken(baseToken{
-		typ: tScanFirst,
-		v:   reflect.ValueOf(v),
-	})
-
-	//orm.Limit(1)
-	//orm.base.ctx.initScanDestOne(v)
-	//orm.base.ctx.checkScanDestField()
-	//orm.base.getStructField()
-	//
-	//orm.base.initExtra()
-	//return orm.base.doSelect()
-	return 0, nil
-}
-
-func (orm OrmTableSelectWhere) ScanOne(v any) (int64, error) {
-	orm.base.appendBaseToken(baseToken{
-		typ: tScanOne,
-		v:   reflect.ValueOf(v),
-	})
-
-	//orm.base.ctx.initScanDestOne(v)
-	//orm.base.ctx.checkScanDestField()
-	//orm.base.getStructField()
-	//
-	//orm.base.initExtra()
-	//return orm.base.doSelect()
-	return 0, nil
-}
-
-func (orm OrmTableSelectWhere) ScanList(v any) (int64, error) {
-	orm.base.appendBaseToken(baseToken{
-		typ: tScanList,
-		v:   reflect.ValueOf(v),
-	})
-
-	//orm.base.ctx.initScanDestList(v)
-	//orm.base.ctx.checkScanDestField()
-	//orm.base.getStructField()
-	//
-	//orm.base.initExtra()
-	//return orm.base.doSelect()
-	return 0, nil
 }
 
 //------------------------------------has--------------------------------------------

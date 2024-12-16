@@ -68,26 +68,3 @@ func (db *coreDB) Commit() error {
 func (db *coreDB) Rollback() error {
 	return errors.New("this not tx")
 }
-
-//todo 下面未重构--------------
-
-func (db *lnDB) tDelete(t baseToken) {
-	db.setNameDest(t.dest)
-}
-
-func (d *MysqlDialect) tPrimaryKey(t baseToken) {
-	d.initPrimaryKeyName()
-	d.ctx.initPrimaryKeyValues(t.pk)
-	d.initByPrimaryKey()
-	d.initExtra()
-}
-
-func (d *MysqlDialect) tWhereModel(t baseToken) {
-	d.initByModel(t.dest)
-	d.initExtra()
-}
-
-//func (ldb *MysqlDialect) tWhereBuilder(t baseToken) {
-//	ldb.initByWhere(t.wb)
-//	ldb.initExtra()
-//}

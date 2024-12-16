@@ -35,61 +35,6 @@ import (
 //return false, nil
 //}
 
-//-------------------------------initContext------------------------
-
-// 根据 byModel 生成的where token
-func (d *MysqlDialect) initByPrimaryKey() {
-	//ctx := ldb.ctx
-	//if err := ctx.err; err != nil {
-	//	return
-	//}
-	//pkNum := len(ctx.primaryKeyValues)
-	//ldb.whereTokens = append(ldb.whereTokens, utils.GenwhereTokenOfBatch(ctx.primaryKeyNames, pkNum))
-	//
-	//for _, value := range ctx.primaryKeyValues {
-	//	ldb.args = append(ldb.args, value...)
-	//}
-}
-
-// 根据 byModel 生成的where token
-func (d *MysqlDialect) initByModel(v any) {
-	//if err := ldb.ctx.err; err != nil {
-	//	return
-	//}
-	//if v == nil {
-	//	ldb.ctx.err = errors.New("model is nil")
-	//	return
-	//}
-	//
-	//columns, values, err := getStructCV(v, ldb.ctx.ormConf)
-	//if err != nil {
-	//	ldb.ctx.err = err
-	//	return
-	//}
-	//ldb.whereTokens = append(ldb.whereTokens, utils.GenwhereToken(columns)...)
-	//ldb.args = append(ldb.args, values...)
-}
-
-// 根据 byWhere 生成的where token
-func (db *lnDB) initByWhere(w *WhereBuilder) {
-	//if err := ldb.core.getCtx().err; err != nil {
-	//	return
-	//}
-	//if w == nil {
-	//	ldb.core.getCtx().err = errors.New("ByWhere is nil")
-	//	return
-	//}
-	//
-	//args := w.args
-	//toSql, err := w.toSql(ldb.core.getDialect().parse)
-	//if err != nil {
-	//	ldb.core.getCtx().err = err
-	//	return
-	//}
-	//ldb.whereTokens = append(ldb.whereTokens, toSql)
-	//ldb.args = append(ldb.args, args...)
-}
-
 // init 逻辑删除、租户
 func (d *MysqlDialect) initExtra() {
 	//if err := ldb.ctx.err; err != nil {
@@ -106,7 +51,7 @@ func (d *MysqlDialect) initExtra() {
 	//}
 	//
 	//var sb strings.QueryBuild
-	//sb.WriteString(ldb.extraWhereSql)
+	//sb.WriteString(ldb.whereSql)
 	//
 	//if len(ldb.orderByTokens) > 0 {
 	//	sb.WriteString(" ORDER BY ")
@@ -120,7 +65,7 @@ func (d *MysqlDialect) initExtra() {
 	//	sb.WriteString(" OFFSET ? ")
 	//	ldb.args = append(ldb.args, ldb.offset)
 	//}
-	//ldb.extraWhereSql = sb.String()
+	//ldb.whereSql = sb.String()
 
 }
 

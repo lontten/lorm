@@ -14,6 +14,9 @@ type ExtraContext struct {
 	skipSoftDelete bool
 	tableName      string
 	selectColumns  []string // select 的 字段名，空为返回所有字段
+	limit          int64
+	offset         int64
+	orderByTokens  []string // 排序
 
 	columns      []string
 	columnValues []field.Value
@@ -57,6 +60,46 @@ func (e *ExtraContext) TableName(name string) *ExtraContext {
 
 func (e *ExtraContext) Select(name ...string) *ExtraContext {
 	e.selectColumns = name
+	return e
+}
+
+func (e *ExtraContext) OrderBy(name string, condition ...bool) *ExtraContext {
+	for _, b := range condition {
+		if !b {
+			return e
+		}
+	}
+	e.orderByTokens = append(e.orderByTokens, name)
+	return e
+}
+
+func (e *ExtraContext) OrderDescBy(name string, condition ...bool) *ExtraContext {
+	for _, b := range condition {
+		if !b {
+			return e
+		}
+	}
+	e.orderByTokens = append(e.orderByTokens, name+" desc")
+	return e
+}
+
+func (e *ExtraContext) Limit(num int64, condition ...bool) *ExtraContext {
+	for _, b := range condition {
+		if !b {
+			return e
+		}
+	}
+	e.limit = num
+	return e
+}
+
+func (e *ExtraContext) Offset(num int64, condition ...bool) *ExtraContext {
+	for _, b := range condition {
+		if !b {
+			return e
+		}
+	}
+	e.offset = num
 	return e
 }
 
