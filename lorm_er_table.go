@@ -194,9 +194,6 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
-	if ctx.lastSql == "" {
-		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
-	}
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
@@ -246,9 +243,6 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
-	if ctx.lastSql == "" {
-		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
-	}
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
@@ -296,9 +290,6 @@ func Has[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t bool, er
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
-	if ctx.lastSql == "" {
-		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
-	}
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
