@@ -43,11 +43,11 @@ var (
 	}
 
 	SoftDelTypeNoFVMap = map[SoftDelType]field.FValue{
-		DelTimeNil:       {Type: field.Null},
+		DelTimeNil:       {Name: "deleted_at", Type: field.Null},
 		DelBool:          {Name: "deleted_flag", Type: field.Expression, Value: "false"},
-		DelBoolNil:       {Type: field.Null},
+		DelBoolNil:       {Name: "deleted_flag", Type: field.Null},
 		DelUUID:          {Name: "deleted_uuid", Type: field.Val, Value: uuid.UUID{}},
-		DelUUIDNil:       {Type: field.Null},
+		DelUUIDNil:       {Name: "deleted_uuid", Type: field.Null},
 		DelInt32:         {Name: "deleted_flag", Type: field.Expression, Value: "0"},
 		DelInt64:         {Name: "deleted_flag", Type: field.Expression, Value: "0"},
 		DelGormSecond:    {Name: "deleted_at", Type: field.Expression, Value: "0"},

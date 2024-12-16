@@ -134,6 +134,10 @@ func getStructColName2fieldNameAllMap(t reflect.Type) colName2fieldNameMap {
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
 		structField := t.Field(i)
+		// 跳过软删除字段
+		if utils.IsSoftDelFieldType(structField.Type) {
+			continue
+		}
 
 		name := structField.Name
 		// 过滤掉首字母小写的字段

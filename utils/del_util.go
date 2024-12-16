@@ -20,6 +20,6 @@ func GetSoftDelType(t reflect.Type) softdelete.SoftDelType {
 }
 
 func IsSoftDelFieldType(t reflect.Type) bool {
-	_, has := softdelete.SoftDelTypeMap[t]
-	return has
+	delType := GetSoftDelType(t)
+	return delType != softdelete.None
 }

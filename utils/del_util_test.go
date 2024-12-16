@@ -21,8 +21,8 @@ func TestCheckSoftDelType(t *testing.T) {
 }
 
 func TestErr(t *testing.T) {
-	var kb = &Kb{}                  // 使用指针
-	v := reflect.ValueOf(kb).Elem() // 获取指针指向的值
+	var kb = &TestSoftDel2{} // 使用指针
+	v := reflect.ValueOf(kb)
 
 	f := v.Field(0)
 
@@ -34,4 +34,10 @@ func TestErr(t *testing.T) {
 
 type Kb struct {
 	Id *int
+}
+
+func TestIsSoftDelFieldType(t *testing.T) {
+
+	delType := IsSoftDelFieldType(reflect.TypeOf(TestSoftDel2{}))
+	t.Log(delType)
 }
