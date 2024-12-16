@@ -1,11 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/lontten/lorm"
 	"github.com/lontten/lorm/softdelete"
-	"github.com/lontten/lorm/types"
-	"test/ldb"
 )
 
 type Ka struct {
@@ -30,7 +27,7 @@ type User struct {
 	Name *string
 	Age  *int
 
-	//softdelete.DeleteGormMilli
+	softdelete.DeleteGormMilli
 }
 
 func main() {
@@ -45,25 +42,6 @@ func main() {
 	//TableInsert()
 	//Build1()
 	//Build2()
+	Del()
 
-	var u = User{
-		Id:   nil,
-		Name: types.NewString("xxx"),
-		Age:  types.NewInt(1),
-	}
-	fmt.Println(u)
-	var m = make(map[string]any)
-	m["a"] = 1
-	m["b"] = "bb"
-	m["c"] = nil
-
-	num, err := lorm.Delete[User](ldb.DB, lorm.Wb().PrimaryKey(User{
-		Id:   types.NewInt(2),
-		Name: types.NewString("b"),
-	}, User{
-		Id:   types.NewInt(3),
-		Name: types.NewString("c"),
-	}), lorm.Extra().ShowSql())
-	fmt.Println(num)
-	fmt.Println(err)
 }

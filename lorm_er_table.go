@@ -94,6 +94,7 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println(whereStr, args)
 	ctx.extraWhereSql = whereStr
 	ctx.args = append(ctx.args, args...)
 

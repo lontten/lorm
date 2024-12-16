@@ -159,8 +159,9 @@ func getCompValueCV(v reflect.Value) ([]string, []field.Value, error) {
 
 //------------------------gen-sql---------------------------
 
-// 根据whereTokens生成的where sql
-func (ctx *ormContext) genSetSqlBycolumnValues() {
+// 根据 columnValues 生成的 VALUES sql
+// INSERT INTO table_name (列1, 列2,...) VALUES (值1, 值2,....)
+func (ctx *ormContext) genInsertValuesSqlBycolumnValues() {
 	columns := ctx.columns
 	values := ctx.columnValues
 	var query = ctx.query
@@ -203,6 +204,73 @@ func (ctx *ormContext) genSetSqlBycolumnValues() {
 				ctx.err = errors.New("软删除标记为主键id，需要单主键")
 				return
 			}
+			query.WriteString(ctx.primaryKeyNames[0])
+			break
+		}
+	}
+}
+
+// 根据 columnValues 生成的set sql
+// SET ...
+// column1 = value1, column2 = value2, ...
+func (ctx *ormContext) genSetSqlBycolumnValues() {
+	columns := ctx.columns
+	values := ctx.columnValues
+	var query = ctx.query
+
+	for i, v := range values {
+		if i > 0 {
+			query.WriteString(" , ")
+		}
+		switch v.Type {
+		case field.None:
+			break
+		case field.Null:
+			query.WriteString(columns[i])
+			query.WriteString(" = NULL")
+			break
+		case field.Now:
+			query.WriteString(columns[i])
+			query.WriteString(" = NOW()")
+			break
+		case field.UnixSecond:
+			query.WriteString(columns[i])
+			query.WriteString(" = ")
+			query.WriteString(strconv.Itoa(time.Now().Second()))
+			break
+		case field.UnixMilli:
+			query.WriteString(columns[i])
+			query.WriteString(" = ")
+			query.WriteString(strconv.FormatInt(time.Now().UnixMilli(), 10))
+			break
+		case field.UnixNano:
+			query.WriteString(columns[i])
+			query.WriteString(" = ")
+			query.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
+			break
+		case field.Val:
+			query.WriteString(columns[i])
+			query.WriteString(" = ? ")
+			ctx.args = append(ctx.args, v.Value)
+			break
+		case field.Increment:
+			query.WriteString(columns[i])
+			query.WriteString(" = ")
+			query.WriteString(columns[i] + " + ? ")
+			ctx.args = append(ctx.args, v.Value)
+			break
+		case field.Expression:
+			query.WriteString(columns[i])
+			query.WriteString(" = ")
+			query.WriteString(v.Value.(string))
+			break
+		case field.ID:
+			if len(ctx.primaryKeyNames) > 0 {
+				ctx.err = errors.New("软删除标记为主键id，需要单主键")
+				return
+			}
+			query.WriteString(columns[i])
+			query.WriteString(" = ")
 			query.WriteString(ctx.primaryKeyNames[0])
 			break
 		}

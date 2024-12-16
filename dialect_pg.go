@@ -91,7 +91,7 @@ func (d *PgDialect) tableInsertGen() {
 	query.WriteString(") ")
 	query.WriteString("VALUES")
 	query.WriteString("(")
-	ctx.genSetSqlBycolumnValues()
+	ctx.genInsertValuesSqlBycolumnValues()
 	query.WriteString(") ")
 
 	if ctx.insertType == insert_type.Ignore || ctx.insertType == insert_type.Update {

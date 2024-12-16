@@ -4,6 +4,7 @@ type ValueType int
 
 const (
 	None       ValueType = iota // 无,未定义
+	Default                     // 字段默认值
 	Null                        // 设为null
 	Now                         // 当前时间
 	UnixSecond                  // 秒时间戳

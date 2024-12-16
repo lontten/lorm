@@ -322,6 +322,7 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	if sqlStr == "" {
 		return b
 	}
+	sqlStr = "(" + sqlStr + ")"
 
 	if b.selectStatus != selectDone {
 		ctx.err = errors.New("未完成 select 设置")

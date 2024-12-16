@@ -256,6 +256,16 @@ func (w *WhereBuilder) fieldValue(name string, v field.Value, condition ...bool)
 		})
 		w.args = append(w.args, v.Value)
 		break
+	case field.Expression:
+		w.wheres = append(w.wheres, whereToken{
+			Type: native,
+			clause: Clause{
+				Type:  Eq,
+				query: name,
+			},
+		})
+		w.args = append(w.args, v.Value)
+		break
 	default:
 		break
 	}

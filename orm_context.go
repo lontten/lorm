@@ -330,7 +330,7 @@ func (ctx *ormContext) initColumnsValueSoftDel() {
 			// where
 			value, has = softdelete.SoftDelTypeNoFVMap[ctx.softDeleteType]
 			if has {
-				ctx.wb.Eq(value.Name, value.ToValue())
+				ctx.wb.fieldValue(value.Name, value.ToValue())
 			}
 		}
 

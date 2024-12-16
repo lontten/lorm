@@ -29,13 +29,19 @@ func Build1() {
 }
 
 func Build2() {
+	neq := lorm.Wb().Neq("id", 7)
 	var u User
 	num, err := lorm.QueryBuild(ldb.DB).
 		Select("id").Select("name").
-		From("t_user").Where("id = ?", 1 == 2).Arg(1, 1 == 2).
-		Where("id = 2").Limit(2).
+		From("t_user").
+		Where("id = 2").
+		WhereBuilder(lorm.Wb().
+			Eq("id", 3).
+			Eq("id", 5).
+			Or(neq)).
+		Limit(2).ShowSql().
 		ScanOne(&u)
 	fmt.Println(num, err)
-	fmt.Println(*u.Id)
-	fmt.Println(*u.Name)
+	bytes, err := json.Marshal(u)
+	fmt.Println(string(bytes))
 }

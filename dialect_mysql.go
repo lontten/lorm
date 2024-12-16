@@ -139,7 +139,7 @@ func (d *MysqlDialect) tableInsertGen() {
 	query.WriteString(") ")
 	query.WriteString("VALUES")
 	query.WriteString("(")
-	ctx.genSetSqlBycolumnValues()
+	ctx.genInsertValuesSqlBycolumnValues()
 	query.WriteString(" ) ")
 
 	switch ctx.insertType {
