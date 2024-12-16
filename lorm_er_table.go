@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/lontten/lorm/sqltype"
 	"github.com/lontten/lorm/types"
+	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 )
@@ -316,6 +317,58 @@ func Has[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t bool, er
 		return false, err
 	}
 	return rows.Next(), nil
+}
+
+// Count
+func Count[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t int64, err error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...)
+	ctx.columns = []string{"count(*)"}
+
+	dest := new(T)
+	ctx.initScanDestOneT(dest)
+	if ctx.err != nil {
+		return 0, ctx.err
+	}
+
+	ctx.initConf() //初始化表名，主键，自增id
+	ctx.initColumnsValueSoftDel()
+
+	ctx.initPrimaryKeyByWhere(wb)
+	ctx.wb.And(wb)
+
+	whereStr, args, err := ctx.wb.toSql(dialect.parse)
+	if err != nil {
+		return 0, err
+	}
+	ctx.whereSql = whereStr
+	ctx.args = append(ctx.args, args...)
+
+	dialect.tableSelectGen()
+	if ctx.hasErr() {
+		return 0, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+
+	var total int64
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return 0, err
+	}
+	for rows.Next() {
+		box := reflect.ValueOf(&total).Interface()
+		err = rows.Scan(box)
+		if err != nil {
+			return total, err
+		}
+		return total, nil
+	}
+	return total, errors.New("rows no data")
 }
 
 type OrmTableUpdate struct {
