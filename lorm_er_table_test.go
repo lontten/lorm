@@ -17,7 +17,11 @@ func TestInsert(t *testing.T) {
 		WillReturnError(nil).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	num, err := Insert(engine, "delete from user where id = ?", 1)
+	var u = User{
+		Id:   0,
+		Name: "",
+	}
+	num, err := Insert(engine, u)
 	as.Nil(err)
 	as.Equal(int64(1), num, "num error")
 

@@ -133,7 +133,7 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 	db = db.init()
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
-	ctx.initExtra(extra...)
+	ctx.initExtra(extra...) // 表名，set，select配置
 	ctx.limit = types.NewInt64(1)
 
 	dest := new(T)
@@ -147,7 +147,8 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
 	}
 
-	ctx.initColumnsAll()
+	ctx.initColumnsValue()
+	ctx.initColumns()
 	if len(ctx.modelSelectFieldNames) == 0 {
 		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
 	}
@@ -200,7 +201,7 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
-	ctx.initColumnsAll()
+	ctx.initColumns()
 	if len(ctx.modelSelectFieldNames) == 0 {
 		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
 	}
@@ -253,7 +254,7 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
-	ctx.initColumnsAll()
+	ctx.initColumns()
 	if len(ctx.modelSelectFieldNames) == 0 {
 		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
 	}

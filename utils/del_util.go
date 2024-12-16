@@ -5,6 +5,8 @@ import (
 	"reflect"
 )
 
+// GetSoftDelType
+// 获取一个 struct 的 type 的软删除类型
 func GetSoftDelType(t reflect.Type) softdelete.SoftDelType {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -20,6 +22,6 @@ func GetSoftDelType(t reflect.Type) softdelete.SoftDelType {
 }
 
 func IsSoftDelFieldType(t reflect.Type) bool {
-	delType := GetSoftDelType(t)
-	return delType != softdelete.None
+	_, has := softdelete.SoftDelTypeMap[t]
+	return has
 }

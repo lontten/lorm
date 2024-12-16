@@ -29,8 +29,9 @@ func TestWhereBuilder_toSql(t *testing.T) {
 	builder := W().
 		And(w11).
 		And(w22)
-	sql, err := builder.toSql(db.getDialect().parse)
+	sql, args, err := builder.toSql(db.getDialect().parse)
 	fmt.Println(err)
 	fmt.Println(sql)
+	fmt.Println(args)
 
 }

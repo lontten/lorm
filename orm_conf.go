@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"unicode"
 )
 
 type OrmConf struct {
@@ -134,68 +133,7 @@ func (c OrmConf) getStructAllField(t reflect.Type) (columns []string, err error)
 	return arr, nil
 }
 
-var colName2fieldNameMapCache = make(map[reflect.Type]colName2fieldNameMap)
-
 type colName2fieldNameMap map[string]string
-
-var mutex sync.Mutex
-
-//	 可以缓存
-//
-//		主键ID，转化为id
-//
-// tag== lrom:-  跳过
-// 过滤掉首字母小写的字段
-// 跳过软删除字段
-// 获取model对应的数据字段名：和其在model中的字段名
-func getStructColName2fieldNameMap(t reflect.Type) colName2fieldNameMap {
-	fields, ok := colName2fieldNameMapCache[t]
-	if ok {
-		return fields
-	}
-	mutex.Lock()
-	defer mutex.Unlock()
-	fields, ok = colName2fieldNameMapCache[t]
-	if ok {
-		return fields
-	}
-
-	cfMap := colName2fieldNameMap{}
-
-	numField := t.NumField()
-	for i := 0; i < numField; i++ {
-		structField := t.Field(i)
-		// 跳过软删除字段
-		if utils.IsSoftDelFieldType(structField.Type) {
-			continue
-		}
-
-		name := structField.Name
-		// 过滤掉首字母小写的字段
-		if unicode.IsLower([]rune(name)[0]) {
-			continue
-		}
-
-		tag := structField.Tag.Get("lorm")
-		if tag == "-" {
-			continue
-		}
-
-		if name == "ID" {
-			cfMap["id"] = "ID"
-			continue
-		}
-
-		if tag != "" {
-			cfMap[tag] = name
-			continue
-		}
-
-		cfMap[utils.Camel2Case(name)] = name
-	}
-
-	return cfMap
-}
 
 type compCV struct {
 	//有效字段列表

@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"errors"
+	"github.com/lontten/lorm/softdelete"
 	"github.com/lontten/lorm/utils"
 	"reflect"
 	"sync"
@@ -107,7 +108,6 @@ func checkCompFieldVS(va reflect.Value) error {
 }
 
 var colName2fieldNameAllMapCache = make(map[reflect.Type]colName2fieldNameMap)
-
 var colName2fieldNameAllMapMutex sync.Mutex
 
 //	 可以缓存
@@ -128,18 +128,30 @@ func getStructColName2fieldNameAllMap(t reflect.Type) colName2fieldNameMap {
 	if ok {
 		return fields
 	}
+	return _getStructColName2fieldNameAllMap(t, "")
+}
 
+//	主键ID，转化为id
+//
+// tag== lrom:-  跳过
+// 过滤掉首字母小写的字段
+// 获取model对应的数据字段名：和其在model中的字段名
+func _getStructColName2fieldNameAllMap(t reflect.Type, lormName string) colName2fieldNameMap {
 	cfMap := colName2fieldNameMap{}
 
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
 		structField := t.Field(i)
-		// 跳过软删除字段
-		if utils.IsSoftDelFieldType(structField.Type) {
+		if structField.Anonymous {
+			allMap := _getStructColName2fieldNameAllMap(structField.Type, structField.Tag.Get("lorm"))
+			for k, v := range allMap {
+				cfMap[k] = v
+			}
 			continue
 		}
 
 		name := structField.Name
+
 		// 过滤掉首字母小写的字段
 		if unicode.IsLower([]rune(name)[0]) {
 			continue
@@ -160,8 +172,91 @@ func getStructColName2fieldNameAllMap(t reflect.Type) colName2fieldNameMap {
 			continue
 		}
 
+		delType, has := softdelete.SoftDelTypeMap[t]
+		if has {
+			if lormName == "" {
+				value := softdelete.SoftDelTypeYesFVMap[delType]
+				cfMap[value.Name] = name
+			} else {
+				cfMap[lormName] = name
+			}
+			continue
+		}
+
 		cfMap[utils.Camel2Case(name)] = name
 	}
+	return cfMap
+}
 
+var colName2fieldNameMapCache = make(map[reflect.Type]colName2fieldNameMap)
+var colName2fieldNameMapMutex sync.Mutex
+
+// 过滤 软删除字段
+// 主键ID，转化为id
+// tag== lrom:-  跳过
+// 过滤掉首字母小写的字段
+// 获取model对应的数据字段名：和其在model中的字段名
+func getStructColName2fieldNameMap(t reflect.Type) colName2fieldNameMap {
+	fields, ok := colName2fieldNameMapCache[t]
+	if ok {
+		return fields
+	}
+	colName2fieldNameMapMutex.Lock()
+	defer colName2fieldNameMapMutex.Unlock()
+	fields, ok = colName2fieldNameMapCache[t]
+	if ok {
+		return fields
+	}
+	return _getStructColName2fieldNameMap(t, "")
+}
+
+// 包含 软删除字段
+// 主键ID，转化为id
+// tag== lrom:-  跳过
+// 过滤掉首字母小写的字段
+// 获取model对应的数据字段名：和其在model中的字段名
+func _getStructColName2fieldNameMap(t reflect.Type, lormName string) colName2fieldNameMap {
+	cfMap := colName2fieldNameMap{}
+
+	numField := t.NumField()
+	for i := 0; i < numField; i++ {
+		structField := t.Field(i)
+		if structField.Anonymous {
+			allMap := _getStructColName2fieldNameMap(structField.Type, structField.Tag.Get("lorm"))
+			for k, v := range allMap {
+				cfMap[k] = v
+			}
+			continue
+		}
+
+		name := structField.Name
+
+		// 过滤掉首字母小写的字段
+		if unicode.IsLower([]rune(name)[0]) {
+			continue
+		}
+
+		tag := structField.Tag.Get("lorm")
+		if tag == "-" {
+			continue
+		}
+
+		if name == "ID" {
+			cfMap["id"] = "ID"
+			continue
+		}
+
+		if tag != "" {
+			cfMap[tag] = name
+			continue
+		}
+
+		_, has := softdelete.SoftDelTypeMap[t]
+		if has {
+			continue
+		}
+
+		cfMap[utils.Camel2Case(name)] = name
+	}
 	return cfMap
 }

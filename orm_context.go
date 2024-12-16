@@ -272,7 +272,7 @@ func (ctx *ormContext) initColumnsValue() {
 	ctx.initColumnsValueSoftDel()
 	return
 }
-func (ctx *ormContext) initColumnsAll() {
+func (ctx *ormContext) initColumns() {
 	if ctx.hasErr() {
 		return
 	}
@@ -359,8 +359,23 @@ func (ctx *ormContext) initColumnsValueSoftDel() {
 				ctx.wb.fieldValue(value.Name, value.ToValue())
 			}
 		}
-
 		break
+	case sqltype.Select:
+		if ctx.softDeleteType != softdelete.None {
+			// select
+			value, has := softdelete.SoftDelTypeYesFVMap[ctx.softDeleteType]
+			if has {
+				ctx.modelSelectFieldNames = append(ctx.modelSelectFieldNames, value.Name)
+			}
+
+			// where
+			value, has = softdelete.SoftDelTypeNoFVMap[ctx.softDeleteType]
+			if has {
+				ctx.wb.fieldValue(value.Name, value.ToValue())
+			}
+		}
+		break
+
 	default:
 		break
 	}
