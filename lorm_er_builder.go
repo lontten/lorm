@@ -339,7 +339,7 @@ func (b *SqlBuilder) WhereBuilder(w *WhereBuilder) *SqlBuilder {
 	return b
 }
 
-func (b *SqlBuilder) WhereIng() *SqlBuilder {
+func (b *SqlBuilder) LinkWhere() *SqlBuilder {
 	b.selectStatus = selectDone
 	b.whereStatus = whereSet
 	return b
