@@ -344,6 +344,10 @@ func (b *SqlBuilder) LinkWhere() *SqlBuilder {
 	b.whereStatus = whereSet
 	return b
 }
+func (b *SqlBuilder) SelectEnd() *SqlBuilder {
+	b.selectStatus = selectDone
+	return b
+}
 func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
 	db := b.db
 	ctx := db.getCtx()
@@ -380,6 +384,10 @@ func (b *SqlBuilder) BoolWhere(condition bool, whereStr string, args ...any) *Sq
 	db := b.db
 	ctx := db.getCtx()
 	if ctx.hasErr() {
+		return b
+	}
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("Where 设置异常：" + whereStr)
 		return b
 	}
 
