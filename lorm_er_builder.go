@@ -382,10 +382,6 @@ func (b *SqlBuilder) BoolWhere(condition bool, whereStr string, args ...any) *Sq
 	if ctx.hasErr() {
 		return b
 	}
-	if b.selectStatus != selectDone {
-		ctx.err = errors.New("Where 设置异常：" + whereStr)
-		return b
-	}
 
 	if !condition {
 		return b
