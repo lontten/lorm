@@ -290,16 +290,16 @@ func getStructCVMap(v reflect.Value) (m compCVMap) {
 	}
 	list := getStructCV(v)
 	for _, cv := range list {
-		m.modelAllFieldNameMap[cv.columnName] = cv.fieldName
-		m.modelAllFieldNames = append(m.modelAllFieldNames, cv.fieldName)
+		m.modelAllFieldNameMap[cv.columnName] = cv.columnName
+		m.modelAllFieldNames = append(m.modelAllFieldNames, cv.columnName)
 		if cv.isZero {
-			m.modelZeroFieldNames = append(m.modelZeroFieldNames, cv.fieldName)
+			m.modelZeroFieldNames = append(m.modelZeroFieldNames, cv.columnName)
 		}
 		if !cv.isSoftDel {
-			m.modelNoSoftDelFieldNames = append(m.modelNoSoftDelFieldNames, cv.fieldName)
+			m.modelNoSoftDelFieldNames = append(m.modelNoSoftDelFieldNames, cv.columnName)
 		}
 		if !cv.isZero && !cv.isSoftDel {
-			m.columns = append(m.columns, cv.fieldName)
+			m.columns = append(m.columns, cv.columnName)
 			m.columnValues = append(m.columnValues, cv.value)
 		}
 	}
