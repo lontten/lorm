@@ -39,8 +39,8 @@ func main() {
 	//
 	//Prepare4()
 	//time.Sleep(1 * time.Hour)
-	TableInsert()
-	//Build1()
+	//TableInsert()
+	Build1()
 	//Build2()
 	//Del()
 	//First()

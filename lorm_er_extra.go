@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-func (b *SqlBuilder) Page(pageSize int64, current int64) *SqlBuilder {
+func (b *SqlBuilder) Page(current int64, pageSize int64) *SqlBuilder {
 	if pageSize < 1 || current < 1 {
 		b.db.getCtx().err = errors.New("pageSize,current must be greater than 0")
 	}

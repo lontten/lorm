@@ -15,7 +15,7 @@ func Build1() {
 		Native(`
 `).
 		Where("id > 1").
-		Page(10, 1).
+		Page(1, 10).
 		ScanPage(&u)
 	fmt.Println(num, dto, err)
 	bytes, err := json.Marshal(dto)
