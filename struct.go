@@ -290,7 +290,7 @@ func getStructCVMap(v reflect.Value) (m compCVMap) {
 	}
 	list := getStructCV(v)
 	for _, cv := range list {
-		m.modelAllFieldNameMap[cv.columnName] = cv.columnName
+		m.modelAllFieldNameMap[cv.columnName] = cv.fieldName
 		m.modelAllFieldNames = append(m.modelAllFieldNames, cv.columnName)
 		if cv.isZero {
 			m.modelZeroFieldNames = append(m.modelZeroFieldNames, cv.columnName)

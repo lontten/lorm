@@ -39,10 +39,10 @@ func main() {
 	//
 	//Prepare4()
 	//time.Sleep(1 * time.Hour)
-	//TableInsert()
+	TableInsert()
 	//Build1()
 	//Build2()
 	//Del()
-	First()
+	//First()
 
 }

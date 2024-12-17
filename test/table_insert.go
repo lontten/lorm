@@ -13,7 +13,6 @@ import (
 func TableInsert() {
 	var user = User{
 		Name: types.NewString(time.Now().String()),
-		Age:  types.NewInt(66),
 	}
 	num, err := lorm.Insert(ldb.DB, &user, lorm.E().
 		SetNull("abc").
