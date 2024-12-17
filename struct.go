@@ -280,6 +280,14 @@ type compCVMap struct {
 }
 
 func getStructCVMap(v reflect.Value) (m compCVMap) {
+	m = compCVMap{
+		columns:                  make([]string, 0),
+		columnValues:             make([]field.Value, 0),
+		modelZeroFieldNames:      make([]string, 0),
+		modelAllFieldNames:       make([]string, 0),
+		modelNoSoftDelFieldNames: make([]string, 0),
+		modelAllFieldNameMap:     colName2fieldNameMap{},
+	}
 	list := getStructCV(v)
 	for _, cv := range list {
 		m.modelAllFieldNameMap[cv.columnName] = cv.fieldName
