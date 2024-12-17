@@ -141,11 +141,7 @@ func (b *SqlBuilder) SelectModel(v any) *SqlBuilder {
 	}
 
 	ctx.initScanDestOne(v)
-	columns, err := ctx.ormConf.getStructField(ctx.destBaseType)
-	if err != nil {
-		ctx.err = err
-		return b
-	}
+	columns := getStructCAllList(ctx.destBaseType)
 
 	b.selectStatus = selectSet
 	b.selectTokens = append(b.selectTokens, columns...)

@@ -24,7 +24,7 @@ type Kc struct {
 func Test_getStructColName2fieldNameMap(t *testing.T) {
 	var k Kc
 	v := reflect.ValueOf(k)
-	cv := getStructColName2fieldNameMap(v.Type())
+	cv := getStructC(v.Type())
 	for a, b := range cv {
 		fmt.Println(a, b)
 	}
@@ -33,7 +33,7 @@ func Test_getStructColName2fieldNameMap(t *testing.T) {
 func Test_getStructColName2fieldNameAllMap(t *testing.T) {
 	var k Kc
 	v := reflect.ValueOf(k)
-	cv := getStructColName2fieldNameAllMap(v.Type())
+	cv := getStructC(v.Type())
 	for a, b := range cv {
 		fmt.Println(a, b)
 	}

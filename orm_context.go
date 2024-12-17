@@ -229,11 +229,7 @@ func (ctx *ormContext) initColumnsValue() {
 		return
 	}
 
-	cv, err := getStructCV(ctx.destV)
-	if err != nil {
-		ctx.err = err
-		return
-	}
+	cv := getStructCVMap(ctx.destV)
 	ctx.columns = cv.columns
 	ctx.columnValues = cv.columnValues
 
@@ -264,25 +260,16 @@ func (ctx *ormContext) initColumnsValue() {
 		ctx.lastInsertIdFieldIsPtr = isPtr
 		ctx.lastInsertIdFieldBaseType = baseT
 	}
-
-	// extra 中的 额外 set
-	ctx.initColumnsValueSet()
-	ctx.initColumnsValueExtra()
-	// 软删除
-	ctx.initColumnsValueSoftDel()
 	return
 }
 func (ctx *ormContext) initColumns() {
 	if ctx.hasErr() {
 		return
 	}
-	columns, err := ctx.ormConf.getStructAllField(ctx.destBaseType)
-	if err != nil {
-		ctx.err = err
-		return
+	if len(ctx.modelSelectFieldNames) == 0 {
+		columns := getStructCList(ctx.destBaseType)
+		ctx.modelSelectFieldNames = columns
 	}
-	ctx.modelAllFieldNames = columns
-	ctx.modelSelectFieldNames = columns
 	return
 }
 func (ctx *ormContext) initColumnsValueSet() {

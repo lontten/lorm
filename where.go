@@ -274,6 +274,7 @@ func (w *WhereBuilder) fieldValue(name string, v field.Value, condition ...bool)
 
 //------------------model/map/id------------------
 
+// 过滤 软删除
 func (w *WhereBuilder) Model(v any, condition ...bool) *WhereBuilder {
 	for _, b := range condition {
 		if !b {
@@ -281,12 +282,12 @@ func (w *WhereBuilder) Model(v any, condition ...bool) *WhereBuilder {
 		}
 	}
 
-	cv, err := getStructCV(reflect.ValueOf(v))
-	if err != nil {
-		return w
-	}
-	for i, column := range cv.columns {
-		w.fieldValue(column, cv.columnValues[i])
+	list := getStructCV(reflect.ValueOf(v))
+	for _, cv := range list {
+		if cv.isSoftDel || cv.isZero {
+			continue
+		}
+		w.fieldValue(cv.columnName, cv.value)
 	}
 	return w
 }
@@ -298,12 +299,9 @@ func (w *WhereBuilder) Map(v any, condition ...bool) *WhereBuilder {
 		}
 	}
 
-	cv, err := getMapCV(reflect.ValueOf(v))
-	if err != nil {
-		return w
-	}
-	for i, column := range cv.columns {
-		w.fieldValue(column, cv.columnValues[i])
+	list := getMapCV(reflect.ValueOf(v))
+	for _, cv := range list {
+		w.fieldValue(cv.columnName, cv.value)
 	}
 	return w
 }

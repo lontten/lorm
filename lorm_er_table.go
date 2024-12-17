@@ -20,9 +20,13 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	ctx.sqlType = sqltype.Insert
 	ctx.sqlIsQuery = true
 
-	ctx.initModelDest(v)   //初始化参数
-	ctx.initConf()         //初始化表名，主键，自增id
-	ctx.initColumnsValue() //初始化cv
+	ctx.initModelDest(v) //初始化参数
+	ctx.initConf()       //初始化表名，主键，自增id
+
+	ctx.initColumnsValue()    //初始化cv
+	ctx.initColumnsValueSet() // extra 中的 额外 set
+	ctx.initColumnsValueExtra()
+	ctx.initColumnsValueSoftDel() // 软删除
 
 	dialect.tableInsertGen()
 	if ctx.hasErr() {
@@ -82,8 +86,8 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	if ctx.err != nil {
 		return 0, ctx.err
 	}
-
 	ctx.initConf() //初始化表名，主键，自增id
+
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
@@ -147,11 +151,7 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 		ctx.lastSql = " ORDER BY " + strings.Join(ctx.primaryKeyNames, ",")
 	}
 
-	ctx.initColumnsValue()
 	ctx.initColumns()
-	if len(ctx.modelSelectFieldNames) == 0 {
-		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
-	}
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)

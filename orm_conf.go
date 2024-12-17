@@ -1,8 +1,6 @@
 package lorm
 
 import (
-	"bytes"
-	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/utils"
 	"reflect"
 	"strings"
@@ -111,97 +109,6 @@ func (c OrmConf) autoIncrements(v reflect.Value) []string {
 	return GetAutoIncrements(v)
 }
 
-// 可以缓存
-// 获取model字段对应的 db name，没有软删除
-func (c OrmConf) getStructField(t reflect.Type) (columns []string, err error) {
-	fiMap := getStructColName2fieldNameMap(t)
-	arr := make([]string, len(fiMap))
-	for f := range fiMap {
-		arr = append(arr, f)
-	}
-	return arr, nil
-}
-
-// 可以缓存
-// 获取model字段对应的 db name，包含软删除
-func (c OrmConf) getStructAllField(t reflect.Type) (columns []string, err error) {
-	fiMap := getStructColName2fieldNameAllMap(t)
-	arr := make([]string, 0)
-	for f := range fiMap {
-		arr = append(arr, f)
-	}
-	return arr, nil
-}
-
-type colName2fieldNameMap map[string]string
-
-type compCV struct {
-	//有效字段列表
-	columns []string
-	//有效值列表
-	columnValues []field.Value
-
-	//零值字段列表
-	modelZeroFieldNames []string
-
-	//所有字段列表
-	modelAllFieldNames []string
-
-	//所有字段 dbName:fieldName
-	modelAllFieldNameMap colName2fieldNameMap
-}
-
-// 忽略 软删除 字段
-// 获取 struct 对应的字段名 和 其值
-// 返回值类型有 Val,一种
-func getStructCV(v reflect.Value) (compCV, error) {
-	t := v.Type()
-	cv := compCV{
-		columns:             make([]string, 0),
-		columnValues:        make([]field.Value, 0),
-		modelZeroFieldNames: make([]string, 0),
-		modelAllFieldNames:  make([]string, 0),
-	}
-	structFieldIndexMap := getStructColName2fieldNameMap(t)
-	cv.modelAllFieldNameMap = structFieldIndexMap
-
-	for column, i := range structFieldIndexMap {
-		fieldV := v.FieldByName(i)
-		inter := getFieldInterZero(fieldV)
-		cv.modelAllFieldNames = append(cv.modelAllFieldNames, column)
-		if inter != nil {
-			cv.columns = append(cv.columns, column)
-			cv.columnValues = append(cv.columnValues, field.Value{
-				Type:  field.Val,
-				Value: inter,
-			})
-		} else {
-			cv.modelZeroFieldNames = append(cv.modelZeroFieldNames, column)
-		}
-	}
-
-	return cv, nil
-}
-
-// 获取map[string]any
-// 返回值类型有 None,Null,Val,三种
-func getMapCV(v reflect.Value) (compCV, error) {
-	cv := compCV{
-		columns:             make([]string, 0),
-		columnValues:        make([]field.Value, 0),
-		modelZeroFieldNames: make([]string, 0),
-		modelAllFieldNames:  make([]string, 0),
-	}
-
-	for _, k := range v.MapKeys() {
-		inter := getFieldInter(v.MapIndex(k))
-
-		cv.columns = append(cv.columns, k.String())
-		cv.columnValues = append(cv.columnValues, inter)
-	}
-	return cv, nil
-}
-
 // 获取 rows 返回数据，每个字段index 对应 struct 的字段 名字
 func getColIndex2FieldNameMap(columns []string, t reflect.Type) (ColIndex2FieldNameMap, error) {
 	if isValuerType(t) {
@@ -210,7 +117,7 @@ func getColIndex2FieldNameMap(columns []string, t reflect.Type) (ColIndex2FieldN
 
 	colNum := len(columns)
 	ci2fm := make([]string, colNum)
-	cf := getStructColName2fieldNameMap(t)
+	cf := getStructCFMap(t)
 
 	validNum := 0
 	for i, column := range columns {
@@ -227,122 +134,4 @@ func getColIndex2FieldNameMap(columns []string, t reflect.Type) (ColIndex2FieldN
 		return ColIndex2FieldNameMap{}, nil
 	}
 	return ci2fm, nil
-}
-
-// tableName表名
-// keys
-// hasTen true开启多租户
-func (c OrmConf) genDelSqlCommon(tableName string, keys []string) []byte {
-	var bb bytes.Buffer
-
-	//hasTen := c.TenantIdFieldName != "" && !c.TenantIgnoreTableFun(tableName)
-	//whereSql := c.GenWhere(keys, hasTen)
-
-	//logicDeleteSetSql := c.LogicDeleteSetSql
-	//logicDeleteYesSql := c.LogicDeleteYesSql
-	//if logicDeleteSetSql == "" {
-	//	bb.WriteString("DELETE FROM ")
-	//	bb.WriteString(tableName)
-	//	bb.WriteString(string(whereSql))
-	//} else {
-	//	bb.WriteString("UPDATE ")
-	//	bb.WriteString(tableName)
-	//	bb.WriteString(" SET ")
-	//	bb.WriteString(logicDeleteSetSql)
-	//	bb.WriteString(string(whereSql))
-	//	bb.WriteString(" and ")
-	//	bb.WriteString(logicDeleteYesSql)
-	//}
-	return bb.Bytes()
-}
-
-// tableName表名
-// keys
-// hasTen true开启多租户
-func (c OrmConf) genDelSqlByWhere(tableName string, where []byte) []byte {
-	//hasTen := c.TenantIdFieldName != "" && !c.TenantIgnoreTableFun(tableName)
-
-	var bb bytes.Buffer
-	//whereSql := c.whereExtra(where, hasTen)
-	//
-	//logicDeleteSetSql := c.LogicDeleteSetSql
-	//logicDeleteYesSql := c.LogicDeleteYesSql
-	//lgSql := strings.ReplaceAll(logicDeleteSetSql, "lg.", "")
-	//logicDeleteYesSql = strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-	//if logicDeleteSetSql == lgSql {
-	//	bb.WriteString("DELETE FROM ")
-	//	bb.WriteString(tableName)
-	//	bb.Write(whereSql)
-	//} else {
-	//	bb.WriteString("UPDATE ")
-	//	bb.WriteString(tableName)
-	//	bb.WriteString(" SET ")
-	//	bb.WriteString(lgSql)
-	//	bb.Write(whereSql)
-	//	bb.WriteString(" and ")
-	//	bb.WriteString(logicDeleteYesSql)
-	//}
-	return bb.Bytes()
-}
-
-// GenWhere 有tenantId功能
-func (c OrmConf) GenWhere(keys []string, hasTen bool) []byte {
-	if hasTen {
-		keys = append(keys, c.TenantIdFieldName)
-	}
-	if len(keys) == 0 {
-		return []byte("")
-	}
-
-	var bb bytes.Buffer
-	bb.WriteString(" WHERE ")
-	bb.WriteString(keys[0])
-	bb.WriteString(" = ? ")
-	for i := 1; i < len(keys); i++ {
-		bb.WriteString(" AND ")
-		bb.WriteString(keys[i])
-		bb.WriteString(" = ? ")
-	}
-
-	return bb.Bytes()
-}
-
-// 有tenantid功能
-func (c OrmConf) whereExtra(where []byte, hasTen bool) []byte {
-	var bb bytes.Buffer
-	//bb.Write(where)
-	//
-	//logicDeleteYesSql := c.LogicDeleteYesSql
-	//lg := strings.ReplaceAll(logicDeleteYesSql, "lg.", "")
-	//if lg != logicDeleteYesSql {
-	//	bb.WriteString(" and ")
-	//	bb.WriteString(lg)
-	//}
-	//
-	//if hasTen {
-	//	bb.WriteString(" AND ")
-	//	bb.WriteString(c.TenantIdFieldName)
-	//	bb.WriteString(" = ? ")
-	//}
-
-	return bb.Bytes()
-}
-
-// tableName表名
-// columns
-func (c OrmConf) genSelectSqlCommon(tableName string, columns []string) []byte {
-
-	var bb bytes.Buffer
-	bb.WriteString(" SELECT ")
-	for i, column := range columns {
-		if i == 0 {
-			bb.WriteString(column)
-		} else {
-			bb.WriteString(" , ")
-			bb.WriteString(column)
-		}
-	}
-	bb.WriteString(" FROM ")
-	bb.WriteString(tableName)
-	return bb.Bytes()
 }

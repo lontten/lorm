@@ -92,10 +92,7 @@ func getCompValueCV(v reflect.Value) ([]string, []field.Value, error) {
 		return nil, nil, err
 	}
 
-	cv, err := getStructCV(v)
-	if err != nil {
-		return nil, nil, err
-	}
+	cv := getStructCVMap(v)
 	if len(cv.columns) < 1 {
 		return nil, nil, errors.New("where model valid field need ")
 	}

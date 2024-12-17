@@ -2,6 +2,7 @@ package lorm
 
 import (
 	"errors"
+	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/softdelete"
 	"github.com/lontten/lorm/utils"
 	"reflect"
@@ -22,9 +23,9 @@ func newStruct(t reflect.Type) reflect.Value {
 	}
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
-		field := t.Field(i)
-		if field.Type.Kind() == reflect.Ptr {
-			f := reflect.New(field.Type.Elem())
+		structT := t.Field(i).Type
+		if structT.Kind() == reflect.Ptr {
+			f := reflect.New(structT.Elem())
 			tPtr.Elem().Field(i).Set(f)
 		}
 	}
@@ -107,46 +108,72 @@ func checkCompFieldVS(va reflect.Value) error {
 	return errors.New("checkCompFieldVS err;need a struct or map")
 }
 
-var colName2fieldNameAllMapCache = make(map[reflect.Type]colName2fieldNameMap)
-var colName2fieldNameAllMapMutex sync.Mutex
+var fieldCache = make(map[reflect.Type][]compC)
+var fieldMutex sync.Mutex
 
-//	 可以缓存
-//
-//		主键ID，转化为id
-//
+// 主键ID，转化为id
 // tag== lrom:-  跳过
 // 过滤掉首字母小写的字段
 // 获取model对应的数据字段名：和其在model中的字段名
-func getStructColName2fieldNameAllMap(t reflect.Type) colName2fieldNameMap {
-	fields, ok := colName2fieldNameAllMapCache[t]
+func getStructC(t reflect.Type) []compC {
+	fields, ok := fieldCache[t]
 	if ok {
 		return fields
 	}
-	colName2fieldNameAllMapMutex.Lock()
-	defer colName2fieldNameAllMapMutex.Unlock()
-	fields, ok = colName2fieldNameAllMapCache[t]
+	fieldMutex.Lock()
+	defer fieldMutex.Unlock()
+	fields, ok = fieldCache[t]
 	if ok {
 		return fields
 	}
-	return _getStructColName2fieldNameAllMap(t, "")
+	return _getStructC(t, "")
+}
+func getStructCFMap(t reflect.Type) map[string]string {
+	list := _getStructC(t, "")
+	m := make(map[string]string, 0)
+	for _, c := range list {
+		m[c.columnName] = c.fieldName
+	}
+	return m
 }
 
-//	主键ID，转化为id
-//
+// struct 所有的字段名列表
+func getStructCAllList(t reflect.Type) []string {
+	list := _getStructC(t, "")
+	m := make([]string, 0)
+	for _, c := range list {
+		m = append(m, c.columnName)
+	}
+	return m
+}
+
+// 排除 软删除字段
+// struct 字段名列表
+func getStructCList(t reflect.Type) []string {
+	list := _getStructC(t, "")
+	m := make([]string, 0)
+	for _, c := range list {
+		if c.isSoftDel {
+			continue
+		}
+		m = append(m, c.columnName)
+	}
+	return m
+}
+
+// 主键ID，转化为id
 // tag== lrom:-  跳过
 // 过滤掉首字母小写的字段
 // 获取model对应的数据字段名：和其在model中的字段名
-func _getStructColName2fieldNameAllMap(t reflect.Type, lormName string) colName2fieldNameMap {
-	cfMap := colName2fieldNameMap{}
-
+func _getStructC(t reflect.Type, lormName string) (list []compC) {
 	numField := t.NumField()
 	for i := 0; i < numField; i++ {
+		cc := compC{}
+
 		structField := t.Field(i)
 		if structField.Anonymous {
-			allMap := _getStructColName2fieldNameAllMap(structField.Type, structField.Tag.Get("lorm"))
-			for k, v := range allMap {
-				cfMap[k] = v
-			}
+			data := _getStructC(structField.Type, structField.Tag.Get("lorm"))
+			list = append(list, data...)
 			continue
 		}
 
@@ -163,100 +190,136 @@ func _getStructColName2fieldNameAllMap(t reflect.Type, lormName string) colName2
 		}
 
 		if name == "ID" {
-			cfMap["id"] = "ID"
+			cc.fieldName = "ID"
+			cc.columnName = "id"
 			continue
 		}
 
 		if tag != "" {
-			cfMap[tag] = name
+			cc.fieldName = name
+			cc.columnName = tag
 			continue
 		}
 
 		delType, has := softdelete.SoftDelTypeMap[t]
 		if has {
+			cc.fieldName = name
 			if lormName == "" {
 				value := softdelete.SoftDelTypeYesFVMap[delType]
-				cfMap[value.Name] = name
+				cc.columnName = value.Name
 			} else {
-				cfMap[lormName] = name
+				cc.columnName = lormName
 			}
 			continue
 		}
 
-		cfMap[utils.Camel2Case(name)] = name
+		cc.fieldName = name
+		cc.columnName = utils.Camel2Case(name)
+		list = append(list, cc)
 	}
-	return cfMap
+	return
 }
 
-var colName2fieldNameMapCache = make(map[reflect.Type]colName2fieldNameMap)
-var colName2fieldNameMapMutex sync.Mutex
-
-// 过滤 软删除字段
-// 主键ID，转化为id
-// tag== lrom:-  跳过
-// 过滤掉首字母小写的字段
-// 获取model对应的数据字段名：和其在model中的字段名
-func getStructColName2fieldNameMap(t reflect.Type) colName2fieldNameMap {
-	fields, ok := colName2fieldNameMapCache[t]
-	if ok {
-		return fields
-	}
-	colName2fieldNameMapMutex.Lock()
-	defer colName2fieldNameMapMutex.Unlock()
-	fields, ok = colName2fieldNameMapCache[t]
-	if ok {
-		return fields
-	}
-	return _getStructColName2fieldNameMap(t, "")
+type compC struct {
+	fieldName  string // 字段名字
+	columnName string // 数据库字段名字
+	isSoftDel  bool   // 是否是软删除字段
 }
 
-// 包含 软删除字段
-// 主键ID，转化为id
-// tag== lrom:-  跳过
-// 过滤掉首字母小写的字段
-// 获取model对应的数据字段名：和其在model中的字段名
-func _getStructColName2fieldNameMap(t reflect.Type, lormName string) colName2fieldNameMap {
-	cfMap := colName2fieldNameMap{}
+type compCV struct {
+	fieldName  string // 字段名字
+	columnName string // 数据库字段名字
+	isSoftDel  bool   // 是否是软删除字段
+	value      field.Value
+	isZero     bool // 是否是零值
+}
 
-	numField := t.NumField()
-	for i := 0; i < numField; i++ {
-		structField := t.Field(i)
-		if structField.Anonymous {
-			allMap := _getStructColName2fieldNameMap(structField.Type, structField.Tag.Get("lorm"))
-			for k, v := range allMap {
-				cfMap[k] = v
+//--------------------------------- value -----------------------------------------
+
+// 获取 struct 值
+// 返回值类型有 Val,一种
+func getStructCV(v reflect.Value) (list []compCV) {
+	t := v.Type()
+	cs := getStructC(t)
+	for _, c := range cs {
+		cv := compCV{
+			fieldName:  c.fieldName,
+			columnName: c.columnName,
+			isSoftDel:  c.isSoftDel,
+		}
+
+		fieldV := v.FieldByName(c.fieldName)
+		inter := getFieldInterZero(fieldV)
+		if inter != nil {
+			cv.value = field.Value{
+				Type:  field.Val,
+				Value: inter,
 			}
-			continue
+		} else {
+			cv.isZero = true
 		}
 
-		name := structField.Name
-
-		// 过滤掉首字母小写的字段
-		if unicode.IsLower([]rune(name)[0]) {
-			continue
-		}
-
-		tag := structField.Tag.Get("lorm")
-		if tag == "-" {
-			continue
-		}
-
-		if name == "ID" {
-			cfMap["id"] = "ID"
-			continue
-		}
-
-		if tag != "" {
-			cfMap[tag] = name
-			continue
-		}
-
-		_, has := softdelete.SoftDelTypeMap[t]
-		if has {
-			continue
-		}
-
-		cfMap[utils.Camel2Case(name)] = name
+		list = append(list, cv)
 	}
-	return cfMap
+	return list
+}
+
+type colName2fieldNameMap map[string]string
+type compCVMap struct {
+	//有效字段列表
+	columns []string
+	//有效值列表
+	columnValues []field.Value
+
+	modelZeroFieldNames      []string //零值字段列表
+	modelNoSoftDelFieldNames []string // model 所有字段列表- 忽略软删除字段
+	modelAllFieldNames       []string //所有字段列表
+
+	//所有字段 dbName:fieldName
+	modelAllFieldNameMap colName2fieldNameMap
+}
+
+func getStructCVMap(v reflect.Value) (m compCVMap) {
+	list := getStructCV(v)
+	for _, cv := range list {
+		m.modelAllFieldNameMap[cv.columnName] = cv.fieldName
+		m.modelAllFieldNames = append(m.modelAllFieldNames, cv.fieldName)
+		if cv.isZero {
+			m.modelZeroFieldNames = append(m.modelZeroFieldNames, cv.fieldName)
+		}
+		if !cv.isSoftDel {
+			m.modelNoSoftDelFieldNames = append(m.modelNoSoftDelFieldNames, cv.fieldName)
+		}
+		if !cv.isZero && !cv.isSoftDel {
+			m.columns = append(m.columns, cv.fieldName)
+			m.columnValues = append(m.columnValues, cv.value)
+		}
+	}
+	return m
+}
+
+// 获取map[string]any
+// 返回值类型有 None,Null,Val,三种
+func getMapCV(v reflect.Value) (list []compCV) {
+	for _, k := range v.MapKeys() {
+		inter := getFieldInter(v.MapIndex(k))
+
+		cv := compCV{
+			columnName: k.String(),
+			value:      inter,
+		}
+		list = append(list, cv)
+	}
+	return list
+}
+
+// 获取map[string]any
+// 返回值类型有 None,Null,Val,三种
+func getMapCVMap(v reflect.Value) (m compCVMap) {
+	list := getMapCV(v)
+	for _, cv := range list {
+		m.columns = append(m.columns, cv.columnName)
+		m.columnValues = append(m.columnValues, cv.value)
+	}
+	return m
 }

@@ -68,11 +68,7 @@ func (s *SetContext) SetExpression(name string, expression string) *SetContext {
 }
 
 func (s *SetContext) Map(v map[string]any) *SetContext {
-	cv, err := getMapCV(reflect.ValueOf(v))
-	if err != nil {
-		s.err = err
-		return s
-	}
+	cv := getMapCVMap(reflect.ValueOf(v))
 	s.columns = append(s.columns, cv.columns...)
 	s.columnValues = append(s.columnValues, cv.columnValues...)
 	return s
