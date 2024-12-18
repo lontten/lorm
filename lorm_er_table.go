@@ -259,7 +259,7 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanLnT(rows)
+	_, err = ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanLnT(rows)
+	_, err = ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
 	}
