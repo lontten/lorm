@@ -220,7 +220,6 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
 	ctx.initExtra(extra...) // 表名，set，select配置
-	ctx.limit = types.NewInt64(1)
 
 	var dest = &[]T{}
 	v := reflect.ValueOf(dest).Elem()
@@ -272,7 +271,6 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
 	ctx.initExtra(extra...)
-	ctx.limit = types.NewInt64(1)
 
 	var dest = &[]*T{}
 	v := reflect.ValueOf(dest).Elem()
