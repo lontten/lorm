@@ -92,7 +92,7 @@ func (d *MysqlDialect) initPrimaryKeyName() {
 	if d.ctx.err != nil {
 		return
 	}
-	v := d.ctx.destV
+	v := d.ctx.destBaseValue
 	dest := d.ctx.scanDest
 	d.ctx.primaryKeyNames = d.ctx.ormConf.primaryKeys(v, dest)
 }
@@ -222,6 +222,29 @@ func (d *MysqlDialect) tableDelGen() {
 		query.WriteString(" WHERE ")
 		query.WriteString(ctx.whereSql)
 	}
+
+	query.WriteString(";")
+}
+
+// update 生成
+func (d *MysqlDialect) tableUpdateGen() {
+	ctx := d.ctx
+	if ctx.hasErr() {
+		return
+	}
+
+	var query = d.ctx.query
+
+	tableName := ctx.tableName
+
+	query.WriteString("UPDATE ")
+	query.WriteString(tableName)
+
+	query.WriteString(" SET ")
+	ctx.genSetSqlBycolumnValues()
+
+	query.WriteString(" WHERE ")
+	query.WriteString(ctx.whereSql)
 
 	query.WriteString(";")
 }

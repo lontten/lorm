@@ -14,12 +14,13 @@ type Ka struct {
 
 func (k Ka) TableConf() *lorm.TableConf {
 	return new(lorm.TableConf).
-		Table("t_ka").AutoIncrements("id")
+		Table("t_ka").
+		AutoIncrements("id")
 }
 
 func (u User) TableConf() *lorm.TableConf {
 	return new(lorm.TableConf).PrimaryKeys("id", "name").
-		Table("t_user").AutoIncrements("id")
+		Table("t_user2").AutoIncrements("id")
 }
 
 type User struct {
@@ -40,9 +41,11 @@ func main() {
 	//Prepare4()
 	//time.Sleep(1 * time.Hour)
 	//TableInsert()
-	Build1()
+	//Build1()
 	//Build2()
 	//Del()
 	//First()
+	List()
+	//TableUpdate()
 
 }

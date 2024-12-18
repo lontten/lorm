@@ -133,6 +133,7 @@ type Dialecter interface {
 
 	tableInsertGen()
 	tableDelGen()
+	tableUpdateGen()
 	tableSelectGen()
 	getSql() string
 }

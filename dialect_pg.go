@@ -161,6 +161,11 @@ func (d *PgDialect) tableDelGen() {
 
 }
 
+// update 生成
+func (d *PgDialect) tableUpdateGen() {
+
+}
+
 // select 生成
 func (d *PgDialect) tableSelectGen() {
 

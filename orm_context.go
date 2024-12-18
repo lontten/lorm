@@ -36,9 +36,9 @@ type ormContext struct {
 	// dest
 	scanDest  any
 	scanIsPtr bool
+	scanV     reflect.Value // dest 去除ptr的value
 
-	// model去除ptr的value
-	destV              reflect.Value
+	destBaseValue      reflect.Value // list第一个，去除ptr
 	destBaseType       reflect.Type
 	destBaseTypeIsComp bool
 	// scan 为slice时，里面item是否是ptr
@@ -163,7 +163,7 @@ func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
 		ctx.err = errors.New("last_insert_id field type error")
 		return
 	}
-	f := ctx.destV.FieldByName(ctx.lastInsertIdFieldName)
+	f := ctx.destBaseValue.FieldByName(ctx.lastInsertIdFieldName)
 	if ctx.lastInsertIdFieldIsPtr {
 		f.Set(vp)
 	} else {
@@ -206,7 +206,8 @@ func (ctx *ormContext) initConf() {
 		return
 	}
 
-	v := ctx.destV
+	v := ctx.destBaseValue
+
 	dest := ctx.scanDest
 	t := ctx.destBaseType
 	ctx.softDeleteType = utils.GetSoftDelType(t)
@@ -229,7 +230,7 @@ func (ctx *ormContext) initColumnsValue() {
 		return
 	}
 
-	cv := getStructCVMap(ctx.destV)
+	cv := getStructCVMap(ctx.destBaseValue)
 	ctx.columns = cv.columns
 	ctx.columnValues = cv.columnValues
 
@@ -283,8 +284,8 @@ func (ctx *ormContext) initColumnsValueSet() {
 			ormConf:        ctx.ormConf,
 			skipSoftDelete: true,
 		}
-		oc.initModelDest(set.model) //初始化参数
-		oc.initColumnsValue()       //初始化cv
+		oc.initTargetDestOne(set.model) //初始化参数
+		oc.initColumnsValue()           //初始化cv
 
 		set.columns = append(set.columns, oc.columns...)
 		set.columnValues = append(set.columnValues, oc.columnValues...)
@@ -342,6 +343,15 @@ func (ctx *ormContext) initColumnsValueSoftDel() {
 
 			// where
 			value, has = softdelete.SoftDelTypeNoFVMap[ctx.softDeleteType]
+			if has {
+				ctx.wb.fieldValue(value.Name, value.ToValue())
+			}
+		}
+		break
+	case sqltype.Update:
+		if ctx.softDeleteType != softdelete.None {
+			// where
+			value, has := softdelete.SoftDelTypeNoFVMap[ctx.softDeleteType]
 			if has {
 				ctx.wb.fieldValue(value.Name, value.ToValue())
 			}

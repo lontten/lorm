@@ -24,3 +24,39 @@ select 1 as a,
 ;
 
 ```
+
+
+```go
+
+
+type User struct {
+	Id *int
+    Name *string
+	
+	RoleList []Role
+}
+
+func (User) TableConf() *lorm.TableConf {
+    return new(lorm.TableConf).
+        Table("t_ka").
+        AutoIncrements("id")
+		One2Many(&Role{}, "RoleList", "id", "user_id")
+}
+
+type Role struct {
+    Id *int
+	Name *string
+}
+
+
+
+
+
+
+
+
+
+
+
+
+```

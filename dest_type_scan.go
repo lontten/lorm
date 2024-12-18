@@ -35,7 +35,7 @@ func (ctx *ormContext) initScanDestList(dest any) {
 	ctx.scanDest = dest
 	ctx.scanIsPtr = isPtr
 
-	ctx.destV = v
+	ctx.scanV = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
 
@@ -43,7 +43,7 @@ func (ctx *ormContext) initScanDestList(dest any) {
 	ctx.destSliceItemIsPtr = t.Kind() == reflect.Ptr
 }
 
-func (ctx *ormContext) initScanDestListT(dest any, v reflect.Value, t reflect.Type, destSliceItemIsPtr bool) {
+func (ctx *ormContext) initScanDestListT(dest any, v, baseV reflect.Value, t reflect.Type, destSliceItemIsPtr bool) {
 	if ctx.hasErr() {
 		return
 	}
@@ -57,7 +57,8 @@ func (ctx *ormContext) initScanDestListT(dest any, v reflect.Value, t reflect.Ty
 	ctx.scanDest = dest
 	ctx.scanIsPtr = true
 
-	ctx.destV = v
+	ctx.scanV = v
+	ctx.destBaseValue = baseV
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
 
@@ -90,8 +91,9 @@ func (ctx *ormContext) initScanDestOne(dest any) {
 
 	ctx.scanDest = dest
 	ctx.scanIsPtr = isPtr
-	ctx.destV = v
 
+	ctx.scanV = v
+	ctx.destBaseValue = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
 
@@ -117,51 +119,11 @@ func (ctx *ormContext) initScanDestOneT(dest any) {
 	ctx.scanDest = dest
 	ctx.scanIsPtr = true
 
-	ctx.destV = v
+	ctx.scanV = v
+	ctx.destBaseValue = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
 
 	ctx.destIsSlice = false
 	ctx.destSliceItemIsPtr = false
-}
-
-// 从dest中获取filed 的名字，dest必须为struct或者*struct
-func (ctx *ormContext) initDestScanField(dest any) {
-	if ctx.hasErr() {
-		return
-	}
-	v := reflect.ValueOf(dest)
-	_, v, err := basePtrValue(v)
-	if err != nil {
-		ctx.err = err
-		return
-	}
-	is := isCompType(v.Type())
-	if is {
-		ctx.err = errors.New("dest need is struct or map")
-		return
-	}
-	is, _ = baseSliceType(v.Type())
-	if is {
-		ctx.err = errors.New("dest cannot slice")
-		return
-	}
-
-	err = checkFieldV(v.Type())
-	if err != nil {
-		ctx.err = err
-		return
-	}
-	//ctx.scanDest = dest
-	//
-	//ctx.scanIsSlice = false
-	//ctx.destSliceItemIsPtr = false
-	//
-	//ctx.scanDestBaseType = base
-	//ctx.destBaseTypeIsComp = ctyp == Composite
-	//
-	//ctx.destValue = v
-
-	//todo 把filed 获取到存入 ctx
-
 }

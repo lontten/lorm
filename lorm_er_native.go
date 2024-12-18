@@ -40,9 +40,10 @@ func StmtQueryList[T any](db Stmter, args ...any) ([]T, error) {
 
 	var dest = &[]T{}
 	v := reflect.ValueOf(dest).Elem()
-	t := reflect.TypeFor[T]()
+	baseV := reflect.ValueOf(new(T)).Elem()
+	t := baseV.Type()
 
-	ctx.initScanDestListT(dest, v, t, false)
+	ctx.initScanDestListT(dest, v, baseV, t, false)
 	if ctx.err != nil {
 		return nil, ctx.err
 	}
@@ -64,9 +65,10 @@ func StmtQueryListP[T any](db Stmter, args ...any) ([]*T, error) {
 
 	var dest = &[]*T{}
 	v := reflect.ValueOf(dest).Elem()
-	t := reflect.TypeFor[T]()
+	baseV := reflect.ValueOf(new(T)).Elem()
+	t := baseV.Type()
 
-	ctx.initScanDestListT(dest, v, t, true)
+	ctx.initScanDestListT(dest, v, baseV, t, true)
 	if ctx.err != nil {
 		return nil, ctx.err
 	}
@@ -110,9 +112,10 @@ func QueryList[T any](db Engine, query string, args ...any) ([]T, error) {
 
 	var dest = &[]T{}
 	v := reflect.ValueOf(dest).Elem()
-	t := reflect.TypeFor[T]()
+	baseV := reflect.ValueOf(new(T)).Elem()
+	t := baseV.Type()
 
-	ctx.initScanDestListT(dest, v, t, false)
+	ctx.initScanDestListT(dest, v, baseV, t, false)
 	if ctx.err != nil {
 		return nil, ctx.err
 	}
@@ -134,9 +137,10 @@ func QueryListP[T any](db Engine, query string, args ...any) ([]*T, error) {
 
 	var dest = &[]*T{}
 	v := reflect.ValueOf(dest).Elem()
-	t := reflect.TypeFor[T]()
+	baseV := reflect.ValueOf(new(T)).Elem()
+	t := baseV.Type()
 
-	ctx.initScanDestListT(dest, v, t, true)
+	ctx.initScanDestListT(dest, v, baseV, t, true)
 	if ctx.err != nil {
 		return nil, ctx.err
 	}

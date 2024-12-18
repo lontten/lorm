@@ -117,17 +117,48 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 
 //------------------------------------Update--------------------------------------------
 
-func (db *lnDB) Update(v any) OrmTableUpdate {
-	core := db.core
-	core.getCtx().tableSqlType = dUpdate
-	core.appendBaseToken(baseToken{
-		typ:  tTableNameDestValue,
-		t:    reflect.TypeOf(v),
-		dest: v,
-		v:    reflect.ValueOf(v),
-	})
+func Update(db Engine, wb *WhereBuilder, dest any, extra ...*ExtraContext) (int64, error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...)
+	ctx.sqlType = sqltype.Update
+	ctx.sqlIsQuery = false
 
-	return OrmTableUpdate{base: core}
+	ctx.initScanDestOne(dest)
+	ctx.initConf() //初始化表名，主键，自增id
+
+	ctx.initColumnsValue()    //初始化cv
+	ctx.initColumnsValueSet() // extra 中的 额外 set
+	ctx.initColumnsValueExtra()
+	ctx.initColumnsValueSoftDel() // 软删除
+
+	ctx.initPrimaryKeyByWhere(wb) // byId(1,2,...)
+	if ctx.err != nil {
+		return 0, ctx.err
+	}
+	ctx.wb.And(wb)
+
+	whereStr, args, err := ctx.wb.toSql(dialect.parse)
+	if err != nil {
+		return 0, err
+	}
+	ctx.whereSql = whereStr
+	ctx.args = append(ctx.args, args...)
+
+	dialect.tableUpdateGen()
+	if ctx.hasErr() {
+		return 0, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+	exec, err := db.exec(sql, ctx.args...)
+	if err != nil {
+		return 0, err
+	}
+	return exec.RowsAffected()
 }
 
 //------------------------------------Select--------------------------------------------
@@ -188,23 +219,22 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	db = db.init()
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
-	ctx.initExtra(extra...)
+	ctx.initExtra(extra...) // 表名，set，select配置
 	ctx.limit = types.NewInt64(1)
 
 	var dest = &[]T{}
 	v := reflect.ValueOf(dest).Elem()
-	t := reflect.TypeFor[T]()
+	baseV := reflect.ValueOf(new(T)).Elem()
+	t := baseV.Type()
 
-	ctx.initScanDestListT(dest, v, t, false)
+	ctx.initScanDestListT(dest, v, baseV, t, false)
 	if ctx.err != nil {
 		return nil, ctx.err
 	}
 
 	ctx.initConf() //初始化表名，主键，自增id
 	ctx.initColumns()
-	if len(ctx.modelSelectFieldNames) == 0 {
-		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
-	}
+
 	ctx.initColumnsValueSoftDel()
 
 	ctx.initPrimaryKeyByWhere(wb)
@@ -246,9 +276,10 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 
 	var dest = &[]*T{}
 	v := reflect.ValueOf(dest).Elem()
-	t := reflect.TypeFor[T]()
+	baseV := reflect.ValueOf(new(T)).Elem()
+	t := baseV.Type()
 
-	ctx.initScanDestListT(dest, v, t, false)
+	ctx.initScanDestListT(dest, v, baseV, t, false)
 	if ctx.err != nil {
 		return nil, ctx.err
 	}

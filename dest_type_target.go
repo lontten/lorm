@@ -5,11 +5,7 @@ import (
 	"reflect"
 )
 
-/**
-从传入的struct实例，获取实例类对应的表名，解析字段是否合法
-*/
-// ptr
-// 检查数据类型  struct
+// 获取：参数，表名,scan
 func (ctx *ormContext) initModelDest(dest any) {
 	if ctx.hasErr() {
 		return
@@ -40,7 +36,8 @@ func (ctx *ormContext) initModelDest(dest any) {
 	ctx.scanDest = dest
 	ctx.scanIsPtr = isPtr
 
-	ctx.destV = v
+	ctx.scanV = v
+	ctx.destBaseValue = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = true
 
@@ -48,50 +45,34 @@ func (ctx *ormContext) initModelDest(dest any) {
 	ctx.destSliceItemIsPtr = false
 }
 
-// string 或者 struct
-func (ctx *ormContext) initNameDest(dest any) {
-	if ctx.err != nil {
+// 只作为参数，主要用在insert,update时，获取更新的数据
+func (ctx *ormContext) initTargetDestOne(dest any) {
+	if ctx.hasErr() {
 		return
 	}
 	v := reflect.ValueOf(dest)
-	_, base, err := basePtrValue(v)
+	_, v, err := basePtrValue(v)
 	if err != nil {
 		ctx.err = err
 		return
 	}
-	if base.Kind() == reflect.String {
-		ctx.tableName = dest.(string)
-		return
-	}
-	ctx.initModelDest(dest)
-}
 
-// 参数分为comp 的 vn
-// 接受是comp、atom 的 v
-// 即：检查 comp 的 vn
-func (ctx *ormContext) checkDestParamScan() {
-	if ctx.err != nil {
-		return
-	}
-	ctx.err = checkCompFieldVS(ctx.paramModelBaseV)
-}
+	t := v.Type()
 
-// 参数分为comp vn
-// 即：检查 comp 的 vn
-func (ctx *ormContext) checkDestParam() {
-	if ctx.err != nil {
-		return
+	if ctx.checkParam {
+		if _isStructType(t) {
+			ctx.err = errors.New("dest need is struct")
+			return
+		}
+		err = checkCompFieldVS(v)
+		if err != nil {
+			ctx.err = err
+			return
+		}
 	}
-	ctx.err = checkCompFieldVS(ctx.paramModelBaseV)
-}
+	ctx.paramModelBaseV = v
 
-// 接受是comp、atom 的 v
-func (ctx *ormContext) checkDestScan() {
-	if ctx.hasErr() {
-		return
-	}
-	if isValuerType(ctx.destBaseType) {
-		return
-	}
-	ctx.err = checkCompFieldV(ctx.destBaseType)
+	ctx.destBaseValue = v
+	ctx.destBaseType = t
+	ctx.destBaseTypeIsComp = true
 }
