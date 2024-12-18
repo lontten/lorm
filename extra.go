@@ -12,6 +12,7 @@ type ExtraContext struct {
 	insertType     insert_type.InsertType
 	returnType     return_type.ReturnType
 	showSql        bool
+	noRun          bool
 	skipSoftDelete bool
 	tableName      string
 	selectColumns  []string // select 的 字段名，空为返回所有字段
@@ -46,6 +47,11 @@ func (e *ExtraContext) GetErr() error {
 
 func (e *ExtraContext) ShowSql() *ExtraContext {
 	e.showSql = true
+	return e
+}
+
+func (e *ExtraContext) NoRun() *ExtraContext {
+	e.noRun = true
 	return e
 }
 

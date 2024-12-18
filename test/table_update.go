@@ -18,7 +18,7 @@ func TableUpdate() {
 		TableName("t_user").
 		ReturnType(return_type.PrimaryKey).
 		WhenDuplicateKey("name").DoUpdate().
-		ShowSql(),
+		ShowSql().NoRun(),
 	)
 	if err != nil {
 		panic(err)

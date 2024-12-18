@@ -43,9 +43,9 @@ func main() {
 	//TableInsert()
 	//Build1()
 	//Build2()
-	Del()
+	//Del()
 	//First()
 	//List()
-	//TableUpdate()
+	TableUpdate()
 
 }

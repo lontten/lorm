@@ -37,6 +37,9 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
+	if ctx.noRun {
+		return 0, nil
+	}
 
 	if ctx.sqlIsQuery {
 		rows, err := db.query(sql, ctx.args...)
@@ -101,6 +104,9 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
+	if ctx.noRun {
+		return 0, nil
+	}
 	exec, err := db.exec(sql, ctx.args...)
 	if err != nil {
 		return 0, err
@@ -140,6 +146,9 @@ func Update(db Engine, wb *WhereBuilder, dest any, extra ...*ExtraContext) (int6
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
+	if ctx.noRun {
+		return 0, nil
+	}
 	exec, err := db.exec(sql, ctx.args...)
 	if err != nil {
 		return 0, err
@@ -174,13 +183,6 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
-	whereStr, args, err := ctx.wb.toSql(dialect.parse)
-	if err != nil {
-		return nil, err
-	}
-	ctx.whereSql = whereStr
-	ctx.args = append(ctx.args, args...)
-
 	dialect.tableSelectGen()
 	if ctx.hasErr() {
 		return nil, ctx.err
@@ -189,7 +191,9 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
-
+	if ctx.noRun {
+		return nil, nil
+	}
 	rows, err := db.query(sql, ctx.args...)
 	if err != nil {
 		return nil, err
@@ -233,7 +237,9 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
-
+	if ctx.noRun {
+		return nil, nil
+	}
 	rows, err := db.query(sql, ctx.args...)
 	if err != nil {
 		return nil, err
@@ -279,7 +285,9 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
-
+	if ctx.noRun {
+		return nil, nil
+	}
 	rows, err := db.query(sql, ctx.args...)
 	if err != nil {
 		return nil, err
@@ -319,7 +327,9 @@ func Has[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t bool, er
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
-
+	if ctx.noRun {
+		return false, nil
+	}
 	rows, err := db.query(sql, ctx.args...)
 	if err != nil {
 		return false, err
@@ -355,7 +365,9 @@ func Count[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t int64,
 	if ctx.showSql {
 		fmt.Println(sql, ctx.args)
 	}
-
+	if ctx.noRun {
+		return 0, nil
+	}
 	var total int64
 	rows, err := db.query(sql, ctx.args...)
 	if err != nil {

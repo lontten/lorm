@@ -77,7 +77,8 @@ type ormContext struct {
 	skipSoftDelete bool   // 跳过软删除
 	tableName      string //当前表名
 	checkParam     bool   // 是否检查参数
-	showSql        bool   // 是否打印sql
+	showSql        bool   // 打印sql
+	noRun          bool   // 不实际执行
 	// ------------------conf-end----------------------
 
 	// ------------------字段名：字段值----------------------
@@ -186,6 +187,7 @@ func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 	ctx.insertType = e.insertType
 	ctx.returnType = e.returnType
 	ctx.showSql = e.showSql
+	ctx.noRun = e.noRun
 	ctx.skipSoftDelete = e.skipSoftDelete
 	ctx.tableName = e.tableName
 
