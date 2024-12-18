@@ -200,28 +200,29 @@ func (d *MysqlDialect) tableDelGen() {
 	if ctx.hasErr() {
 		return
 	}
-
 	var query = d.ctx.query
-
 	tableName := ctx.tableName
+
+	whereStr, args, err := ctx.wb.toSql(d.parse)
+	if err != nil {
+		ctx.err = err
+		return
+	}
 
 	//  没有软删除 或者 跳过软删除 ，执行物理删除
 	if ctx.softDeleteType == softdelete.None || ctx.skipSoftDelete {
 		query.WriteString("DELETE FROM ")
 		query.WriteString(tableName)
-
-		query.WriteString(" WHERE ")
-		query.WriteString(ctx.whereSql)
 	} else {
 		query.WriteString("UPDATE ")
 		query.WriteString(tableName)
 
 		query.WriteString(" SET ")
 		ctx.genSetSqlBycolumnValues()
-
-		query.WriteString(" WHERE ")
-		query.WriteString(ctx.whereSql)
 	}
+	query.WriteString(" WHERE ")
+	query.WriteString(whereStr)
+	ctx.args = append(ctx.args, args...)
 
 	query.WriteString(";")
 }
@@ -232,20 +233,22 @@ func (d *MysqlDialect) tableUpdateGen() {
 	if ctx.hasErr() {
 		return
 	}
-
 	var query = d.ctx.query
-
 	tableName := ctx.tableName
+	whereStr, args, err := ctx.wb.toSql(d.parse)
+	if err != nil {
+		ctx.err = err
+		return
+	}
 
 	query.WriteString("UPDATE ")
 	query.WriteString(tableName)
-
 	query.WriteString(" SET ")
 	ctx.genSetSqlBycolumnValues()
-
 	query.WriteString(" WHERE ")
-	query.WriteString(ctx.whereSql)
 
+	query.WriteString(whereStr)
+	ctx.args = append(ctx.args, args...)
 	query.WriteString(";")
 }
 
@@ -255,17 +258,22 @@ func (d *MysqlDialect) tableSelectGen() {
 	if ctx.hasErr() {
 		return
 	}
-
 	var query = d.ctx.query
-
 	tableName := ctx.tableName
+	whereStr, args, err := ctx.wb.toSql(d.parse)
+	if err != nil {
+		ctx.err = err
+		return
+	}
+
 	query.WriteString("SELECT ")
 	query.WriteString(strings.Join(ctx.modelSelectFieldNames, ","))
 	query.WriteString(" FROM ")
 	query.WriteString(tableName)
 
 	query.WriteString(" WHERE ")
-	query.WriteString(ctx.whereSql)
+	query.WriteString(whereStr)
+	ctx.args = append(ctx.args, args...)
 	query.WriteString(ctx.lastSql)
 	if ctx.limit != nil {
 		query.WriteString(" LIMIT ")

@@ -93,13 +93,6 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
-	whereStr, args, err := ctx.wb.toSql(dialect.parse)
-	if err != nil {
-		return 0, err
-	}
-	ctx.whereSql = whereStr
-	ctx.args = append(ctx.args, args...)
-
 	dialect.tableDelGen()
 	if ctx.hasErr() {
 		return 0, ctx.err
@@ -138,13 +131,6 @@ func Update(db Engine, wb *WhereBuilder, dest any, extra ...*ExtraContext) (int6
 		return 0, ctx.err
 	}
 	ctx.wb.And(wb)
-
-	whereStr, args, err := ctx.wb.toSql(dialect.parse)
-	if err != nil {
-		return 0, err
-	}
-	ctx.whereSql = whereStr
-	ctx.args = append(ctx.args, args...)
 
 	dialect.tableUpdateGen()
 	if ctx.hasErr() {
@@ -239,13 +225,6 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
-	whereStr, args, err := ctx.wb.toSql(dialect.parse)
-	if err != nil {
-		return nil, err
-	}
-	ctx.whereSql = whereStr
-	ctx.args = append(ctx.args, args...)
-
 	dialect.tableSelectGen()
 	if ctx.hasErr() {
 		return nil, ctx.err
@@ -292,13 +271,6 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
-	whereStr, args, err := ctx.wb.toSql(dialect.parse)
-	if err != nil {
-		return nil, err
-	}
-	ctx.whereSql = whereStr
-	ctx.args = append(ctx.args, args...)
-
 	dialect.tableSelectGen()
 	if ctx.hasErr() {
 		return nil, ctx.err
@@ -339,13 +311,6 @@ func Has[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t bool, er
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
-	whereStr, args, err := ctx.wb.toSql(dialect.parse)
-	if err != nil {
-		return false, err
-	}
-	ctx.whereSql = whereStr
-	ctx.args = append(ctx.args, args...)
-
 	dialect.tableSelectGen()
 	if ctx.hasErr() {
 		return false, ctx.err
@@ -381,13 +346,6 @@ func Count[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t int64,
 
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
-
-	whereStr, args, err := ctx.wb.toSql(dialect.parse)
-	if err != nil {
-		return 0, err
-	}
-	ctx.whereSql = whereStr
-	ctx.args = append(ctx.args, args...)
 
 	dialect.tableSelectGen()
 	if ctx.hasErr() {

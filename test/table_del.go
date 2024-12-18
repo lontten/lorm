@@ -20,7 +20,7 @@ func Del() {
 	eq := lorm.W().Eq("abc", "xxx")
 
 	num, err := lorm.Delete[User](ldb.DB, lorm.W().Or(eq).
-		Model(u), lorm.E().ShowSql().SkipSoftDelete().TableName("fjakd"))
+		Model(u), lorm.E().ShowSql().TableName("fjakd"))
 	fmt.Println(num)
 	fmt.Println(err)
 }

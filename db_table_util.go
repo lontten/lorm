@@ -162,7 +162,7 @@ func (ctx *ormContext) genSetSqlBycolumnValues() {
 
 	for i, v := range values {
 		if i > 0 {
-			query.WriteString(" , ")
+			query.WriteString(", ")
 		}
 		switch v.Type {
 		case field.None:
