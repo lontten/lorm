@@ -124,7 +124,7 @@ func Update(db Engine, wb *WhereBuilder, dest any, extra ...*ExtraContext) (int6
 	ctx.sqlType = sqltype.Update
 	ctx.sqlIsQuery = false
 
-	ctx.initScanDestOne(dest)
+	ctx.initModelDest(dest)
 	ctx.initConf() //初始化表名，主键，自增id
 
 	ctx.initColumnsValue()    //初始化cv

@@ -34,9 +34,9 @@ func (ctx *ormContext) initModelDest(dest any) {
 	ctx.paramModelBaseV = v
 
 	ctx.scanDest = dest
+	ctx.scanV = v
 	ctx.scanIsPtr = isPtr
 
-	ctx.scanV = v
 	ctx.destBaseValue = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = true

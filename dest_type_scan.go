@@ -33,9 +33,9 @@ func (ctx *ormContext) initScanDestList(dest any) {
 	}
 
 	ctx.scanDest = dest
+	ctx.scanV = v
 	ctx.scanIsPtr = isPtr
 
-	ctx.scanV = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
 
@@ -55,9 +55,9 @@ func (ctx *ormContext) initScanDestListT(dest any, v, baseV reflect.Value, t ref
 	}
 
 	ctx.scanDest = dest
+	ctx.scanV = v
 	ctx.scanIsPtr = true
 
-	ctx.scanV = v
 	ctx.destBaseValue = baseV
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
@@ -90,9 +90,9 @@ func (ctx *ormContext) initScanDestOne(dest any) {
 	}
 
 	ctx.scanDest = dest
+	ctx.scanV = v
 	ctx.scanIsPtr = isPtr
 
-	ctx.scanV = v
 	ctx.destBaseValue = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
@@ -117,9 +117,9 @@ func (ctx *ormContext) initScanDestOneT(dest any) {
 	}
 
 	ctx.scanDest = dest
+	ctx.scanV = v
 	ctx.scanIsPtr = true
 
-	ctx.scanV = v
 	ctx.destBaseValue = v
 	ctx.destBaseType = t
 	ctx.destBaseTypeIsComp = ctyp == Composite
