@@ -26,8 +26,8 @@ func First() {
 }
 
 func First2() {
-	one, err := lorm.First[User](ldb.DB, lorm.W().
-		IsNotNull("info_pdf_url"), lorm.E().ShowSql())
+	one, err := lorm.First[User](ldb.DB, lorm.W().Eq("name", "fjakdsf").
+		IsNotNull("name"), lorm.E().ShowSql())
 	fmt.Println(one)
 	fmt.Println(err)
 }
