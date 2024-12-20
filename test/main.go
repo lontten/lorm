@@ -45,7 +45,8 @@ func main() {
 	//Build2()
 	//Del()
 	//First()
+	First2()
 	//List()
-	TableUpdate()
+	//TableUpdate()
 
 }

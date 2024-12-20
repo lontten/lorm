@@ -23,8 +23,7 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	ctx.initModelDest(v) //初始化参数
 	ctx.initConf()       //初始化表名，主键，自增id
 
-	ctx.initColumnsValue()    //初始化cv
-	ctx.initColumnsValueSet() // extra 中的 额外 set
+	ctx.initColumnsValue() //初始化cv
 	ctx.initColumnsValueExtra()
 	ctx.initColumnsValueSoftDel() // 软删除
 
@@ -127,8 +126,7 @@ func Update(db Engine, wb *WhereBuilder, dest any, extra ...*ExtraContext) (int6
 	ctx.initModelDest(dest)
 	ctx.initConf() //初始化表名，主键，自增id
 
-	ctx.initColumnsValue()    //初始化cv
-	ctx.initColumnsValueSet() // extra 中的 额外 set
+	ctx.initColumnsValue() //初始化cv
 	ctx.initColumnsValueExtra()
 	ctx.initColumnsValueSoftDel() // 软删除
 
@@ -384,6 +382,121 @@ func Count[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t int64,
 	return total, errors.New("rows no data")
 }
 
-type OrmTableUpdate struct {
-	base corer
+func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContext) (*T, error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...) // 表名，set，select配置
+	ctx.sqlType = sqltype.Select
+	ctx.sqlIsQuery = false
+
+	ctx.initModelDest(d) //初始化参数
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+	ctx.initConf() //初始化表名，主键，自增id
+
+	ctx.initColumnsValue()        //初始化cv
+	ctx.initColumnsValueSoftDel() // 软删除
+	if len(ctx.modelSelectFieldNames) == 0 {
+		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
+	}
+
+	ctx.initPrimaryKeyByWhere(wb) // byId(1,2,...)
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+	ctx.wb.And(wb)
+
+	dialect.tableSelectGen()
+	if ctx.hasErr() {
+		return nil, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+	if ctx.noRun {
+		return nil, nil
+	}
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return nil, err
+	}
+
+	dest := new(T)
+	v := reflect.ValueOf(dest).Elem()
+	ctx.scanV = v
+	ctx.scanIsPtr = true
+	ctx.destBaseValue = v
+
+	_, err = ctx.ScanLnT(rows)
+	if err != nil {
+		return nil, err
+	}
+	if dest != nil {
+		return dest, nil
+	}
+
+	ctx.sqlType = sqltype.Insert
+	ctx.sqlIsQuery = true
+
+	ctx.initModelDest(v) //初始化参数
+
+	ctx.initColumnsValue() //初始化cv
+
+	ctx.initColumnsValueExtra()
+	ctx.initColumnsValueSoftDel() // 软删除
+
+	dialect.tableInsertGen()
+	if ctx.hasErr() {
+		return nil, ctx.err
+	}
+
+	sql = dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+	if ctx.noRun {
+		return nil, nil
+	}
+
+	v = reflect.ValueOf(dest)
+	isPtr, v, err := basePtrValue(v)
+	if err != nil {
+		return nil, err
+	}
+	ctx.scanIsPtr = isPtr
+	ctx.scanV = v
+	ctx.destBaseValue = v
+
+	if ctx.sqlIsQuery {
+		rows, err = db.query(sql, ctx.args...)
+		if err != nil {
+			return nil, err
+		}
+		_, err = ctx.ScanLnT(rows)
+		if err != nil {
+			return nil, err
+		}
+		return d, nil
+	}
+
+	exec, err := db.exec(sql, ctx.args...)
+	if err != nil {
+		return nil, err
+	}
+	if ctx.needLastInsertId {
+		id, err := exec.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+		if id > 0 {
+			ctx.setLastInsertId(id)
+			if ctx.hasErr() {
+				return nil, ctx.err
+			}
+		}
+	}
+	return d, nil
 }

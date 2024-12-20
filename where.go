@@ -350,7 +350,7 @@ func (w *WhereBuilder) In(query string, args ArgArray, condition ...bool) *Where
 	if argsLen == 0 {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:    In,
@@ -358,7 +358,7 @@ func (w *WhereBuilder) In(query string, args ArgArray, condition ...bool) *Where
 			argsNum: argsLen,
 		},
 	})
-	w.args = append(w.args, args...)
+	w.andArgs = append(w.andArgs, args...)
 	return w
 }
 
@@ -373,7 +373,7 @@ func (w *WhereBuilder) NotIn(query string, args ArgArray, condition ...bool) *Wh
 		return w
 	}
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:    NotIn,
@@ -381,7 +381,7 @@ func (w *WhereBuilder) NotIn(query string, args ArgArray, condition ...bool) *Wh
 			argsNum: argsLen,
 		},
 	})
-	w.args = append(w.args, args...)
+	w.andArgs = append(w.andArgs, args...)
 	return w
 }
 
@@ -395,14 +395,14 @@ func (w *WhereBuilder) NotEq(query string, arg any, condition ...bool) *WhereBui
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Neq,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -416,14 +416,14 @@ func (w *WhereBuilder) Contains(query string, arg any, condition ...bool) *Where
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Contains,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -438,14 +438,14 @@ func (w *WhereBuilder) Less(query string, arg any, condition ...bool) *WhereBuil
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Less,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -460,14 +460,14 @@ func (w *WhereBuilder) LessEq(query string, arg any, condition ...bool) *WhereBu
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  LessEq,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -482,14 +482,14 @@ func (w *WhereBuilder) Greater(query string, arg any, condition ...bool) *WhereB
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Greater,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -504,14 +504,14 @@ func (w *WhereBuilder) GreaterEq(query string, arg any, condition ...bool) *Wher
 	if arg == nil {
 		return w
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  GreaterEq,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
@@ -522,14 +522,14 @@ func (w *WhereBuilder) Between(query string, arg1, arg2 any, condition ...bool) 
 		}
 	}
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  Between,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg1, arg2)
+	w.andArgs = append(w.andArgs, arg1, arg2)
 	return w
 }
 
@@ -539,12 +539,12 @@ func (w *WhereBuilder) Arg(arg any, condition ...bool) *WhereBuilder {
 			return w
 		}
 	}
-	w.args = append(w.args, arg)
+	w.andArgs = append(w.andArgs, arg)
 	return w
 }
 
 func (w *WhereBuilder) Args(args ...any) *WhereBuilder {
-	w.args = append(w.args, args...)
+	w.andArgs = append(w.andArgs, args...)
 	return w
 }
 
@@ -555,7 +555,7 @@ func (w *WhereBuilder) IsNull(query string, condition ...bool) *WhereBuilder {
 		}
 	}
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  IsNull,
@@ -572,7 +572,7 @@ func (w *WhereBuilder) IsNotNull(query string, condition ...bool) *WhereBuilder 
 		}
 	}
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  IsNotNull,
@@ -588,7 +588,7 @@ func (w *WhereBuilder) IsFalse(query string, condition ...bool) *WhereBuilder {
 			return w
 		}
 	}
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  IsFalse,
@@ -604,14 +604,14 @@ func (w *WhereBuilder) NotBetween(query string, arg1, arg2 any, condition ...boo
 		}
 	}
 
-	w.wheres = append(w.wheres, whereToken{
+	w.andWheres = append(w.andWheres, whereToken{
 		Type: native,
 		clause: Clause{
 			Type:  NotBetween,
 			query: query,
 		},
 	})
-	w.args = append(w.args, arg1, arg2)
+	w.andArgs = append(w.andArgs, arg1, arg2)
 	return w
 }
 

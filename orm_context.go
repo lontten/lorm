@@ -275,7 +275,8 @@ func (ctx *ormContext) initColumns() {
 	}
 	return
 }
-func (ctx *ormContext) initColumnsValueSet() {
+
+func (ctx *ormContext) initColumnsValueExtra() {
 	if ctx.hasErr() {
 		return
 	}
@@ -292,15 +293,7 @@ func (ctx *ormContext) initColumnsValueSet() {
 		set.columns = append(set.columns, oc.columns...)
 		set.columnValues = append(set.columnValues, oc.columnValues...)
 	}
-
-	return
-}
-func (ctx *ormContext) initColumnsValueExtra() {
 	if ctx.hasErr() {
-		return
-	}
-	e := ctx.extra
-	if e == nil {
 		return
 	}
 	for i, column := range e.columns {
