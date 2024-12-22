@@ -196,9 +196,12 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanLnT(rows)
+	num, err := ctx.ScanLnT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return dest, nil
 }
@@ -242,9 +245,12 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanT(rows)
+	num, err := ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return *dest, nil
 }
@@ -290,9 +296,12 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanT(rows)
+	num, err := ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return *dest, nil
 }

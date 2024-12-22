@@ -27,9 +27,12 @@ func StmtQueryOne[T any](db Stmter, args ...any) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanLnT(rows)
+	num, err := ctx.ScanLnT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return dest, nil
 }
@@ -52,9 +55,12 @@ func StmtQueryList[T any](db Stmter, args ...any) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanT(rows)
+	num, err := ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return *dest, nil
 }
@@ -77,9 +83,12 @@ func StmtQueryListP[T any](db Stmter, args ...any) ([]*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanT(rows)
+	num, err := ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return *dest, nil
 }
@@ -99,9 +108,12 @@ func QueryOne[T any](db Engine, query string, args ...any) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanLnT(rows)
+	num, err := ctx.ScanLnT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return dest, nil
 }
@@ -124,9 +136,12 @@ func QueryList[T any](db Engine, query string, args ...any) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanT(rows)
+	num, err := ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return *dest, nil
 }
@@ -149,9 +164,12 @@ func QueryListP[T any](db Engine, query string, args ...any) ([]*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = ctx.ScanT(rows)
+	num, err := ctx.ScanT(rows)
 	if err != nil {
 		return nil, err
+	}
+	if num == 0 {
+		return nil, nil
 	}
 	return *dest, nil
 }
