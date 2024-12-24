@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lontten/lorm"
 	"github.com/lontten/lorm/types"
@@ -36,4 +37,20 @@ func List() {
 	num, err := lorm.List[User](ldb.DB, lorm.W().Eq("id", 1), lorm.E().ShowSql())
 	fmt.Println(num)
 	fmt.Println(err)
+}
+func GetOrInsert() {
+	var u = User{
+		Name: types.NewString("kb"),
+		Age:  types.NewInt(33),
+	}
+	d, err := lorm.GetOrInsert[User](ldb.DB, lorm.W().Eq("name", "kb"), &u, lorm.E().ShowSql())
+	Log(d)
+	Log(u)
+	fmt.Println(err)
+
+}
+
+func Log(v any) {
+	bytes, _ := json.Marshal(v)
+	fmt.Println(string(bytes))
 }

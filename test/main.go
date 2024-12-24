@@ -19,8 +19,9 @@ func (k Ka) TableConf() *lorm.TableConf {
 }
 
 func (u User) TableConf() *lorm.TableConf {
-	return new(lorm.TableConf).PrimaryKeys("id", "name").
-		Table("t_user").AutoIncrements("id")
+	return new(lorm.TableConf).Table("t_user").
+		PrimaryKeys("id").
+		AutoIncrements("id")
 }
 
 type User struct {
@@ -46,8 +47,8 @@ func main() {
 	//Del()
 	//First()
 	//First2()
-	QueryOneT()
+	//QueryOneT()
 	//List()
 	//TableUpdate()
-
+	GetOrInsert()
 }

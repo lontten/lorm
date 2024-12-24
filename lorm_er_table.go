@@ -391,30 +391,29 @@ func Count[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t int64,
 	return total, errors.New("rows no data")
 }
 
+// GetOrInsert
+// d insert 的 对象，
+// e 通用设置，select 自定义字段
 func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContext) (*T, error) {
 	db = db.init()
 	dialect := db.getDialect()
 	ctx := dialect.getCtx()
 	ctx.initExtra(extra...) // 表名，set，select配置
 	ctx.sqlType = sqltype.Select
-	ctx.sqlIsQuery = false
+	ctx.sqlIsQuery = true
 
-	ctx.initModelDest(d) //初始化参数
+	dest := new(T)
+	ctx.initScanDestOneT(dest)
 	if ctx.err != nil {
 		return nil, ctx.err
 	}
+
 	ctx.initConf() //初始化表名，主键，自增id
 
-	ctx.initColumnsValue()        //初始化cv
-	ctx.initColumnsValueSoftDel() // 软删除
-	if len(ctx.modelSelectFieldNames) == 0 {
-		ctx.modelSelectFieldNames = ctx.modelAllFieldNames
-	}
+	ctx.initColumns()
+	ctx.initColumnsValueSoftDel()
 
-	ctx.initPrimaryKeyByWhere(wb) // byId(1,2,...)
-	if ctx.err != nil {
-		return nil, ctx.err
-	}
+	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
 	dialect.tableSelectGen()
@@ -432,28 +431,24 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 	if err != nil {
 		return nil, err
 	}
-
-	dest := new(T)
-	v := reflect.ValueOf(dest).Elem()
-	ctx.scanV = v
-	ctx.scanIsPtr = true
-	ctx.destBaseValue = v
-
-	_, err = ctx.ScanLnT(rows)
+	num, err := ctx.ScanLnT(rows)
 	if err != nil {
 		return nil, err
 	}
-	if dest != nil {
+	if num != 0 {
 		return dest, nil
 	}
 
+	//------------
+
+	ctx.query.Reset()
+	ctx.args = []any{}
 	ctx.sqlType = sqltype.Insert
 	ctx.sqlIsQuery = true
 
-	ctx.initModelDest(v) //初始化参数
+	ctx.initModelDest(d) //初始化参数
 
 	ctx.initColumnsValue() //初始化cv
-
 	ctx.initColumnsValueExtra()
 	ctx.initColumnsValueSoftDel() // 软删除
 
@@ -470,25 +465,15 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 		return nil, nil
 	}
 
-	v = reflect.ValueOf(dest)
-	isPtr, v, err := basePtrValue(v)
-	if err != nil {
-		return nil, err
-	}
-	ctx.scanIsPtr = isPtr
-	ctx.scanV = v
-	ctx.destBaseValue = v
-
 	if ctx.sqlIsQuery {
 		rows, err = db.query(sql, ctx.args...)
 		if err != nil {
 			return nil, err
 		}
-		_, err = ctx.ScanLnT(rows)
+		num, err = ctx.ScanLnT(rows)
 		if err != nil {
 			return nil, err
 		}
-		return d, nil
 	}
 
 	exec, err := db.exec(sql, ctx.args...)
@@ -506,6 +491,13 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 				return nil, ctx.err
 			}
 		}
+	}
+	affected, err := exec.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if affected == 0 {
+		return nil, errors.New("insert affected 0")
 	}
 	return d, nil
 }
