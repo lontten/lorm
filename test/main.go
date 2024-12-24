@@ -1,9 +1,16 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/lontten/lorm"
 	"github.com/lontten/lorm/softdelete"
 )
+
+func Log(v any) {
+	bytes, _ := json.Marshal(v)
+	fmt.Println(string(bytes))
+}
 
 type Ka struct {
 	Id   *int    `ldb:"id"`
@@ -50,5 +57,6 @@ func main() {
 	//QueryOneT()
 	//List()
 	//TableUpdate()
-	GetOrInsert()
+	//GetOrInsert()
+	InsertOrHas()
 }

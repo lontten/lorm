@@ -67,12 +67,6 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	return exec.RowsAffected()
 }
 
-// InsertOrHas 根据条件查询是否已存在，不存在则直接插入
-// 应用场景：例如添加 后台管理员 时，如果名字已存在，返回名字重复，否者正常添加。
-func InsertOrHas(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
-	return 0, err
-}
-
 //------------------------------------Delete--------------------------------------------
 
 func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, error) {
@@ -416,6 +410,7 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
+	ctx.modelSelectFieldNames = []string{"1"}
 	dialect.tableSelectGen()
 	if ctx.hasErr() {
 		return nil, ctx.err
@@ -500,4 +495,106 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 		return nil, errors.New("insert affected 0")
 	}
 	return d, nil
+}
+
+// InsertOrHas 根据条件查询是否已存在，不存在则直接插入
+// 应用场景：例如添加 后台管理员 时，如果名字已存在，返回名字重复，否者正常添加。
+// d insert 的 对象，
+// e 通用设置，select 自定义字段
+func InsertOrHas(db Engine, wb *WhereBuilder, d any, extra ...*ExtraContext) (bool, error) {
+	db = db.init()
+	dialect := db.getDialect()
+	ctx := dialect.getCtx()
+	ctx.initExtra(extra...) // 表名，set，select配置
+	ctx.sqlType = sqltype.Select
+	ctx.sqlIsQuery = true
+
+	ctx.initModelDest(d) //初始化参数
+	ctx.initConf()       //初始化表名，主键，自增id
+
+	ctx.initColumnsValue() //初始化cv
+	ctx.initColumnsValueExtra()
+	ctx.initColumnsValueSoftDel() // 软删除
+	if ctx.err != nil {
+		return false, ctx.err
+	}
+
+	ctx.initPrimaryKeyByWhere(wb)
+	ctx.wb.And(wb)
+
+	dialect.tableSelectGen()
+	if ctx.hasErr() {
+		return false, ctx.err
+	}
+	sql := dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+	if ctx.noRun {
+		return false, nil
+	}
+	rows, err := db.query(sql, ctx.args...)
+	if err != nil {
+		return false, err
+	}
+	if rows.Next() {
+		return true, nil
+	}
+
+	//------------
+
+	ctx.query.Reset()
+	ctx.args = []any{}
+	ctx.sqlType = sqltype.Insert
+	ctx.sqlIsQuery = true
+	ctx.initColumnsValueSoftDel() // 软删除
+
+	dialect.tableInsertGen()
+	if ctx.hasErr() {
+		return false, ctx.err
+	}
+
+	sql = dialect.getSql()
+	if ctx.showSql {
+		fmt.Println(sql, ctx.args)
+	}
+	if ctx.noRun {
+		return false, nil
+	}
+
+	if ctx.sqlIsQuery {
+		rows, err = db.query(sql, ctx.args...)
+		if err != nil {
+			return false, err
+		}
+		_, err = ctx.ScanLnT(rows)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	exec, err := db.exec(sql, ctx.args...)
+	if err != nil {
+		return false, err
+	}
+	if ctx.needLastInsertId {
+		id, err := exec.LastInsertId()
+		if err != nil {
+			return false, err
+		}
+		if id > 0 {
+			ctx.setLastInsertId(id)
+			if ctx.hasErr() {
+				return false, ctx.err
+			}
+		}
+	}
+	affected, err := exec.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if affected == 0 {
+		return false, errors.New("insert affected 0")
+	}
+	return false, nil
 }
