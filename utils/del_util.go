@@ -15,7 +15,10 @@ func GetSoftDelType(t reflect.Type) softdelete.SoftDelType {
 			if has {
 				return delType
 			}
-			return GetSoftDelType(field.Type)
+			softDelType := GetSoftDelType(field.Type)
+			if softDelType != softdelete.None {
+				return softDelType
+			}
 		}
 	}
 	return softdelete.None

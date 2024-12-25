@@ -31,12 +31,14 @@ func (u User) TableConf() *lorm.TableConf {
 		AutoIncrements("id")
 }
 
+type Kaaa struct {
+}
 type User struct {
 	Id   *int
 	Name *string
 	Age  *int
-
-	softdelete.DeleteGormMilli
+	Kaaa
+	softdelete.DeleteTimeNil
 }
 
 func main() {
@@ -51,12 +53,12 @@ func main() {
 	//TableInsert()
 	//Build1()
 	//Build2()
-	//Del()
+	Del()
 	//First()
 	//First2()
 	//QueryOneT()
 	//List()
 	//TableUpdate()
 	//GetOrInsert()
-	InsertOrHas()
+	//InsertOrHas()
 }

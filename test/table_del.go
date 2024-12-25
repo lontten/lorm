@@ -17,10 +17,8 @@ func Del() {
 	m["a"] = 1
 	m["b"] = "bb"
 	m["c"] = nil
-	eq := lorm.W().Eq("abc", "xxx")
 
-	num, err := lorm.Delete[User](ldb.DB, lorm.W().Or(eq).
-		Model(u), lorm.E().ShowSql().TableName("fjakd"))
+	num, err := lorm.Delete[User](ldb.DB, lorm.W().PrimaryKey(1), lorm.E().ShowSql())
 	fmt.Println(num)
 	fmt.Println(err)
 }

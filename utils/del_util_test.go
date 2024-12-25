@@ -9,8 +9,10 @@ import (
 type TestSoftDel1 struct {
 	softdelete.DeleteGormMilli
 }
-
+type T1 struct {
+}
 type TestSoftDel2 struct {
+	T1
 	TestSoftDel1
 }
 
