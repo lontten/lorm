@@ -19,7 +19,18 @@ func NowTime() Time {
 func NowTimeP() *Time {
 	return &Time{time.Now()}
 }
-
+func isJsonTimeNull(s string) bool {
+	if s == "" {
+		return true
+	}
+	if s == "\"\"" {
+		return true
+	}
+	if s == "null" {
+		return true
+	}
+	return false
+}
 func (t Time) ToString() string {
 	return t.Time.Format(`15:04:05`)
 }
@@ -30,10 +41,7 @@ func (t Time) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Time) UnmarshalJSON(data []byte) error {
-	if string(data) == "" {
-		return nil
-	}
-	if string(data) == "null" {
+	if isJsonTimeNull(string(data)) {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
@@ -141,10 +149,7 @@ func (t Date) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Date) UnmarshalJSON(data []byte) error {
-	if string(data) == "" {
-		return nil
-	}
-	if string(data) == "null" {
+	if isJsonTimeNull(string(data)) {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"2006-01-02"`, string(data), time.Local)
@@ -246,10 +251,7 @@ func (t DateTime) MarshalJSON() ([]byte, error) {
 }
 
 func (t *DateTime) UnmarshalJSON(data []byte) error {
-	if string(data) == "" {
-		return nil
-	}
-	if string(data) == "null" {
+	if isJsonTimeNull(string(data)) {
 		return nil
 	}
 	now, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, string(data), time.Local)
