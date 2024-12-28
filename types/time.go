@@ -30,9 +30,6 @@ func (t Time) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Time) UnmarshalJSON(data []byte) error {
-	if string(data) == "" {
-		return nil
-	}
 	if string(data) == "null" {
 		return nil
 	}
@@ -141,9 +138,6 @@ func (t Date) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Date) UnmarshalJSON(data []byte) error {
-	if string(data) == "" {
-		return nil
-	}
 	if string(data) == "null" {
 		return nil
 	}
@@ -246,9 +240,6 @@ func (t DateTime) MarshalJSON() ([]byte, error) {
 }
 
 func (t *DateTime) UnmarshalJSON(data []byte) error {
-	if string(data) == "" {
-		return nil
-	}
 	if string(data) == "null" {
 		return nil
 	}
