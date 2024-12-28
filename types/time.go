@@ -11,9 +11,17 @@ import (
 type Time struct {
 	time.Time
 }
+type NullTime struct {
+	Time  time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
 
 func NowTime() Time {
 	return Time{time.Now()}
+}
+
+func NowNullTime() NullTime {
+	return NullTime{time.Now(), true}
 }
 
 func NowTimeP() *Time {
@@ -21,6 +29,13 @@ func NowTimeP() *Time {
 }
 
 func (t Time) ToString() string {
+	return t.Time.Format(`15:04:05`)
+}
+
+func (t NullTime) ToString() string {
+	if !t.Valid {
+		return ""
+	}
 	return t.Time.Format(`15:04:05`)
 }
 
@@ -38,7 +53,36 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+func (t NullTime) MarshalJSON() ([]byte, error) {
+	if !t.Valid {
+		return []byte("null"), nil
+	}
+	tune := t.Time.Format(`"15:04:05"`)
+	return []byte(tune), nil
+}
+
+func (t *NullTime) UnmarshalJSON(data []byte) error {
+	if isJsonTimeNull(string(data)) {
+		t.Valid = false
+		return nil
+	}
+	now, err := time.ParseInLocation(`"15:04:05"`, string(data), time.Local)
+	*t = NullTime{now, true}
+	return err
+}
+
 func (t Time) Value() (driver.Value, error) {
+	var zeroTime time.Time
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
+		return nil, nil
+	}
+	return t.Time, nil
+}
+
+func (t NullTime) Value() (driver.Value, error) {
+	if !t.Valid {
+		return nil, nil
+	}
 	var zeroTime time.Time
 	if t.Time.UnixNano() == zeroTime.UnixNano() {
 		return nil, nil
@@ -72,6 +116,40 @@ func (t *Time) Scan(v any) error {
 		return err
 	}
 	*t = Time{Time: now}
+	return nil
+}
+
+func (t *NullTime) Scan(v any) error {
+	if v == nil {
+		t.Valid = false
+		return nil
+	}
+	var s = ""
+	switch v := v.(type) {
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	case time.Time:
+		*t = NullTime{v, true}
+	case NullTime:
+		*t = v
+		return nil
+	default:
+		return fmt.Errorf("can not convert %v to Time", v)
+	}
+	if isJsonTimeNull(s) {
+		t.Valid = false
+		return nil
+	}
+	if len(s) < 8 {
+		return fmt.Errorf("can not convert %v to Time", v)
+	}
+	now, err := time.Parse(`15:04:05`, s[:8])
+	if err != nil {
+		return err
+	}
+	*t = NullTime{Time: now, Valid: true}
 	return nil
 }
 
@@ -119,9 +197,16 @@ func (p *TimeList) Scan(data any) error {
 type Date struct {
 	time.Time
 }
+type NullDate struct {
+	Time  time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
 
 func NowDate() Date {
 	return Date{time.Now()}
+}
+func NowNullDate() NullDate {
+	return NullDate{time.Now(), true}
 }
 
 func NowDateP() *Date {
@@ -129,11 +214,26 @@ func NowDateP() *Date {
 }
 
 func (t Date) ToString() string {
-	return t.Format(`2006-01-02`)
+	return t.Time.Format(`2006-01-02`)
+}
+
+func (t NullDate) ToString() string {
+	if !t.Valid {
+		return ""
+	}
+	return t.Time.Format(`2006-01-02`)
 }
 
 func (t Date) MarshalJSON() ([]byte, error) {
-	tune := t.Format(`"2006-01-02"`)
+	tune := t.Time.Format(`"2006-01-02"`)
+	return []byte(tune), nil
+}
+
+func (t NullDate) MarshalJSON() ([]byte, error) {
+	if !t.Valid {
+		return []byte("null"), nil
+	}
+	tune := t.Time.Format(`"2006-01-02"`)
 	return []byte(tune), nil
 }
 
@@ -143,6 +243,16 @@ func (t *Date) UnmarshalJSON(data []byte) error {
 	}
 	now, err := time.ParseInLocation(`"2006-01-02"`, string(data), time.Local)
 	*t = Date{Time: now}
+	return err
+}
+
+func (t *NullDate) UnmarshalJSON(data []byte) error {
+	if isJsonTimeNull(string(data)) {
+		t.Valid = false
+		return nil
+	}
+	now, err := time.ParseInLocation(`"2006-01-02"`, string(data), time.Local)
+	*t = NullDate{Time: now, Valid: true}
 	return err
 }
 
@@ -400,4 +510,16 @@ func (t *AutoDateTime) Scan(v any) error {
 	}
 	*t = AutoDateTime{Time: now}
 	return nil
+}
+func isJsonTimeNull(s string) bool {
+	if s == "" {
+		return true
+	}
+	if s == "\"\"" {
+		return true
+	}
+	if s == "null" {
+		return true
+	}
+	return false
 }
