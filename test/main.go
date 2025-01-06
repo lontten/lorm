@@ -25,12 +25,6 @@ func (k Ka) TableConf() *lorm.TableConf {
 		AutoIncrements("id")
 }
 
-func (u User) TableConf() *lorm.TableConf {
-	return new(lorm.TableConf).Table("t_user").
-		PrimaryKeys("id").
-		AutoIncrements("id")
-}
-
 type Kaaa struct {
 }
 type User struct {
@@ -41,6 +35,11 @@ type User struct {
 	softdelete.DeleteTimeNil
 }
 
+func (u User) TableConf() *lorm.TableConf {
+	return new(lorm.TableConf).Table("t_user").
+		PrimaryKeys("id").
+		AutoIncrements("id")
+}
 func main() {
 	//QueryOneT2()
 	//QueryListT2()
@@ -59,6 +58,7 @@ func main() {
 	//QueryOneT()
 	//List()
 	//TableUpdate()
-	GetOrInsert()
+	//GetOrInsert()
 	//InsertOrHas()
+	TableInsert3()
 }

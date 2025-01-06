@@ -47,7 +47,6 @@ func GetOrInsert() {
 	Log(d)
 	Log(u)
 	fmt.Println(err)
-
 }
 
 func InsertOrHas() {
