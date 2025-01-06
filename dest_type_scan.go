@@ -26,7 +26,8 @@ func (ctx *ormContext) initScanDestList(dest any) {
 		ctx.err = errors.New("scanList must be a slice ")
 		return
 	}
-	ctyp := checkAtomType(t)
+	_, base := basePtrType(t)
+	ctyp := checkAtomType(base)
 	if ctyp == Invalid {
 		ctx.err = errors.New("scan type is not supported")
 		return
@@ -36,7 +37,7 @@ func (ctx *ormContext) initScanDestList(dest any) {
 	ctx.scanV = v
 	ctx.scanIsPtr = isPtr
 
-	ctx.destBaseType = t
+	ctx.destBaseType = base
 	ctx.destBaseTypeIsComp = ctyp == Composite
 
 	ctx.destIsSlice = true
