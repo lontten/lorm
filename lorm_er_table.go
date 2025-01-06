@@ -410,7 +410,6 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 	ctx.initPrimaryKeyByWhere(wb)
 	ctx.wb.And(wb)
 
-	ctx.modelSelectFieldNames = []string{"1"}
 	dialect.tableSelectGen()
 	if ctx.hasErr() {
 		return nil, ctx.err
