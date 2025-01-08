@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lontten/lorm/types"
 	"strconv"
 	"strings"
 )
@@ -248,6 +249,7 @@ func (b *SqlBuilder) Native(sql string, condition ...bool) *SqlBuilder {
 	if ctx.hasErr() {
 		return b
 	}
+	b.SelectEnd()
 	for _, c := range condition {
 		if !c {
 			return b
@@ -349,38 +351,16 @@ func (b *SqlBuilder) SelectEnd() *SqlBuilder {
 	return b
 }
 func (b *SqlBuilder) Where(whereStr string, condition ...bool) *SqlBuilder {
-	db := b.db
-	ctx := db.getCtx()
-	if ctx.hasErr() {
-		return b
-	}
-	if b.selectStatus != selectDone {
-		ctx.err = errors.New("Where 设置异常：" + whereStr)
-		return b
-	}
-
 	for _, c := range condition {
 		if !c {
 			return b
 		}
 	}
-
-	switch b.whereStatus {
-	case whereNoSet:
-		b.whereStatus = whereSet
-		b.otherSqlBuilder.WriteString(" WHERE ")
-		b.otherSqlBuilder.WriteString(whereStr)
-	case whereSet:
-		b.otherSqlBuilder.WriteString(" AND ")
-		b.otherSqlBuilder.WriteString(whereStr)
-	case whereDone:
-		ctx.err = errors.New("where has been done")
-	}
-
+	b._whereArg(whereStr)
 	return b
 }
 
-func (b *SqlBuilder) BoolWhere(condition bool, whereStr string, args ...any) *SqlBuilder {
+func (b *SqlBuilder) _whereArg(whereStr string, args ...any) *SqlBuilder {
 	db := b.db
 	ctx := db.getCtx()
 	if ctx.hasErr() {
@@ -388,10 +368,6 @@ func (b *SqlBuilder) BoolWhere(condition bool, whereStr string, args ...any) *Sq
 	}
 	if b.selectStatus != selectDone {
 		ctx.err = errors.New("Where 设置异常：" + whereStr)
-		return b
-	}
-
-	if !condition {
 		return b
 	}
 
@@ -408,6 +384,13 @@ func (b *SqlBuilder) BoolWhere(condition bool, whereStr string, args ...any) *Sq
 		ctx.err = errors.New("where has been done")
 	}
 
+	return b
+}
+func (b *SqlBuilder) BoolWhere(condition bool, whereStr string, args ...any) *SqlBuilder {
+	if !condition {
+		return b
+	}
+	b._whereArg(whereStr, args...)
 	return b
 }
 
@@ -496,6 +479,51 @@ func (b *SqlBuilder) WhereSqlIn(whereStr string, args ...any) *SqlBuilder {
 
 	case whereDone:
 		ctx.err = errors.New("where has been done")
+	}
+
+	return b
+}
+
+// BetweenDateOfDateTime
+// 用 Date类型，去查询 DateTime 字段
+func (b *SqlBuilder) BetweenDateOfDateTime(whereStr string, dateBegin, dateEnd *types.Date, condition ...bool) *SqlBuilder {
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
+		return b
+	}
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("Where 设置异常：" + whereStr)
+		return b
+	}
+
+	for _, c := range condition {
+		if !c {
+			return b
+		}
+	}
+
+	var dateTimeBegin *types.DateTime = nil
+	if dateBegin != nil {
+		dateTimeBegin = dateBegin.ToDateTimeP()
+	}
+
+	var dateTimeEnd *types.DateTime = nil
+	if dateEnd != nil {
+		dateTimeEnd = types.DateOf(dateEnd.Time.AddDate(0, 0, 1)).ToDateTimeP()
+	}
+
+	if dateTimeBegin != nil {
+		if dateTimeEnd != nil {
+			b._whereArg(whereStr+" BETWEEN ? AND ?", dateTimeBegin, dateTimeEnd)
+			return b
+		}
+		b._whereArg(whereStr+" >= ?", dateTimeBegin)
+		return b
+	}
+	if dateTimeEnd != nil {
+		b._whereArg(whereStr+" <= ?", dateTimeEnd)
+		return b
 	}
 
 	return b

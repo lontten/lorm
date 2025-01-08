@@ -19,7 +19,23 @@ func NowTime() Time {
 func NowTimeP() *Time {
 	return &Time{time.Now()}
 }
-
+func TimeOf(t time.Time) Time {
+	timeOnly := time.Date(0, 0, 0, t.Hour(), t.Minute(), t.Second(), 0, t.Location())
+	return Time{timeOnly}
+}
+func TimePOf(t time.Time) *Time {
+	timeOnly := time.Date(0, 0, 0, t.Hour(), t.Minute(), t.Second(), 0, t.Location())
+	return &Time{timeOnly}
+}
+func (t Time) ToGoTime() time.Time {
+	return time.Date(0, 0, 0, t.Hour(), t.Minute(), t.Second(), 0, t.Location())
+}
+func (t Time) ToDateTime() DateTime {
+	return DateTime{t.ToGoTime()}
+}
+func (t Time) ToDateTimeP() *DateTime {
+	return &DateTime{t.ToGoTime()}
+}
 func (t Time) ToString() string {
 	return t.Time.Format(`15:04:05`)
 }
@@ -127,6 +143,24 @@ func NowDate() Date {
 func NowDateP() *Date {
 	return &Date{time.Now()}
 }
+func DateOf(t time.Time) Time {
+	dateOnly := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	return Time{dateOnly}
+}
+func DatePOf(t time.Time) *Time {
+	dateOnly := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	return &Time{dateOnly}
+}
+
+func (t Date) ToGoTime() time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+func (t Date) ToDateTime() DateTime {
+	return DateTime{t.ToGoTime()}
+}
+func (t Date) ToDateTimeP() *DateTime {
+	return &DateTime{t.ToGoTime()}
+}
 
 func (t Date) ToString() string {
 	return t.Format(`2006-01-02`)
@@ -172,9 +206,6 @@ func (t *Date) Scan(v any) error {
 
 	return fmt.Errorf("can not convert %v to types.Date", v)
 
-}
-func (t Date) ToGoTime() time.Time {
-	return time.Unix(t.Unix(), 0)
 }
 
 type DateList []Date
