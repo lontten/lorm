@@ -9,9 +9,10 @@ import (
 func TestNowTime(t *testing.T) {
 	now := time.Now()
 
-	date := DateOf(now)
-	fmt.Println(date.Time.String())
+	dateEnd := DateOf(now)
+	date := dateEnd.Time.AddDate(0, 0, 1)
+	of := DateOf(date)
+	var dateTimeEnd = of.ToDateTimeP()
 
-	time := TimeOf(now)
-	fmt.Println(time.Time.String())
+	fmt.Println(dateTimeEnd.String())
 }

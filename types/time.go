@@ -143,13 +143,13 @@ func NowDate() Date {
 func NowDateP() *Date {
 	return &Date{time.Now()}
 }
-func DateOf(t time.Time) Time {
+func DateOf(t time.Time) Date {
 	dateOnly := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-	return Time{dateOnly}
+	return Date{dateOnly}
 }
-func DatePOf(t time.Time) *Time {
+func DatePOf(t time.Time) *Date {
 	dateOnly := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-	return &Time{dateOnly}
+	return &Date{dateOnly}
 }
 
 func (t Date) ToGoTime() time.Time {
