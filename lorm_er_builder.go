@@ -484,9 +484,41 @@ func (b *SqlBuilder) WhereSqlIn(whereStr string, args ...any) *SqlBuilder {
 	return b
 }
 
-// BetweenDateOfDateTime
+func (b *SqlBuilder) Between(whereStr string, begin, end any, condition ...bool) *SqlBuilder {
+	db := b.db
+	ctx := db.getCtx()
+	if ctx.hasErr() {
+		return b
+	}
+	if b.selectStatus != selectDone {
+		ctx.err = errors.New("Where 设置异常：" + whereStr)
+		return b
+	}
+
+	for _, c := range condition {
+		if !c {
+			return b
+		}
+	}
+
+	if begin != nil {
+		if end != nil {
+			b._whereArg(whereStr+" BETWEEN ? AND ?", begin, end)
+			return b
+		}
+		b._whereArg(whereStr+" >= ?", begin)
+		return b
+	}
+	if end != nil {
+		b._whereArg(whereStr+" <= ?", end)
+		return b
+	}
+	return b
+}
+
+// BetweenDateTimeOfDate
 // 用 Date类型，去查询 DateTime 字段
-func (b *SqlBuilder) BetweenDateOfDateTime(whereStr string, dateBegin, dateEnd *types.Date, condition ...bool) *SqlBuilder {
+func (b *SqlBuilder) BetweenDateTimeOfDate(whereStr string, dateBegin, dateEnd *types.Date, condition ...bool) *SqlBuilder {
 	db := b.db
 	ctx := db.getCtx()
 	if ctx.hasErr() {
@@ -514,16 +546,10 @@ func (b *SqlBuilder) BetweenDateOfDateTime(whereStr string, dateBegin, dateEnd *
 	}
 
 	if dateTimeBegin != nil {
-		if dateTimeEnd != nil {
-			b._whereArg(whereStr+" BETWEEN ? AND ?", dateTimeBegin, dateTimeEnd)
-			return b
-		}
 		b._whereArg(whereStr+" >= ?", dateTimeBegin)
-		return b
 	}
 	if dateTimeEnd != nil {
-		b._whereArg(whereStr+" <= ?", dateTimeEnd)
-		return b
+		b._whereArg(whereStr+" < ?", dateTimeEnd)
 	}
 
 	return b
