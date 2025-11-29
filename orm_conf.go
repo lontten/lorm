@@ -1,10 +1,24 @@
+//  Copyright 2025 lontten lontten@163.com
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 package lorm
 
 import (
-	"github.com/lontten/lorm/utils"
 	"reflect"
-	"strings"
 	"sync"
+
+	"github.com/lontten/lorm/utils"
 )
 
 type OrmConf struct {
@@ -29,6 +43,8 @@ type OrmConf struct {
 	PrimaryKeyNames   []string
 	PrimaryKeyNameFun func(v reflect.Value, dest any) []string
 
+	insertCanReturn bool // 数据库是否支持 insert时直接返回字段
+
 	//多租户
 	TenantIdFieldName    string                      //多租户的  租户字段名 空字符串极为不启用多租户
 	TenantIdValueFun     func() any                  //租户的id值，获取函数
@@ -50,11 +66,11 @@ func getTypeTableName(t reflect.Type, tableNamePrefix string) string {
 		return s
 	}
 
-	name := t.String()
-	index := strings.LastIndex(name, ".")
-	if index > 0 {
-		name = name[index+1:]
+	name := t.Name()
+	if name == "" {
+		return ""
 	}
+
 	name = utils.Camel2Case(name)
 	if tableNamePrefix != "" {
 		name = tableNamePrefix + name
@@ -73,9 +89,9 @@ func (c OrmConf) tableName(v reflect.Value, dest any) string {
 	}
 
 	// tableName
-	n := GetTableName(v)
-	if n != nil {
-		return *n
+	n := getTableName(v)
+	if n != "" {
+		return n
 	}
 
 	// structName
@@ -85,53 +101,42 @@ func (c OrmConf) tableName(v reflect.Value, dest any) string {
 }
 
 // 不可缓存
-// 1.默认主键为id，
-// 2.可以PrimaryKeyNames设置主键字段名
-// 3.通过表名动态设置主键字段名-fn
-func (c OrmConf) primaryKeys(v reflect.Value, dest any) []string {
+// 1.可以PrimaryKeyNames设置主键字段名
+// 2.通过表名动态设置主键字段名-fn
+func (c OrmConf) primaryKeyColumnNames(v reflect.Value, dest any) []string {
 	//fun
-	primaryKeyNameFun := c.PrimaryKeyNameFun
-	if primaryKeyNameFun != nil {
-		return primaryKeyNameFun(v, dest)
+	primaryKeyColumnNameFun := c.PrimaryKeyNameFun
+	if primaryKeyColumnNameFun != nil {
+		return primaryKeyColumnNameFun(v, dest)
 	}
 
-	list := GetPrimaryKeyNames(v)
-	if len(list) > 0 {
-		return list
-	}
-
-	// id
-	return []string{"id"}
-}
-
-// 可缓存
-func (c OrmConf) autoIncrements(v reflect.Value) []string {
-	return GetAutoIncrements(v)
+	return getPrimaryKeyColumnNames(v)
 }
 
 // 获取 rows 返回数据，每个字段index 对应 struct 的字段 名字
-func getColIndex2FieldNameMap(columns []string, t reflect.Type) (ColIndex2FieldNameMap, error) {
+func getColIndex2FieldNameMap(columns []string, t reflect.Type) map[string]compC {
+	r := make(map[string]compC)
 	if isValuerType(t) {
-		return ColIndex2FieldNameMap{}, nil
+		return r
 	}
 
 	colNum := len(columns)
-	ci2fm := make([]string, colNum)
-	cf := getStructCFMap(t)
+	cm := _getStructC_columnNameMap(t, "")
 
 	validNum := 0
 	for i, column := range columns {
-		fieldName, ok := cf[column]
+		c, ok := cm[column]
+		c.columnIndex = i
 		if !ok {
-			ci2fm[i] = ""
+			r[column] = compC{}
 			continue
 		}
-		ci2fm[i] = fieldName
+		r[column] = c
 		validNum++
 	}
 
 	if colNum == 1 && validNum == 0 {
-		return ColIndex2FieldNameMap{}, nil
+		return r
 	}
-	return ci2fm, nil
+	return r
 }

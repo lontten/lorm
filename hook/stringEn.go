@@ -2,10 +2,11 @@ package hook
 
 import (
 	"encoding/json"
-	"github.com/jackc/pgtype"
-	"github.com/lontten/lorm/types"
 	"os/user"
 	"reflect"
+
+	"github.com/jackc/pgtype"
+	"github.com/lontten/lcore/v2/types"
 )
 
 /*
@@ -17,12 +18,12 @@ func StringEn(v string) any {
 }
 
 type Hello struct {
-	_db  struct{} `lorm:"column(name)"`
-	Name string   `lorm:"hook.after:StringEn" json:"name"`
+	_db  struct{} `db:"column(name)"`
+	Name string   `db:"hook.after:StringEn" json:"name"`
 }
 
-func ToArr(src pgtype.DateArray) []types.Date {
-	var arr []types.Date
+func ToArr(src pgtype.DateArray) []types.LocalDate {
+	var arr []types.LocalDate
 	err := src.AssignTo(&arr)
 	if err != nil {
 		panic(err)
@@ -30,7 +31,7 @@ func ToArr(src pgtype.DateArray) []types.Date {
 	return arr
 }
 
-func ToPgDateArr(src []types.Date) pgtype.DateArray {
+func ToPgDateArr(src []types.LocalDate) pgtype.DateArray {
 	var arr pgtype.DateArray
 	err := arr.Set(src)
 	if err != nil {

@@ -1,16 +1,32 @@
+//  Copyright 2025 lontten lontten@163.com
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 package lorm
 
 import (
 	"errors"
+	"strconv"
+	"strings"
+
 	"github.com/lontten/lorm/insert-type"
 	"github.com/lontten/lorm/softdelete"
 	"github.com/lontten/lorm/utils"
-	"strconv"
-	"strings"
 )
 
 type MysqlDialect struct {
-	ctx *ormContext
+	ctx       *ormContext
+	dbVersion MysqlVersion
 }
 
 // ===----------------------------------------------------------------------===//
@@ -20,14 +36,18 @@ type MysqlDialect struct {
 func (d *MysqlDialect) getCtx() *ormContext {
 	return d.ctx
 }
-func (d *MysqlDialect) initContext() Dialecter {
-	return &MysqlDialect{ctx: &ormContext{
-		ormConf:                 d.ctx.ormConf,
-		query:                   &strings.Builder{},
-		wb:                      W(),
-		insertType:              insert_type.Err,
-		dialectNeedLastInsertId: d.ctx.dialectNeedLastInsertId,
-	}}
+func (d *MysqlDialect) copyContext() Dialecter {
+	return &MysqlDialect{
+		ctx: &ormContext{
+			ormConf:      d.ctx.ormConf,
+			convertCtx:   ConvertCtx{}.Init(),
+			query:        &strings.Builder{},
+			wb:           W(),
+			insertType:   insert_type.Err,
+			disableColor: d.ctx.disableColor,
+		},
+		dbVersion: d.dbVersion,
+	}
 }
 func (d *MysqlDialect) hasErr() bool {
 	return d.ctx.err != nil
@@ -41,7 +61,6 @@ func (d *MysqlDialect) getErr() error {
 // sql 方言化
 // ===----------------------------------------------------------------------===//
 func (d *MysqlDialect) query(query string, args ...any) (string, []any) {
-	d.ctx.log.Println(query, args)
 	return query, args
 }
 
@@ -58,10 +77,9 @@ func (d *MysqlDialect) exec(query string, args ...any) (string, []any) {
 }
 
 func (d *MysqlDialect) execBatch(query string, args [][]any) (string, [][]any) {
-	d.ctx.log.Println(query, args)
 
 	//var num int64 = 0
-	//stmt, err := d.ldb.Prepare(query)
+	//stmt, err := d.lorm.Prepare(query)
 	//if err != nil {
 	//	return 0, err
 	//}
@@ -83,22 +101,26 @@ func (d *MysqlDialect) execBatch(query string, args [][]any) (string, [][]any) {
 // ===----------------------------------------------------------------------===//
 // 工具
 // ===----------------------------------------------------------------------===//
+// 转义 危险标识符
+func (d MysqlDialect) escapeIdentifier(s string) string {
+	_, ok := dangNamesMap[s]
+	if ok {
+		return "`" + s + "`"
+	}
+	return s
+}
 
 // ===----------------------------------------------------------------------===//
 // 中间服务
 // ===----------------------------------------------------------------------===//
-// 初始化主键
-func (d *MysqlDialect) initPrimaryKeyName() {
-	if d.ctx.err != nil {
-		return
+
+func (d *MysqlDialect) getSql(sql ...string) {
+	if len(sql) == 1 {
+		d.ctx.originalSql = sql[0]
+	} else {
+		d.ctx.originalSql = d.ctx.query.String()
 	}
-	v := d.ctx.destBaseValue
-	dest := d.ctx.scanDest
-	d.ctx.primaryKeyNames = d.ctx.ormConf.primaryKeys(v, dest)
-}
-func (d *MysqlDialect) getSql() string {
-	s := d.ctx.query.String()
-	return s
+	d.ctx.dialectSql = d.ctx.originalSql
 }
 
 // insert 生成
@@ -107,11 +129,9 @@ func (d *MysqlDialect) tableInsertGen() {
 	if ctx.hasErr() {
 		return
 	}
-	// mysql insert 时，无法直接返回数据，只能借助 last_insert_id
-	ctx.sqlIsQuery = false
 
 	extra := ctx.extra
-	set := extra.set
+	whenUpdateSet := extra.whenUpdateSet
 
 	columns := ctx.columns
 	var query = d.ctx.query
@@ -130,27 +150,38 @@ func (d *MysqlDialect) tableInsertGen() {
 		query.WriteString("REPLACE INTO ")
 		break
 	}
-	query.WriteString(ctx.tableName + " ")
+	query.WriteString(d.escapeIdentifier(ctx.tableName))
 
-	query.WriteString("(")
-	query.WriteString(strings.Join(columns, ","))
-	query.WriteString(") ")
-	query.WriteString("VALUES")
-	query.WriteString("(")
+	query.WriteString(" (")
+	query.WriteString(escapeJoin(d.escapeIdentifier, columns, ", "))
+	query.WriteString(") VALUES (")
 	ctx.genInsertValuesSqlBycolumnValues()
-	query.WriteString(" ) ")
+	query.WriteString(")")
 
 	switch ctx.insertType {
 	case insert_type.Update:
-		query.WriteString(" AS new ON DUPLICATE KEY UPDATE ")
-		// 当未设置更新字段时，默认为所有字段
-		if len(set.columns) == 0 && len(set.fieldNames) == 0 {
+		//从 MySQL 8.0.19 开始 可以用 new 取代 VALUES
+		//从 MySQL 8.0.20 开始 VALUES 被弃用。
+		// INSERT INTO t1 (a,b,c) VALUES (1,2,3),(4,5,6)
+		//  ON DUPLICATE KEY UPDATE c=VALUES(c);
+
+		// INSERT INTO t1 (a,b,c) VALUES (1,2,3),(4,5,6) AS new
+		//  ON DUPLICATE KEY UPDATE c = new.c;
+
+		if d.dbVersion >= MysqlVersion8_0_19 {
+			query.WriteString(" AS new ")
+		}
+
+		query.WriteString("ON DUPLICATE KEY UPDATE ")
+		// 当未设置更新字段时，默认为所有效有字段（排除索引）
+		columnLen := len(whenUpdateSet.columns)
+		if columnLen == 0 && len(whenUpdateSet.fieldNames) == 0 {
 			list := append(ctx.columns, extra.columns...)
 
 			for _, name := range list {
 				find := utils.Find(extra.duplicateKeyNames, name)
-				if find < 0 {
-					set.fieldNames = append(set.fieldNames, name)
+				if find < 0 { // 排除 主键 字段
+					whenUpdateSet.fieldNames = append(whenUpdateSet.fieldNames, name)
 				}
 			}
 		}
@@ -176,15 +207,25 @@ func (d *MysqlDialect) tableInsertGen() {
 		// 从上面分析可知，DUPLICATE KEY UPDATE 时，软删除字段不进行更新是最差方案，会出现 不符合预期情况。
 		// 软删除字段进行更新 时，如果 唯一索引设置正确，是完美执行；如果 唯一索引 错误，也可以达到 基本复合预期的效果。
 
-		for i, name := range set.fieldNames {
+		for i, name := range whenUpdateSet.fieldNames {
 			if i > 0 {
 				query.WriteString(", ")
 			}
-			query.WriteString(name + " = new." + name)
+			name = d.escapeIdentifier(name)
+
+			if d.dbVersion >= MysqlVersion8_0_19 {
+				query.WriteString(name + " = new." + name)
+			} else {
+				query.WriteString(name + " = VALUES(" + name + ")")
+			}
 		}
-		for i, column := range set.columns {
-			query.WriteString(column + " = ? , ")
-			ctx.args = append(ctx.args, set.columnValues[i].Value)
+
+		for i, column := range whenUpdateSet.columns {
+			query.WriteString(d.escapeIdentifier(column) + " = ?")
+			if i < columnLen-1 {
+				query.WriteString(", ")
+			}
+			ctx.args = append(ctx.args, whenUpdateSet.columnValues[i].Value)
 		}
 		break
 	default:
@@ -203,22 +244,29 @@ func (d *MysqlDialect) tableDelGen() {
 	var query = d.ctx.query
 	tableName := ctx.tableName
 
-	whereStr, args, err := ctx.wb.toSql(d.parse)
+	whereStr, args, err := ctx.wb.toSql(d.parse, ctx.primaryKeyColumnNames...)
 	if err != nil {
 		ctx.err = err
 		return
 	}
 
+	if !ctx.allowFullTableOp {
+		if whereStr == "" {
+			ctx.err = errors.New("禁止全表操作")
+			return
+		}
+	}
+
 	//  没有软删除 或者 跳过软删除 ，执行物理删除
 	if ctx.softDeleteType == softdelete.None || ctx.skipSoftDelete {
 		query.WriteString("DELETE FROM ")
-		query.WriteString(tableName)
+		query.WriteString(d.escapeIdentifier(tableName))
 	} else {
 		query.WriteString("UPDATE ")
-		query.WriteString(tableName)
+		query.WriteString(d.escapeIdentifier(tableName))
 
 		query.WriteString(" SET ")
-		ctx.genSetSqlBycolumnValues()
+		ctx.genSetSqlBycolumnValues(d.escapeIdentifier)
 	}
 	query.WriteString(" WHERE ")
 	query.WriteString(whereStr)
@@ -235,17 +283,24 @@ func (d *MysqlDialect) tableUpdateGen() {
 	}
 	var query = d.ctx.query
 	tableName := ctx.tableName
-	whereStr, args, err := ctx.wb.toSql(d.parse)
+	whereStr, args, err := ctx.wb.toSql(d.parse, ctx.primaryKeyColumnNames...)
 	if err != nil {
 		ctx.err = err
 		return
 	}
 
+	if !ctx.allowFullTableOp {
+		if whereStr == "" {
+			ctx.err = errors.New("禁止全表操作")
+			return
+		}
+	}
+
 	query.WriteString("UPDATE ")
-	query.WriteString(tableName)
+	query.WriteString(d.escapeIdentifier(tableName))
 	query.WriteString(" SET ")
-	ctx.genSetSqlBycolumnValues()
-	query.WriteString(" WHERE ")
+	ctx.genSetSqlBycolumnValues(d.escapeIdentifier)
+	query.WriteString("WHERE ")
 
 	query.WriteString(whereStr)
 	ctx.args = append(ctx.args, args...)
@@ -267,7 +322,7 @@ func (d *MysqlDialect) tableSelectGen() {
 	}
 
 	query.WriteString("SELECT ")
-	query.WriteString(strings.Join(ctx.modelSelectFieldNames, ","))
+	query.WriteString(escapeJoin(d.escapeIdentifier, ctx.modelSelectFieldNames, " ,"))
 	query.WriteString(" FROM ")
 	query.WriteString(tableName)
 
@@ -307,12 +362,17 @@ func (d *MysqlDialect) parse(c Clause) (string, error) {
 	case NotLike:
 		sb.WriteString(c.query + " NOT LIKE ?")
 	case In:
-		sb.WriteString(c.query + " IN (")
-		sb.WriteString(gen(c.argsNum))
-		sb.WriteString(")")
+		length := len(c.args)
+		if length == 0 {
+			sb.WriteString("1=0")
+		} else {
+			sb.WriteString(c.query + " IN (")
+			sb.WriteString(gen(length))
+			sb.WriteString(")")
+		}
 	case NotIn:
 		sb.WriteString(c.query + " NOT IN (")
-		sb.WriteString(gen(c.argsNum))
+		sb.WriteString(gen(len(c.args)))
 		sb.WriteString(")")
 	case Between:
 		sb.WriteString(c.query + " BETWEEN ? AND ?")

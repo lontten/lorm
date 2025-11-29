@@ -2,20 +2,21 @@ package lorm
 
 import (
 	"fmt"
-	"github.com/lontten/lorm/softdelete"
 	"reflect"
 	"testing"
+
+	"github.com/lontten/lorm/softdelete"
 )
 
-type Ka struct {
+type Kae struct {
 	Ka1 *string
 	Ka2 *string
 
-	softdelete.DeleteGormMilli `lorm:"abc"`
+	softdelete.DeleteGormMilli `db:"abc"`
 }
 
 type Kb struct {
-	Ka
+	Kae
 }
 type Kc struct {
 	Kb

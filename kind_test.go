@@ -1,29 +1,38 @@
 package lorm
 
 import (
-	"database/sql"
 	"reflect"
 	"testing"
+
+	"github.com/lontten/lcore/v2/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_basePtrValue(t *testing.T) {
+	as := assert.New(t)
 	var a *int
 	v := reflect.ValueOf(a)
-	t.Log(v.Kind())
-	t.Log(v.IsValid())
-	t.Log(v.IsZero())
-	t.Log(v.IsNil())
-	t.Log(v.Elem())
 	is, v, err := basePtrValue(v)
-	t.Log(is, v, err)
+	as.NotNil(err)
+	as.False(is)
 }
 
-func Test_vn(ts *testing.T) {
-	var d sql.NullTime
+func Test_isValuerType(t *testing.T) {
+	as := assert.New(t)
 
-	v := reflect.ValueOf(d)
-	t := v.Type()
-	ts.Log(t.Kind())
-	ts.Log(t.String())
-	ts.Log(t.Name())
+	t1 := reflect.TypeOf(types.LocalDateTime{})
+	as.True(t1.Implements(ImpValuer))
+
+	t2 := reflect.TypeOf(new(types.LocalDateTime))
+	as.True(t2.Implements(ImpValuer))
+}
+
+func Test_isScannerType(t *testing.T) {
+	as := assert.New(t)
+
+	t1 := reflect.TypeOf(types.LocalDateTime{})
+	as.False(t1.Implements(ImpScanner))
+
+	t2 := reflect.TypeOf(new(types.LocalDateTime))
+	as.True(t2.Implements(ImpScanner))
 }

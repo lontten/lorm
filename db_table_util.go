@@ -1,71 +1,59 @@
+//  Copyright 2025 lontten lontten@163.com
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 package lorm
 
 import (
-	"github.com/lontten/lorm/field"
-	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
 	"time"
-)
 
-// has
-//func (ldb coreDb) doHas() (bool, error) {
-//if err := ldb.getCtx().err; err != nil {
-//	return false, err
-//}
-//var bb bytes.Buffer
-//
-//ctx := ldb.getCtx()
-//tableName := ctx.tableName
-//
-//bb.WriteString("SELECT 1 FROM ")
-//bb.WriteString(tableName)
-//bb.Write(ldb.genWhereSqlByToken())
-//bb.WriteString("LIMIT 1")
-//
-//rows, err := ldb.doQuery(bb.String(), ldb.args...)
-//
-//if err != nil {
-//	return false, err
-//}
-//defer rows.Close()
-//if rows.Next() {
-//	return true, nil
-//}
-//return false, nil
-//}
+	"github.com/lontten/lorm/field"
+	"github.com/pkg/errors"
+)
 
 // init 逻辑删除、租户
 func (d *MysqlDialect) initExtra() {
-	//if err := ldb.ctx.err; err != nil {
+	//if err := lorm.ctx.err; err != nil {
 	//	return
 	//}
 	//
-	//if ldb.ctx.ormConf.LogicDeleteYesSql != "" {
-	//	ldb.whereTokens = append(ldb.whereTokens, ldb.ctx.ormConf.LogicDeleteYesSql)
+	//if lorm.ctx.ormConf.LogicDeleteYesSql != "" {
+	//	lorm.whereTokens = append(lorm.whereTokens, lorm.ctx.ormConf.LogicDeleteYesSql)
 	//}
 	//
-	//if ldb.ctx.ormConf.TenantIdFieldName != "" {
-	//	ldb.whereTokens = append(ldb.whereTokens, ldb.ctx.ormConf.TenantIdFieldName)
-	//	ldb.args = append(ldb.args, ldb.ctx.ormConf.TenantIdValueFun())
+	//if lorm.ctx.ormConf.TenantIdFieldName != "" {
+	//	lorm.whereTokens = append(lorm.whereTokens, lorm.ctx.ormConf.TenantIdFieldName)
+	//	lorm.args = append(lorm.args, lorm.ctx.ormConf.TenantIdValueFun())
 	//}
 	//
 	//var sb strings.QueryBuild
-	//sb.WriteString(ldb.whereSql)
+	//sb.WriteString(lorm.whereSql)
 	//
-	//if len(ldb.orderByTokens) > 0 {
+	//if len(lorm.orderByTokens) > 0 {
 	//	sb.WriteString(" ORDER BY ")
-	//	sb.WriteString(strings.Join(ldb.orderByTokens, ","))
+	//	sb.WriteString(strings.Join(lorm.orderByTokens, ","))
 	//}
-	//if ldb.limit > 0 {
+	//if lorm.limit > 0 {
 	//	sb.WriteString(" LIMIT ? ")
-	//	ldb.args = append(ldb.args, ldb.limit)
+	//	lorm.args = append(lorm.args, lorm.limit)
 	//}
-	//if ldb.offset > 0 {
+	//if lorm.offset > 0 {
 	//	sb.WriteString(" OFFSET ? ")
-	//	ldb.args = append(ldb.args, ldb.offset)
+	//	lorm.args = append(lorm.args, lorm.offset)
 	//}
-	//ldb.whereSql = sb.String()
+	//lorm.whereSql = sb.String()
 
 }
 
@@ -110,7 +98,7 @@ func (ctx *ormContext) genInsertValuesSqlBycolumnValues() {
 
 	for i, v := range values {
 		if i > 0 {
-			query.WriteString(" , ")
+			query.WriteString(", ")
 		}
 		switch v.Type {
 		case field.None:
@@ -131,22 +119,22 @@ func (ctx *ormContext) genInsertValuesSqlBycolumnValues() {
 			query.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 			break
 		case field.Val:
-			query.WriteString(" ? ")
+			query.WriteString("?")
 			ctx.args = append(ctx.args, v.Value)
 			break
 		case field.Increment:
-			query.WriteString(columns[i] + " + ? ")
+			query.WriteString(columns[i] + "+ ?")
 			ctx.args = append(ctx.args, v.Value)
 			break
 		case field.Expression:
 			query.WriteString(v.Value.(string))
 			break
 		case field.ID:
-			if len(ctx.primaryKeyNames) > 0 {
+			if len(ctx.primaryKeyColumnNames) != 1 {
 				ctx.err = errors.New("软删除标记为主键id，需要单主键")
 				return
 			}
-			query.WriteString(ctx.primaryKeyNames[0])
+			query.WriteString(ctx.primaryKeyColumnNames[0])
 			break
 		}
 	}
@@ -155,12 +143,14 @@ func (ctx *ormContext) genInsertValuesSqlBycolumnValues() {
 // 根据 columnValues 生成的set sql
 // SET ...
 // column1 = value1, column2 = value2, ...
-func (ctx *ormContext) genSetSqlBycolumnValues() {
+func (ctx *ormContext) genSetSqlBycolumnValues(fn escapeFun) {
 	columns := ctx.columns
 	values := ctx.columnValues
 	var query = ctx.query
 
 	for i, v := range values {
+		column := columns[i]
+		column = fn(column)
 		if i > 0 {
 			query.WriteString(", ")
 		}
@@ -168,53 +158,56 @@ func (ctx *ormContext) genSetSqlBycolumnValues() {
 		case field.None:
 			break
 		case field.Null:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = NULL")
 			break
 		case field.Now:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = NOW()")
 			break
 		case field.UnixSecond:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = ")
 			query.WriteString(strconv.Itoa(time.Now().Second()))
 			break
 		case field.UnixMilli:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = ")
 			query.WriteString(strconv.FormatInt(time.Now().UnixMilli(), 10))
 			break
 		case field.UnixNano:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = ")
 			query.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 			break
 		case field.Val:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = ? ")
 			ctx.args = append(ctx.args, v.Value)
 			break
 		case field.Increment:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = ")
-			query.WriteString(columns[i] + " + ? ")
+			query.WriteString(column + " + ? ")
 			ctx.args = append(ctx.args, v.Value)
 			break
 		case field.Expression:
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = ")
 			query.WriteString(v.Value.(string))
 			break
 		case field.ID:
-			if len(ctx.primaryKeyNames) > 0 {
+			if len(ctx.primaryKeyColumnNames) != 1 {
 				ctx.err = errors.New("软删除标记为主键id，需要单主键")
 				return
 			}
-			query.WriteString(columns[i])
+			query.WriteString(column)
 			query.WriteString(" = ")
-			query.WriteString(ctx.primaryKeyNames[0])
+			query.WriteString(ctx.primaryKeyColumnNames[0])
 			break
+		default:
+			ctx.err = errors.New("genSetSqlBycolumnValues not support type")
 		}
+
 	}
 }

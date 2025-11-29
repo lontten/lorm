@@ -6,8 +6,9 @@ import (
 	"gorm.io/plugin/soft_delete"
 )
 import (
-	"github.com/lontten/lorm/types"
 	"reflect"
+
+	"github.com/lontten/lcore/v2/types"
 )
 
 type SoftDelType int
@@ -98,7 +99,7 @@ type DeleteGormFlag struct {
 
 // 未删除时，为nil，删除时，为删除时间
 type DeleteTimeNil struct {
-	DeletedAt *types.DateTime
+	DeletedAt *types.LocalDateTime
 }
 
 // 未删除时，为false，删除时，为true

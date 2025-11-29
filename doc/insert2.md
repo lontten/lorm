@@ -9,7 +9,7 @@ num,err:=Insert(db,user)
 num,err:=Insert(db,&user)
 
 //通过遍历插入多个数据，并返回插入的数据的所有null值得字段
-num,err:=Insert(db,users,new(ldb.Extra).
+num,err:=Insert(db,users,new(lorm.Extra).
         .shwoSql()  // 打印sql
         .skipLgDel() //跳过逻辑删除字段
         .returnLevel(Field.All,Field.Nil,Field.Pk,Field.None) //返回所有字段，；只返回nil字段；只返回主键字段
@@ -43,7 +43,7 @@ has,num,err:=InsertOrUpdate(db,&user,byField("name") // 先检查 name 是否有
 //应用场景，
 添加数据时，要求，名字不能重复
 // 先根据条件查询是否存在，有则返回true，否则insert
-has,num,err:=InsertOrHas(db,&user,new(ldb.Extra).
+has,num,err:=InsertOrHas(db,&user,new(lorm.Extra).
                 .shwoSql()  // 打印sql
                 .skipLgDel() //跳过逻辑删除字段
                 .returnLevel(Field.All,Field.Nil,Field.Pk,Field.None) //返回所有字段，；只返回nil字段；只返回主键字段

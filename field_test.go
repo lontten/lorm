@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/lontten/lorm/utils"
 )
 
 func Test_getFieldInter(t *testing.T) {
@@ -54,4 +56,12 @@ func Test_isFieldNull(t *testing.T) {
 	v4 := reflect.ValueOf(a4)
 	is4 := isFieldNull(v4)
 	t.Log(is4)
+	t.Log(*a4)
+
+	var a5 *string = nil
+	var is5 = toNoNil(a5)
+	t.Log(is5)
+}
+func toNoNil(v any) bool {
+	return utils.IsNil(v)
 }

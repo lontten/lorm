@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/lontten/lorm/softdelete"
 	"reflect"
+
+	"github.com/lontten/lorm/softdelete"
 )
 
 // GetSoftDelType

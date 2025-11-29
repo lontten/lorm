@@ -2,16 +2,16 @@ package lorm
 
 //import (
 //	"github.com/DATA-DOG/go-sqlmock"
-//	"github.com/lontten/lorm/types"
+//	"github.com/lontten/lcore/v2/types"
 //	"github.com/stretchr/testify/assert"
 //	"testing"
 //)
 //
 //func TestHasByPrimaryKey(t *testing.T) {
 //	as := assert.New(t)
-//	ldb, mock, err := sqlmock.New()
+//	lorm, mock, err := sqlmock.New()
 //	as.Nil(err, "new sqlmock error")
-//	engine := MustConnectMock(ldb, &PgConf{})
+//	engine := MustConnectMock(lorm, &PgConf{})
 //
 //	mock.ExpectQuery("t_user *").
 //		WithArgs(1).
@@ -36,9 +36,9 @@ package lorm
 //
 //func TestHasByPrimaryKeys(t *testing.T) {
 //	as := assert.New(t)
-//	ldb, mock, err := sqlmock.New()
+//	lorm, mock, err := sqlmock.New()
 //	as.Nil(err, "new sqlmock error")
-//	engine := MustConnectMock(ldb, &PgConf{})
+//	engine := MustConnectMock(lorm, &PgConf{})
 //
 //	mock.ExpectQuery("t_user *").
 //		WithArgs(1, 2).
@@ -63,9 +63,9 @@ package lorm
 //
 //func TestHasByModel(t *testing.T) {
 //	as := assert.New(t)
-//	ldb, mock, err := sqlmock.New()
+//	lorm, mock, err := sqlmock.New()
 //	as.Nil(err, "new sqlmock error")
-//	engine := MustConnectMock(ldb, &PgConf{})
+//	engine := MustConnectMock(lorm, &PgConf{})
 //
 //	mock.ExpectQuery("t_user *").
 //		WithArgs("kk").
@@ -100,9 +100,9 @@ package lorm
 //
 //func TestHasByWhere(t *testing.T) {
 //	as := assert.New(t)
-//	ldb, mock, err := sqlmock.New()
+//	lorm, mock, err := sqlmock.New()
 //	as.Nil(err, "new sqlmock error")
-//	engine := MustConnectMock(ldb, &PgConf{})
+//	engine := MustConnectMock(lorm, &PgConf{})
 //
 //	mock.ExpectQuery("t_user *").
 //		WithArgs("kk").

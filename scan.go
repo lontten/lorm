@@ -1,18 +1,38 @@
+//  Copyright 2025 lontten lontten@163.com
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 package lorm
 
 import (
 	"database/sql"
-	"fmt"
+	"reflect"
+
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
-	"reflect"
 )
 
-// ScanLnT
+type rowColumnType struct {
+	index            int    // 字段再row中的位置
+	noNull           bool   // true 字段必定不为null
+	databaseTypeName string // 字段-数据库数据类型
+}
+
+// ScanLn
 // 接收一行结果
 // 1.ptr single/comp
 // 2.slice- single
-func (ctx ormContext) ScanLnT(rows *sql.Rows) (num int64, err error) {
+func (ctx ormContext) ScanLn(rows *sql.Rows) (num int64, err error) {
 	defer func(rows *sql.Rows) {
 		utils.PanicErr(rows.Close())
 	}(rows)
@@ -27,17 +47,32 @@ func (ctx ormContext) ScanLnT(rows *sql.Rows) (num int64, err error) {
 		return
 	}
 
-	cfm := ColIndex2FieldNameMap{}
+	cfm := make(map[string]compC)
 	if ctx.destBaseTypeIsComp {
-		cfm, err = getColIndex2FieldNameMap(columns, t)
-		if err != nil {
-			return
+		cfm = getColIndex2FieldNameMap(columns, t)
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return 0, err
+	}
+	var rowColumnTypeMap = make(map[int]rowColumnType)
+	for i, columnType := range columnTypes {
+		nullable, ok := columnType.Nullable()
+		rowColumnTypeMap[i] = rowColumnType{
+			index:            i,
+			databaseTypeName: columnType.DatabaseTypeName(),
+			noNull:           ok && !nullable,
 		}
 	}
 
 	if rows.Next() {
-		box := createColBoxT(v, tP, cfm)
+		box, convert := ctx.createColBox(v, tP, cfm, rowColumnTypeMap)
 		err = rows.Scan(box...)
+		if err != nil {
+			return
+		}
+		err = convert()
 		if err != nil {
 			return
 		}
@@ -50,9 +85,9 @@ func (ctx ormContext) ScanLnT(rows *sql.Rows) (num int64, err error) {
 	return
 }
 
-// ScanT
+// Scan
 // 接收多行结果
-func (ctx ormContext) ScanT(rows *sql.Rows) (int64, error) {
+func (ctx ormContext) Scan(rows *sql.Rows) (int64, error) {
 	defer func(rows *sql.Rows) {
 		utils.PanicErr(rows.Close())
 	}(rows)
@@ -66,18 +101,35 @@ func (ctx ormContext) ScanT(rows *sql.Rows) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	cfm, err := getColIndex2FieldNameMap(columns, t)
+	cfm := getColIndex2FieldNameMap(columns, t)
+
+	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return 0, err
 	}
+
+	var rowColumnTypeMap = make(map[int]rowColumnType)
+	for i, columnType := range columnTypes {
+		nullable, ok := columnType.Nullable()
+		rowColumnTypeMap[i] = rowColumnType{
+			index:            i,
+			databaseTypeName: columnType.DatabaseTypeName(),
+			noNull:           ok && !nullable,
+		}
+	}
+
 	for rows.Next() {
-		box, vp, v := createColBox(t, cfm)
+		box, vp, v, convert := ctx.createColBoxNew(t, cfm, rowColumnTypeMap)
 
 		err = rows.Scan(box...)
 		if err != nil {
-			fmt.Println(err)
 			return 0, err
 		}
+		err = convert()
+		if err != nil {
+			return 0, err
+		}
+
 		if isPtr {
 			arr.Set(reflect.Append(arr, vp))
 		} else {

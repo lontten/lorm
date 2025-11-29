@@ -40,5 +40,3 @@ func (l *Logger) Println(msg string, v ...any) {
 
 	l.log.Output(2, fmt.Sprintln(arr...))
 }
-
-// todo 下面未重构--------------

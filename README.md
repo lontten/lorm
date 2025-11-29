@@ -4,62 +4,40 @@
 ### init lorm
 ```go
 
-	path := "./log/go.log"
-	writer, _ := rotatelogs.New(
-		path+".%Y-%m-%d",
-		rotatelogs.WithLinkName(path),
-		rotatelogs.WithMaxAge(time.Duration(365*24)*time.Hour),
-		rotatelogs.WithRotationTime(time.Duration(24)*time.Hour),
-	)
-	newLogger := log.New(writer, "\r\n", log.LstdFlags)
-
-	var dbName = pg.DbName
-
-	pgConf := lorm.PgConf{
-		Host:     pg.Ip,
-		Port:     pg.Port,
-		DbName:   pg.dbName,
-		User:     pg.User,
-		Password: pg.Pwd,
+	conf := lorm.MysqlConf{
+		Host:     "127.0.0.1",
+		Port:     "3306",
+		DbName:   "test",
+		User:     "root",
+		Password: "123456",
 		Other:    "sslmode=disable TimeZone=Asia/Shanghai",
 	}
-	poolConf := lorm.PoolConf{
-		MaxIdleCount: 10,
-		MaxOpen:      100,
-		MaxLifetime:  time.Hour,
-		Logger:       newLogger,
-	}
-	ormConf := lorm.OrmConf{
-		TableNamePrefix: "t_",
-		PrimaryKeyNames: []string{"id"},
-	}
-
-	db := lorm.MustConnect(&pgConf, &poolConf).OrmConf(&ormConf)
+	DB := lorm.MustConnect(&conf,nil)
 
 ```
+
+
 ```go
 type User struct {
-	ID   types.UUID `json:"id"  tableName:"public.t_user"`
-	Name string     `json:"info"`
-	Age  int        `json:"age"`
+	ID   int64
+	Name string
+	Age  int
 }
 
-type NullUser struct {
-	ID   *types.UUID `json:"id"  tableName:"public.t_user"`
-	Name *string     `json:"info"`
-	Age  *int        `json:"age"`
+func (u User) TableConf() *lorm.TableConfContext {
+    return lorm.TableConf("t_user").
+        PrimaryKeys("id").
+        AutoColumn("id")
 }
 
 ```
-### create
+### Insert
 ```go
-	user := NullUser{
-		ID:   types.NewV4P(),
-		Name: types.NewString("tom"),
-		Age:  types.NewInt(12),
+	user := User{
+		Name: "tom",
+		Age:  12,
 	}
-	// create 是引用，会返回id
-	num, err := db.Insert(&user)
+	num, err := lorm.Insert(DB,&user)
 	if err != nil {
 		return err
 	}
@@ -67,106 +45,56 @@ type NullUser struct {
 	fmt.Println(num)
 	//return id
 	fmt.Println(user.ID)
-	
-	//-----------------------
-
-	user := NullUser{
-		ID:   types.NewV4P(),
-		Name: types.NewString("tom"),
-		Age:  types.NewInt(12),
-	}
-	
-	// create 不是引用，不会返回id
-	num, err := db.Insert(user)
-	if err != nil {
-		return err
-	}
-	// num=1
-	fmt.Println(num)
-	// nil
-	fmt.Println(user.ID)
-
-```
-
-###create or update
-```go
-	user := NullUser{
-		ID:   types.NewV4P(),
-		Name: types.NewString("tom"),
-		Age:  types.NewInt(12),
-	}
-	
-	// 创建或更新，根据主键
-	num, err := db.InsertOrUpdate(&user).ByPrimaryKey()
-	if err != nil {
-		return err
-	}
-	// num=1
-	fmt.Println(num)
-	//------------------
-	
-	user := NullUser{
-		Name: types.NewString("tom"),
-		Age:  types.NewInt(12),
-	}
-	
-	// 创建或更新，根据 name,age组合的唯一索引；mysql不支持此功能
-	num, err := db.InsertOrUpdate(&user).ByUnique([]string{"name","age"})
-	if err != nil {
-		return err
-	}
-	// num=1
-	fmt.Println(num)
 
 ```
 
 ### update
 ```go
-	user := NullUser{
-		ID:   types.NewV4P(),
-		Name: types.NewString("tom"),
-		Age:  types.NewInt(12),
+	user := User{
+		ID:   1,
+		Name: "tom",
+		Age:  12,
 	}
 	
 	//根据主键更新
-	num, err := db.Update(&user).ByPrimaryKey()
+	num, err := lorm.UpdateByPrimaryKey(DB,&user)
 	if err != nil {
 		return err
 	}
 	// num=1
 	fmt.Println(num)
 	
-	//----------------
-	
-	user := NullUser{
-		ID:   types.NewV4P(),
-		Name: types.NewString("tom"),
-		Age:  types.NewInt(12),
+	user := User{
+		Name: "tom",
+		Age:  12,
 	}
 	
-	//根据条件更新
-	num, err := db.Update(&user).ByModel(NullUser{
-		Name: types.NewString("tom"),
-	})
+	// lorm.W() 条件构造器
+	num, err := lorm.Update(DB, &user, lorm.W().
+            Eq("id", 1).
+            In("id", 1, 2).
+            Gt("id", 1).
+            IsNull("name").
+            Like("name", "abc"),
+        )
 	if err != nil {
 		return err
 	}
 	// num=1
 	fmt.Println(num)
-	//-------------------
 	
-	
-	user := NullUser{
-		ID:   types.NewV4P(),
-		Name: types.NewString("tom"),
-		Age:  types.NewInt(12),
+	user := User{
+		Name: "tom",
+		Age:  12,
 	}
 	
-	//使用条件构造器
-	num, err := db.Update(&user).ByWhere(new(lorm.WhereBuilder).
-		Eq("id", user.ID,true).
-		NoLike("age", *user.Name, user.Name != nil).
-		Ne("age", user.Age,false))
+	// 特殊配置
+	num, err := lorm.Update(DB, &user, lorm.W(), lorm.E().
+            SetNull("age").  // 设置age字段为null
+            TableName("user2"). // 临时自定义表名 为 user2
+            ShowSql(). // 打印执行 sql
+		    NoRun(),  // 不具体执行sql，配合 ShowSql() 用来调试sql
+        )
 	if err != nil {
 		return err
 	}
@@ -317,4 +245,45 @@ type NullUser struct {
 	tx := Db.Begin()
     err := tx.Commit()
     err := tx.Rollback()
+```
+
+
+
+
+
+### init lorm pool log
+```go
+
+	path := "./log/go.log"
+	writer, _ := rotatelogs.New(
+		path+".%Y-%m-%d",
+		rotatelogs.WithLinkName(path),
+		rotatelogs.WithMaxAge(time.Duration(365*24)*time.Hour),
+		rotatelogs.WithRotationTime(time.Duration(24)*time.Hour),
+	)
+	newLogger := log.New(writer, "\r\n", log.LstdFlags)
+
+	var dbName = pg.DbName
+
+	pgConf := lorm.PgConf{
+		Host:     pg.Ip,
+		Port:     pg.Port,
+		DbName:   pg.dbName,
+		User:     pg.User,
+		Password: pg.Pwd,
+		Other:    "sslmode=disable TimeZone=Asia/Shanghai",
+	}
+	poolConf := lorm.PoolConf{
+		MaxIdleCount: 10,
+		MaxOpen:      100,
+		MaxLifetime:  time.Hour,
+		Logger:       newLogger,
+	}
+	ormConf := lorm.OrmConf{
+		TableNamePrefix: "t_",
+		PrimaryKeyNames: []string{"id"},
+	}
+
+	db := lorm.MustConnect(&pgConf, &poolConf).OrmConf(&ormConf)
+
 ```

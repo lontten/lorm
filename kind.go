@@ -1,11 +1,23 @@
+//  Copyright 2025 lontten lontten@163.com
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 package lorm
 
 import (
 	"errors"
 	"reflect"
 )
-
-//todo 下面未重构--------------
 
 // atom 原子类型			#作为字段使用。
 // composite 非原子类型		#多个atom组成的实体类
@@ -64,11 +76,21 @@ func baseMapType(t reflect.Type) (is, has bool) {
 	return true, true
 }
 
+func _isScannerType(t reflect.Type) bool {
+	if t.Implements(ImpScanner) {
+		return true
+	}
+	if reflect.PointerTo(t).Implements(ImpScanner) {
+		return true
+	}
+	return false
+}
+
 func isScannerType(t reflect.Type) bool {
 	if _isBaseType(t) {
 		return true
 	}
-	return t.Implements(ImpScanner)
+	return _isScannerType(t)
 }
 
 func isValuerType(t reflect.Type) bool {

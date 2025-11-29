@@ -1,6 +1,23 @@
+//  Copyright 2025 lontten lontten@163.com
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 package lorm
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/lontten/lorm/field"
 	"github.com/lontten/lorm/insert-type"
 	"github.com/lontten/lorm/return-type"
@@ -8,8 +25,6 @@ import (
 	"github.com/lontten/lorm/sqltype"
 	"github.com/lontten/lorm/utils"
 	"github.com/pkg/errors"
-	"reflect"
-	"strings"
 )
 
 type tableSqlType int
@@ -26,9 +41,20 @@ const (
 	dCount
 )
 
+type returnAutoPrimaryKeyType int
+
+// pk前缀是主键的意思
+const (
+	pkNoReturn    returnAutoPrimaryKeyType = iota
+	pkQueryReturn                          // insert 时，可以直接 query 返回
+	pkFetchReturn                          // insert 时，不能直接返回，需要手动LastInsertId获取
+)
+
 type ormContext struct {
 	ormConf *OrmConf
 	extra   *ExtraContext
+
+	allowFullTableOp bool // 是否允许全表操作，默认false不允许全表操作
 
 	// model 参数，用于校验字段类型是否合法
 	paramModelBaseV reflect.Value
@@ -54,59 +80,59 @@ type ormContext struct {
 	isTen   bool //是否启用了多租户
 
 	// ------------------主键----------------------
-	indexs         []Index  // 索引列表
-	autoIncrements []string // 自增字段列表
+	indexs []Index // 索引列表
+
+	returnAutoPrimaryKey returnAutoPrimaryKeyType // 自增主键返回类型
+
+	// 在不支持 insertCanReturn 的数据库中，使用 LastInsertId 返回 自增主键
+	// First时，用来当默认排序字段
+	autoPrimaryKeyColumnName string // 自增主键字段名
+	autoPrimaryKeyFieldName  string // 自增主键字段名
+	// 只能在 insert时，返回字段，只能支持 insertCanReturn 的数据库，可以返回
+	otherAutoColumnNames []string // 其他自动生成字段名列表
+	allAutoColumnNames   []string // 所有自动生成字段名列表
+
+	autoPrimaryKeyFieldIsPtr    bool         // id 对应的model字段 是否是 ptr
+	autoPrimaryKeyFieldBaseType reflect.Type // id 对应的model字段 type
 
 	// id = 1
 	//主键名-列表,这里考虑到多主键
-	primaryKeyNames []string
-	//主键值-列表
-	primaryKeyValues [][]field.Value
-
-	// id != 1 ,使用场景 更新名字时，检查名字重复，排除自己
-	//主键名-列表,这里考虑到多主键-排除
-	filterPrimaryKeyNames []string
-	//主键值-列表-排除
-	filterPrimaryKeyValues [][]field.Value
+	primaryKeyColumnNames []string
 
 	// ------------------conf----------------------
 
 	insertType     insert_type.InsertType
 	returnType     return_type.ReturnType
 	softDeleteType softdelete.SoftDelType
-	skipSoftDelete bool   // 跳过软删除
-	tableName      string //当前表名
-	checkParam     bool   // 是否检查参数
-	showSql        bool   // 打印sql
-	noRun          bool   // 不实际执行
+	skipSoftDelete bool       // 跳过软删除
+	tableName      string     //当前表名
+	checkParam     bool       // 是否检查参数
+	showSql        bool       // 打印sql
+	disableColor   bool       // 打印sql时，是否使用颜色
+	noRun          bool       // 不实际执行
+	convertCtx     ConvertCtx // 查询结果转换函数
 	// ------------------conf-end----------------------
 
 	// ------------------字段名：字段值----------------------
 
-	columns      []string      // 有效字段列表
-	columnValues []field.Value // 有效字段值
+	columns      []string      // 有效字段 column
+	columnValues []field.Value // 有效字段 value
 
-	modelZeroFieldNames      []string       // model 零值字段列表
-	modelNoSoftDelFieldNames []string       // model 所有字段列表- 忽略软删除字段
-	modelAllFieldNames       []string       // model 所有字段列表
-	modelFieldIndexMap       map[string]int // model字段名-index
-	modelSelectFieldNames    []string       // model select 字段列表
+	modelZeroColumnNames      []string // model 零值字段列表
+	modelNoSoftDelColumnNames []string // model 所有字段列表- 忽略软删除字段
+	modelAllColumnNames       []string // model 所有字段列表
+	modelSelectFieldNames     []string // model select 字段列表
 	// ------------------字段名：字段值-end----------------------
 
 	//------------------scan----------------------
-	//true query,false exec
-	sqlIsQuery                bool
-	sqlType                   sqltype.SqlType
-	dialectNeedLastInsertId   bool         // 数据库是否需要 last_insert_id。例如：mysql等数据库insert无法直接数据需要 last_insert_id
-	needLastInsertId          bool         // 最终执行，是否需要 last_insert_id
-	lastInsertIdFieldName     string       // last_insert_id 对应的model字段的 名字
-	lastInsertIdFieldIsPtr    bool         // last_insert_id 对应的model字段 是否是 ptr
-	lastInsertIdFieldBaseType reflect.Type // last_insert_id 对应的model字段 type
+	sqlType sqltype.SqlType
 
-	//要执行的sql语句
-	query *strings.Builder
+	query       *strings.Builder // query sql
+	originalSql string           // 原始sql
+	dialectSql  string           // 方言 sql
 	//参数
-	args []any
+	args         []any
+	originalArgs []any // 原始参数
 
 	started bool
 
@@ -119,7 +145,7 @@ type ormContext struct {
 
 func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
 	var vp reflect.Value
-	switch ctx.lastInsertIdFieldBaseType.Kind() {
+	switch ctx.autoPrimaryKeyFieldBaseType.Kind() {
 	case reflect.Int8:
 		id := int8(lastInsertId)
 		vp = reflect.ValueOf(&id)
@@ -164,8 +190,8 @@ func (ctx *ormContext) setLastInsertId(lastInsertId int64) {
 		ctx.err = errors.New("last_insert_id field type error")
 		return
 	}
-	f := ctx.destBaseValue.FieldByName(ctx.lastInsertIdFieldName)
-	if ctx.lastInsertIdFieldIsPtr {
+	f := ctx.destBaseValue.FieldByName(ctx.autoPrimaryKeyFieldName)
+	if ctx.autoPrimaryKeyFieldIsPtr {
 		f.Set(vp)
 	} else {
 		f.Set(reflect.Indirect(vp))
@@ -183,6 +209,8 @@ func (ctx *ormContext) initExtra(extra ...*ExtraContext) {
 		ctx.err = e.GetErr()
 		return
 	}
+	ctx.allowFullTableOp = e.allowFullTableOp
+	ctx.convertCtx = e.convertCtx
 	ctx.extra = e
 	ctx.insertType = e.insertType
 	ctx.returnType = e.returnType
@@ -215,14 +243,20 @@ func (ctx *ormContext) initConf() {
 	ctx.softDeleteType = utils.GetSoftDelType(t)
 
 	if ctx.tableName == "" {
-		tableName := ctx.ormConf.tableName(v, dest)
-		ctx.tableName = tableName
+		ctx.tableName = ctx.ormConf.tableName(v, dest)
+		if ctx.tableName == "" {
+			ctx.err = ErrNoTableName
+			return
+		}
 	}
 
-	primaryKeys := ctx.ormConf.primaryKeys(v, dest)
-	ctx.primaryKeyNames = primaryKeys
+	ctx.primaryKeyColumnNames = ctx.ormConf.primaryKeyColumnNames(v, dest)
 
-	ctx.autoIncrements = ctx.ormConf.autoIncrements(v)
+	tc := getTableConf(v)
+	if tc != nil {
+		ctx.autoPrimaryKeyColumnName = tc.autoPrimaryKeyColumnName
+		ctx.otherAutoColumnNames = tc.otherAutoColumnName
+	}
 }
 
 // 获取struct对应的字段名 和 其值，
@@ -236,32 +270,30 @@ func (ctx *ormContext) initColumnsValue() {
 	ctx.columns = cv.columns
 	ctx.columnValues = cv.columnValues
 
-	ctx.modelZeroFieldNames = cv.modelZeroFieldNames
-	ctx.modelNoSoftDelFieldNames = cv.modelAllFieldNames
-	ctx.modelAllFieldNames = cv.modelAllFieldNames
+	ctx.modelZeroColumnNames = cv.modelZeroColumnNames
+	ctx.modelNoSoftDelColumnNames = cv.modelAllColumnNames
+	ctx.modelAllColumnNames = cv.modelAllColumnNames
 
-	// 自增主键
-	// 用于 mysql sqlite 等无法直接返回的数据库
-	// 需要返回值，scan可以接收数据，设置为 true
-	if ctx.dialectNeedLastInsertId {
-		if len(ctx.autoIncrements) != 1 {
-			ctx.err = errors.New("only one auto_increment field is allowed")
-			return
+	if ctx.scanIsPtr && ctx.returnType != return_type.None {
+		if ctx.ormConf.insertCanReturn {
+			ctx.returnAutoPrimaryKey = pkQueryReturn
+		} else if ctx.autoPrimaryKeyColumnName != "" {
+			ctx.returnAutoPrimaryKey = pkFetchReturn
 		}
 	}
-	ctx.needLastInsertId = ctx.dialectNeedLastInsertId && ctx.scanIsPtr && ctx.returnType != return_type.None
-	if ctx.needLastInsertId {
-		fieldName, ok := cv.modelAllFieldNameMap[ctx.autoIncrements[0]]
+
+	if ctx.returnAutoPrimaryKey == pkFetchReturn {
+		fieldName, ok := cv.modelAllCFNameMap[ctx.autoPrimaryKeyColumnName]
 		if !ok {
-			ctx.err = errors.New("auto_increment field not found")
+			ctx.err = errors.New("TableConfContext not set AutoPrimaryKey")
 			return
 		}
-		ctx.lastInsertIdFieldName = fieldName
+		ctx.autoPrimaryKeyFieldName = fieldName
 
 		structField, _ := ctx.destBaseType.FieldByName(fieldName)
 		isPtr, baseT := basePtrType(structField.Type)
-		ctx.lastInsertIdFieldIsPtr = isPtr
-		ctx.lastInsertIdFieldBaseType = baseT
+		ctx.autoPrimaryKeyFieldIsPtr = isPtr
+		ctx.autoPrimaryKeyFieldBaseType = baseT
 	}
 	return
 }
@@ -281,17 +313,17 @@ func (ctx *ormContext) initColumnsValueExtra() {
 		return
 	}
 	e := ctx.extra
-	set := e.set
-	if set.hasModel {
+	whenUpdateSet := e.whenUpdateSet
+	if whenUpdateSet.hasModel {
 		oc := &ormContext{
 			ormConf:        ctx.ormConf,
 			skipSoftDelete: true,
 		}
-		oc.initTargetDestOne(set.model) //初始化参数
-		oc.initColumnsValue()           //初始化cv
+		oc.initTargetDestOne(whenUpdateSet.model) //初始化参数
+		oc.initColumnsValue()                     //初始化cv
 
-		set.columns = append(set.columns, oc.columns...)
-		set.columnValues = append(set.columnValues, oc.columnValues...)
+		whenUpdateSet.columns = append(whenUpdateSet.columns, oc.columns...)
+		whenUpdateSet.columnValues = append(whenUpdateSet.columnValues, oc.columnValues...)
 	}
 	if ctx.hasErr() {
 		return
@@ -299,14 +331,14 @@ func (ctx *ormContext) initColumnsValueExtra() {
 	for i, column := range e.columns {
 		cv := e.columnValues[i]
 		if cv.Type == field.Null || cv.Type == field.Now {
-			ctx.modelZeroFieldNames = append(ctx.modelZeroFieldNames, column)
+			ctx.modelZeroColumnNames = append(ctx.modelZeroColumnNames, column)
 		}
 		find := utils.Find(ctx.columns, column)
 		if find == -1 {
 			ctx.columns = append(ctx.columns, column)
-			ctx.columnValues = append(ctx.columnValues, e.columnValues[i])
+			ctx.columnValues = append(ctx.columnValues, cv)
 		} else {
-			ctx.columnValues[i] = e.columnValues[i]
+			ctx.columnValues[find] = cv
 		}
 	}
 	return
@@ -381,228 +413,10 @@ func (ctx ormContext) Copy() ormContext {
 	}
 }
 
-// select 生成
-func (ctx *ormContext) selectArgsArr2SqlStr(args []string) {
-	query := ctx.query
-	if ctx.started {
-		for _, name := range args {
-			query.WriteString(", " + name)
-		}
-	} else {
-		query.WriteString("SELECT ")
-		for i := range args {
-			if i == 0 {
-				query.WriteString(args[i])
-			} else {
-				query.WriteString(", " + args[i])
-			}
-		}
-		if len(args) > 0 {
-			ctx.started = true
-		}
+func (ctx ormContext) printSql() {
+	if ctx.showSql {
+		utils.PrintSql(ctx.disableColor, ctx.originalSql, ctx.dialectSql, ctx.originalArgs...)
 	}
-}
-
-// create 生成
-func (ctx *ormContext) tableInsertGen() string {
-	args := ctx.columns
-	var sb strings.Builder
-
-	sb.WriteString("INSERT INTO ")
-	sb.WriteString(ctx.tableName + " ")
-
-	sb.WriteString(" ( ")
-	for i, v := range args {
-		if i == 0 {
-			sb.WriteString(v)
-		} else {
-			sb.WriteString(" , " + v)
-		}
-	}
-	sb.WriteString(" ) ")
-	sb.WriteString(" VALUES ")
-	sb.WriteString("( ")
-	for i := range args {
-		if i == 0 {
-			sb.WriteString(" ? ")
-		} else {
-			sb.WriteString(", ? ")
-		}
-	}
-	sb.WriteString(" ) ")
-	return sb.String()
-}
-
-// 单表sql生成，insert
-func (p *PgDialect) tGenInsert() string {
-	args := p.ctx.columns
-	var sb strings.Builder
-
-	sb.WriteString("INSERT INTO ")
-	sb.WriteString(p.ctx.tableName + " ")
-
-	sb.WriteString(" ( ")
-	for i, v := range args {
-		if i == 0 {
-			sb.WriteString(v)
-		} else {
-			sb.WriteString(" , " + v)
-		}
-	}
-	sb.WriteString(" ) ")
-	sb.WriteString(" VALUES ")
-	sb.WriteString("( ")
-	for i := range args {
-		if i == 0 {
-			sb.WriteString(" ? ")
-		} else {
-			sb.WriteString(", ? ")
-		}
-	}
-	sb.WriteString(" ) ")
-	return sb.String()
-}
-
-func (ctx *ormContext) createSqlGenera(args []string) string {
-	var sb strings.Builder
-	sb.WriteString(" ( ")
-	for i, v := range args {
-		if i == 0 {
-			sb.WriteString(v)
-		} else {
-			sb.WriteString(" , " + v)
-		}
-	}
-	sb.WriteString(" ) ")
-	sb.WriteString(" VALUES ")
-	sb.WriteString("( ")
-	for i := range args {
-		if i == 0 {
-			sb.WriteString(" ? ")
-		} else {
-			sb.WriteString(", ? ")
-		}
-	}
-	sb.WriteString(" ) ")
-	return sb.String()
-}
-
-// upd 生成
-func (ctx *ormContext) tableUpdateArgs2SqlStr(args []string) string {
-	var sb strings.Builder
-	l := len(args)
-	for i, v := range args {
-		if i != l-1 {
-			sb.WriteString(v + " = ? ,")
-		} else {
-			sb.WriteString(v + " = ? ")
-		}
-	}
-	return sb.String()
-}
-
-func (ctx *ormContext) initPrimaryKeyByWhere(wb *WhereBuilder) {
-	ctx.primaryKeyValues = ctx.initPrimaryKeyValues(wb.primaryKeyValue)
-	if ctx.hasErr() {
-		return
-	}
-	builderAnd := W()
-	for _, value := range ctx.primaryKeyValues {
-		builder := W()
-		for i, name := range ctx.primaryKeyNames {
-			builder.Eq(name, value[i].Value)
-		}
-		builderAnd.Or(builder)
-	}
-	wb.And(builderAnd)
-	ctx.filterPrimaryKeyValues = ctx.initPrimaryKeyValues(wb.filterPrimaryKeyValue)
-	if ctx.hasErr() {
-		return
-	}
-	builderAnd = W()
-	for _, value := range ctx.filterPrimaryKeyValues {
-		builder := W()
-		for i, name := range ctx.primaryKeyNames {
-			builder.Neq(name, value[i].Value)
-		}
-		builderAnd.Or(builder)
-	}
-	wb.And(builderAnd)
-}
-func (ctx *ormContext) initPrimaryKeyValues(v []any) (idValuess [][]field.Value) {
-	if ctx.hasErr() {
-		return
-	}
-	if len(v) == 0 {
-		return
-	}
-
-	idLen := len(v)
-	if idLen == 0 {
-		ctx.err = errors.New("ByPrimaryKey arg len num 0")
-		return
-	}
-	pkLen := len(ctx.primaryKeyNames)
-
-	if pkLen == 1 { //单主键
-		for _, i := range v {
-			value := reflect.ValueOf(i)
-			_, value, err := basePtrDeepValue(value)
-			if err != nil {
-				ctx.err = err
-				return
-			}
-
-			if ctx.checkParam {
-				if !isValuerType(value.Type()) {
-					ctx.err = errors.New("ByPrimaryKey typ err,not single")
-					return
-				}
-			}
-
-			idValues := make([]field.Value, 1)
-			idValues[0] = field.Value{
-				Type:  field.Val,
-				Value: value.Interface(),
-			}
-			idValuess = append(idValuess, idValues)
-		}
-
-	} else {
-		for _, i := range v {
-			value := reflect.ValueOf(i)
-			_, value, err := basePtrDeepValue(value)
-			if err != nil {
-				ctx.err = err
-				return
-			}
-
-			if ctx.checkParam {
-				if !isCompType(value.Type()) {
-					ctx.err = errors.New("ByPrimaryKey typ err,not comp")
-					return
-				}
-			}
-
-			columns, values, err := getCompValueCV(value)
-			if err != nil {
-				ctx.err = err
-				return
-			}
-
-			if ctx.checkParam {
-				if len(columns) != pkLen {
-					ctx.err = errors.New("复合主键，filed数量 len err")
-					return
-				}
-			}
-
-			idValues := make([]field.Value, 0)
-			idValues = append(idValues, values...)
-			idValuess = append(idValuess, idValues)
-		}
-	}
-	return
 }
 
 func (ctx *ormContext) hasErr() bool {

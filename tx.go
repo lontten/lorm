@@ -3,6 +3,7 @@ package lorm
 import (
 	"context"
 	"database/sql"
+
 	"github.com/pkg/errors"
 )
 
@@ -14,7 +15,7 @@ type coreTX struct {
 func (db *coreTX) init() Engine {
 	return &coreTX{
 		tx:      db.tx,
-		dialect: db.dialect.initContext(),
+		dialect: db.dialect.copyContext(),
 	}
 }
 func (db *coreTX) ping() error {
@@ -58,4 +59,8 @@ func (db *coreTX) Commit() error {
 
 func (db *coreTX) Rollback() error {
 	return db.tx.Rollback()
+}
+
+func (db *coreTX) ToWhereSQL(w *WhereBuilder, primaryKeyColumnNames ...string) (string, []any, error) {
+	return w.toSql(db.getDialect().parse, primaryKeyColumnNames...)
 }

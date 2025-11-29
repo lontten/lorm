@@ -1,11 +1,11 @@
 package lorm
 
-import "github.com/lontten/lorm/types"
+import "github.com/lontten/lcore/v2/types"
 
 // import (
 //
 //	"github.com/DATA-DOG/go-sqlmock"
-//	"github.com/lontten/lorm/types"
+//	"github.com/lontten/lcore/types"
 //	"github.com/stretchr/testify/assert"
 //	"testing"
 //
@@ -19,9 +19,9 @@ type UserUuid struct {
 //
 //func TestUpdateByPrimaryKey(t *testing.T) {
 //	as := assert.New(t)
-//	ldb, mock, err := sqlmock.New()
+//	lorm, mock, err := sqlmock.New()
 //	as.Nil(err, "new sqlmock error")
-//	engine := MustConnectMock(ldb, &PgConf{})
+//	engine := MustConnectMock(lorm, &PgConf{})
 //
 //	v4 := types.NewV4()
 //
@@ -42,9 +42,9 @@ type UserUuid struct {
 //
 //func TestUpdateByModel(t *testing.T) {
 //	as := assert.New(t)
-//	ldb, mock, err := sqlmock.New()
+//	lorm, mock, err := sqlmock.New()
 //	as.Nil(err, "new sqlmock error")
-//	engine := MustConnectMock(ldb, &PgConf{})
+//	engine := MustConnectMock(lorm, &PgConf{})
 //
 //	mock.ExpectExec("UPDATE *").
 //		WithArgs(1, "nn", 22, "nmmn").
@@ -72,9 +72,9 @@ type UserUuid struct {
 //
 //func TestUpdateByWhere(t *testing.T) {
 //	as := assert.New(t)
-//	ldb, mock, err := sqlmock.New()
+//	lorm, mock, err := sqlmock.New()
 //	as.Nil(err, "new sqlmock error")
-//	engine := MustConnectMock(ldb, &PgConf{})
+//	engine := MustConnectMock(lorm, &PgConf{})
 //
 //	mock.ExpectExec("UPDATE *").
 //		WithArgs(1, "nn", "name_name", 233).
