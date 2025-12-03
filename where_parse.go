@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/lontten/lcore/v2/lcutils"
+	"github.com/lontten/lcore/v2/strutil"
 	"github.com/pkg/errors"
 )
 
@@ -86,7 +86,7 @@ func (w *WhereBuilder) parsePkClause(not bool, primaryKeyColumnNames ...string) 
 				if cv.isSoftDel || cv.isZero {
 					continue
 				}
-				if lcutils.StrContainsAny(cv.columnName, primaryKeyColumnNames...) {
+				if strutil.StrContainsAny(cv.columnName, primaryKeyColumnNames...) {
 					nw2.fieldValue(cv.columnName, cv.value)
 				}
 			}
@@ -104,7 +104,7 @@ func (w *WhereBuilder) parsePkClause(not bool, primaryKeyColumnNames ...string) 
 				if cv.isSoftDel || cv.isZero {
 					continue
 				}
-				if lcutils.StrContainsAny(cv.columnName, primaryKeyColumnNames...) {
+				if strutil.StrContainsAny(cv.columnName, primaryKeyColumnNames...) {
 					nw2.fieldValue(cv.columnName, cv.value)
 				}
 			}

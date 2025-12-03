@@ -8,7 +8,7 @@ require github.com/lontten/lorm v0.2.23
 
 require (
 	github.com/go-sql-driver/mysql v1.9.3
-	github.com/lontten/lcore/v2 v2.12.1
+	github.com/lontten/lcore/v2 v2.13.0
 	gorm.io/gorm v1.31.1
 )
 

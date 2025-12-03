@@ -40,6 +40,7 @@ github.com/lestrrat-go/strftime v1.0.5/go.mod h1:E1nN3pCbtMSu1yjSVeyuRFVm/U0xoR7
 github.com/lontten/lcore v0.1.0-alpha.2 h1:k13Xmg++mBrKm0rKF9BgOurrkF3HqlRg0hMUFiKyRTY=
 github.com/lontten/lcore v0.1.0-alpha.2/go.mod h1:CPfNAKTRB0YVlrdcHgml95J0BddOU0nj2RuJvoGmwHE=
 github.com/lontten/lcore/v2 v2.6.1/go.mod h1:4Ko2Fryk9BW6NsXY8dDkuQjcQQwrhry1GFQyUptNp1M=
+github.com/lontten/lcore/v2 v2.13.0/go.mod h1:4Ko2Fryk9BW6NsXY8dDkuQjcQQwrhry1GFQyUptNp1M=
 github.com/lontten/lorm v0.2.23/go.mod h1:YeVw03XheXcS1gl7gVhXioTwc+Jiqboz9Jp7myzftPk=
 github.com/mattn/go-colorable v0.1.6 h1:6Su7aK7lXmJ/U79bYtBjLNaha4Fs1Rg9plHpcH+vvnE=
 github.com/mattn/go-isatty v0.0.12 h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHXY=
