@@ -27,7 +27,7 @@ func Rollback[T any](result T) {
 	panic(RollbackWithResult[T]{Result: result})
 }
 
-func TransactionErr[T any](db Engine, fn func(tx Engine) (T, error)) (res T, err error) {
+func Transaction[T any](db Engine, fn func(tx Engine) T) (res T, err error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return res, err
@@ -56,14 +56,7 @@ func TransactionErr[T any](db Engine, fn func(tx Engine) (T, error)) (res T, err
 		}
 	}()
 
-	res, err = fn(tx)
-	if err != nil {
-		rbErr := tx.Rollback()
-		if rbErr != nil {
-			log.Printf("rollback failed: %v", rbErr)
-		}
-		return res, err
-	}
+	res = fn(tx)
 
 	if err = tx.Commit(); err != nil {
 		return res, fmt.Errorf("commit failed: %v", err)
@@ -72,7 +65,7 @@ func TransactionErr[T any](db Engine, fn func(tx Engine) (T, error)) (res T, err
 	return res, nil
 }
 
-func Transaction[T any](db Engine, fn func(tx Engine) T) (res T) {
+func TransactionPanic[T any](db Engine, fn func(tx Engine) T) (res T) {
 	tx, err := db.Begin()
 	if err != nil {
 		panic(err)
