@@ -137,7 +137,7 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 	baseV := reflect.ValueOf(new(T)).Elem()
 	t := baseV.Type()
 
-	ctx.initScanDestListT(dest, v, baseV, t, false)
+	ctx.initScanDestListT(dest, v, baseV, t, true)
 	ctx.initConf() //初始化表名，主键，自增id
 	ctx.initColumns()
 	ctx.initColumnsValueSoftDel()
