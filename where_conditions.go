@@ -111,12 +111,7 @@ func (w *WhereBuilder) Eq(field string, arg any, condition ...bool) *WhereBuilde
 
 	isNil := utils.IsNil(arg)
 	if isNil {
-		w.andWheres = append(w.andWheres, WhereBuilder{
-			clause: &Clause{
-				Type:  IsNull,
-				query: field,
-			},
-		})
+		w.err = fmt.Errorf("invalid use of Eq: argument for field '%s' is nil", field)
 		return w
 	}
 
@@ -144,12 +139,7 @@ func (w *WhereBuilder) NotEq(field string, arg any, condition ...bool) *WhereBui
 
 	isNil := utils.IsNil(arg)
 	if isNil {
-		w.andWheres = append(w.andWheres, WhereBuilder{
-			clause: &Clause{
-				Type:  IsNotNull,
-				query: field,
-			},
-		})
+		w.err = fmt.Errorf("invalid use of NotEq: argument for field '%s' is nil", field)
 		return w
 	}
 
@@ -285,7 +275,7 @@ func (w *WhereBuilder) Lt(field string, arg any, condition ...bool) *WhereBuilde
 
 	isNil := utils.IsNil(arg)
 	if isNil {
-		w.err = fmt.Errorf("invalid use of Lt: argument for field '%s' is nil.", field)
+		w.err = fmt.Errorf("invalid use of Lt: argument for field '%s' is nil", field)
 		return w
 	}
 
@@ -313,7 +303,7 @@ func (w *WhereBuilder) Lte(field string, arg any, condition ...bool) *WhereBuild
 
 	isNil := utils.IsNil(arg)
 	if isNil {
-		w.err = fmt.Errorf("invalid use of Lte: argument for field '%s' is nil.", field)
+		w.err = fmt.Errorf("invalid use of Lte: argument for field '%s' is nil", field)
 		return w
 	}
 
@@ -341,7 +331,7 @@ func (w *WhereBuilder) Gt(field string, arg any, condition ...bool) *WhereBuilde
 
 	isNil := utils.IsNil(arg)
 	if isNil {
-		w.err = fmt.Errorf("invalid use of Gt: argument for field '%s' is nil.", field)
+		w.err = fmt.Errorf("invalid use of Gt: argument for field '%s' is nil", field)
 		return w
 	}
 
@@ -368,7 +358,7 @@ func (w *WhereBuilder) Gte(field string, arg any, condition ...bool) *WhereBuild
 	}
 	isNil := utils.IsNil(arg)
 	if isNil {
-		w.err = fmt.Errorf("invalid use of Gte: argument for field '%s' is nil.", field)
+		w.err = fmt.Errorf("invalid use of Gte: argument for field '%s' is nil", field)
 		return w
 	}
 	w.andWheres = append(w.andWheres, WhereBuilder{

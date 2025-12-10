@@ -14,7 +14,13 @@
 
 package lorm
 
-import "reflect"
+import (
+	"errors"
+	"fmt"
+	"reflect"
+
+	"github.com/lontten/lorm/utils"
+)
 
 type NativeQueryContext[T any] struct {
 	db    Engine
@@ -23,8 +29,15 @@ type NativeQueryContext[T any] struct {
 }
 
 func NativeQuery[T any](db Engine, query string, args ...any) *NativeQueryContext[T] {
+	db = db.init()
+	for i, arg := range args {
+		isNil := utils.IsNil(arg)
+		if isNil {
+			db.getCtx().err = errors.New(fmt.Sprintf("args[%v] is nil", i))
+		}
+	}
 	return &NativeQueryContext[T]{
-		db:    db.init(),
+		db:    db,
 		query: query,
 		args:  args,
 	}

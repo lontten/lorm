@@ -14,7 +14,21 @@
 
 package lorm
 
+import (
+	"errors"
+	"fmt"
+
+	"github.com/lontten/lorm/utils"
+)
+
 func Exec(db Engine, query string, args ...any) (int64, error) {
+	for i, arg := range args {
+		isNil := utils.IsNil(arg)
+		if isNil {
+			return 0, errors.New(fmt.Sprintf("args[%v] is nil", i))
+		}
+	}
+
 	db = db.init()
 	exec, err := db.exec(query, args...)
 	if err != nil {

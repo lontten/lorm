@@ -230,8 +230,10 @@ func (d *PgDialect) tableDelGen() {
 		query.WriteString(" SET ")
 		ctx.genSetSqlBycolumnValues(d.escapeIdentifier)
 	}
-	query.WriteString(" WHERE ")
-	query.WriteString(whereStr)
+	if len(whereStr) > 0 {
+		query.WriteString(" WHERE ")
+		query.WriteString(whereStr)
+	}
 	ctx.args = append(ctx.args, args...)
 
 	query.WriteString(";")
@@ -262,9 +264,12 @@ func (d *PgDialect) tableUpdateGen() {
 	query.WriteString(d.escapeIdentifier(tableName))
 	query.WriteString(" SET ")
 	ctx.genSetSqlBycolumnValues(d.escapeIdentifier)
-	query.WriteString("WHERE ")
 
-	query.WriteString(whereStr)
+	if len(whereStr) > 0 {
+		query.WriteString(" WHERE ")
+		query.WriteString(whereStr)
+	}
+
 	ctx.args = append(ctx.args, args...)
 	query.WriteString(";")
 }
@@ -282,14 +287,23 @@ func (d *PgDialect) tableSelectGen() {
 		ctx.err = err
 		return
 	}
+	if !ctx.allowFullTableOp {
+		if whereStr == "" {
+			ctx.err = errors.New("禁止全表操作")
+			return
+		}
+	}
 
 	query.WriteString("SELECT ")
 	query.WriteString(escapeJoin(d.escapeIdentifier, ctx.modelSelectFieldNames, " ,"))
 	query.WriteString(" FROM ")
 	query.WriteString(tableName)
 
-	query.WriteString(" WHERE ")
-	query.WriteString(whereStr)
+	if len(whereStr) > 0 {
+		query.WriteString(" WHERE ")
+		query.WriteString(whereStr)
+	}
+
 	ctx.args = append(ctx.args, args...)
 	query.WriteString(ctx.lastSql)
 	if ctx.limit != nil {
