@@ -194,6 +194,7 @@ func _getStructC(t reflect.Type, lormName string) (list []compC) {
 		cc.kind = structField.Type.Kind()
 		if cc.kind == reflect.Ptr {
 			cc.canNull = true
+			cc.kind = structField.Type.Elem().Kind()
 		} else {
 			canNull, isScanner := checkHandleNull(structField.Type)
 			cc.canNull = canNull
