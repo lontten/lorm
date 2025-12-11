@@ -4,11 +4,10 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/lontten/lcore/v2/logutil"
 	"github.com/lontten/lorm"
 )
-
-//import _ "github.com/jackc/pgx/v5/stdlib"
 
 var DB lorm.Engine
 
