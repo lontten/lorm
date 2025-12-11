@@ -103,7 +103,7 @@ func (ctx *ormContext) createColBox(v reflect.Value, tP any, cfLink map[string]c
 
 		converters = append(converters, func(f reflect.Value, fieldName string, val any, c compC) func() error {
 			return func() error {
-				return FieldSetValNil(f, val)
+				return FieldSetValNil(f, fieldName, val)
 			}
 		}(field, f.fieldName, tmpVal, f))
 	}
