@@ -128,7 +128,9 @@ func getColIndex2FieldNameMap(columns []string, t reflect.Type) map[string]compC
 		c, ok := cm[column]
 		c.columnIndex = i
 		if !ok {
-			r[column] = compC{}
+			r[column] = compC{
+				columnIndex: i,
+			}
 			continue
 		}
 		r[column] = c
