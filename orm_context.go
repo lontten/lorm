@@ -256,6 +256,7 @@ func (ctx *ormContext) initConf() {
 	if tc != nil {
 		ctx.autoPrimaryKeyColumnName = tc.autoPrimaryKeyColumnName
 		ctx.otherAutoColumnNames = tc.otherAutoColumnName
+		ctx.allAutoColumnNames = tc.allAutoColumnName
 	}
 }
 
