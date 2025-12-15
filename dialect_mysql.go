@@ -225,7 +225,7 @@ func (d *MysqlDialect) tableInsertGen() {
 			if i < columnLen-1 {
 				query.WriteString(", ")
 			}
-			ctx.args = append(ctx.args, whenUpdateSet.columnValues[i].Value)
+			ctx.originalArgs = append(ctx.originalArgs, whenUpdateSet.columnValues[i].Value)
 		}
 		break
 	default:
@@ -274,7 +274,7 @@ func (d *MysqlDialect) tableDelGen() {
 		query.WriteString(whereStr)
 	}
 
-	ctx.args = append(ctx.args, args...)
+	ctx.originalArgs = append(ctx.originalArgs, args...)
 
 	query.WriteString(";")
 }
@@ -310,7 +310,7 @@ func (d *MysqlDialect) tableUpdateGen() {
 		query.WriteString(whereStr)
 	}
 
-	ctx.args = append(ctx.args, args...)
+	ctx.originalArgs = append(ctx.originalArgs, args...)
 	query.WriteString(";")
 }
 
@@ -344,7 +344,7 @@ func (d *MysqlDialect) tableSelectGen() {
 		query.WriteString(whereStr)
 	}
 
-	ctx.args = append(ctx.args, args...)
+	ctx.originalArgs = append(ctx.originalArgs, args...)
 	query.WriteString(ctx.lastSql)
 	if ctx.limit != nil {
 		query.WriteString(" LIMIT ")

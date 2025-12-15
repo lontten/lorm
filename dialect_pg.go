@@ -169,7 +169,7 @@ func (d *PgDialect) tableInsertGen() {
 				query.WriteString(", ")
 			}
 			query.WriteString(d.escapeIdentifier(column) + " = ?")
-			ctx.args = append(ctx.args, whenUpdateSet.columnValues[i].Value)
+			ctx.originalArgs = append(ctx.originalArgs, whenUpdateSet.columnValues[i].Value)
 		}
 		break
 	default:
@@ -229,7 +229,7 @@ func (d *PgDialect) tableDelGen() {
 		query.WriteString(" WHERE ")
 		query.WriteString(whereStr)
 	}
-	ctx.args = append(ctx.args, args...)
+	ctx.originalArgs = append(ctx.originalArgs, args...)
 
 	query.WriteString(";")
 }
@@ -265,7 +265,7 @@ func (d *PgDialect) tableUpdateGen() {
 		query.WriteString(whereStr)
 	}
 
-	ctx.args = append(ctx.args, args...)
+	ctx.originalArgs = append(ctx.originalArgs, args...)
 	query.WriteString(";")
 }
 
@@ -299,7 +299,7 @@ func (d *PgDialect) tableSelectGen() {
 		query.WriteString(whereStr)
 	}
 
-	ctx.args = append(ctx.args, args...)
+	ctx.originalArgs = append(ctx.originalArgs, args...)
 	query.WriteString(ctx.lastSql)
 	if ctx.limit != nil {
 		query.WriteString(" LIMIT ")

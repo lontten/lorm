@@ -45,7 +45,7 @@ func Delete[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (int64, 
 		return 0, nil
 	}
 
-	exec, err := db.exec(dialectSql, ctx.args...)
+	exec, err := db.exec(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return 0, err
 	}

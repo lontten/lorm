@@ -120,11 +120,11 @@ func (ctx *ormContext) genInsertValuesSqlBycolumnValues() {
 			break
 		case field.Val:
 			query.WriteString("?")
-			ctx.args = append(ctx.args, v.Value)
+			ctx.originalArgs = append(ctx.originalArgs, v.Value)
 			break
 		case field.Increment:
 			query.WriteString(columns[i] + "+ ?")
-			ctx.args = append(ctx.args, v.Value)
+			ctx.originalArgs = append(ctx.originalArgs, v.Value)
 			break
 		case field.Expression:
 			query.WriteString(v.Value.(string))
@@ -183,13 +183,13 @@ func (ctx *ormContext) genSetSqlBycolumnValues(fn escapeFun) {
 		case field.Val:
 			query.WriteString(column)
 			query.WriteString(" = ? ")
-			ctx.args = append(ctx.args, v.Value)
+			ctx.originalArgs = append(ctx.originalArgs, v.Value)
 			break
 		case field.Increment:
 			query.WriteString(column)
 			query.WriteString(" = ")
 			query.WriteString(column + " + ? ")
-			ctx.args = append(ctx.args, v.Value)
+			ctx.originalArgs = append(ctx.originalArgs, v.Value)
 			break
 		case field.Expression:
 			query.WriteString(column)

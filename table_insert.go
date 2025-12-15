@@ -47,14 +47,14 @@ func Insert(db Engine, v any, extra ...*ExtraContext) (num int64, err error) {
 	}
 
 	if ctx.returnAutoPrimaryKey == pkQueryReturn {
-		rows, err := db.query(dialectSql, ctx.args...)
+		rows, err := db.query(dialectSql, ctx.originalArgs...)
 		if err != nil {
 			return 0, err
 		}
 		return ctx.ScanLn(rows)
 	}
 
-	exec, err := db.exec(dialectSql, ctx.args...)
+	exec, err := db.exec(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return 0, err
 	}

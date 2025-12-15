@@ -63,7 +63,7 @@ func First[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t *T, er
 		return nil, nil
 	}
 
-	rows, err := db.query(dialectSql, ctx.args...)
+	rows, err := db.query(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func List[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []T,
 		return nil, nil
 	}
 
-	rows, err := db.query(dialectSql, ctx.args...)
+	rows, err := db.query(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func ListP[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (list []*
 		return nil, nil
 	}
 
-	rows, err := db.query(dialectSql, ctx.args...)
+	rows, err := db.query(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func Has[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t bool, er
 		return false, nil
 	}
 
-	rows, err := db.query(dialectSql, ctx.args...)
+	rows, err := db.query(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return false, err
 	}
@@ -247,7 +247,7 @@ func Count[T any](db Engine, wb *WhereBuilder, extra ...*ExtraContext) (t int64,
 	}
 
 	var total int64
-	rows, err := db.query(dialectSql, ctx.args...)
+	rows, err := db.query(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return 0, err
 	}
@@ -298,7 +298,7 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 	if ctx.noRun {
 		return nil, nil
 	}
-	rows, err := db.query(dialectSql, ctx.args...)
+	rows, err := db.query(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,7 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 	//------------
 
 	ctx.query.Reset()
-	ctx.args = []any{}
+	ctx.originalArgs = []any{}
 	ctx.sqlType = sqltype.Insert
 
 	ctx.initModelDest(d) //初始化参数
@@ -336,7 +336,7 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 	}
 
 	if ctx.returnAutoPrimaryKey == pkQueryReturn {
-		rows, err = db.query(dialectSql, ctx.args...)
+		rows, err = db.query(dialectSql, ctx.originalArgs...)
 		if err != nil {
 			return nil, err
 		}
@@ -350,7 +350,7 @@ func GetOrInsert[T any](db Engine, wb *WhereBuilder, d *T, extra ...*ExtraContex
 		return d, nil
 	}
 
-	exec, err := db.exec(dialectSql, ctx.args...)
+	exec, err := db.exec(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +413,7 @@ func HasOrInsert(db Engine, wb *WhereBuilder, d any, extra ...*ExtraContext) (bo
 	if ctx.noRun {
 		return false, nil
 	}
-	rows, err := db.query(dialectSql, ctx.args...)
+	rows, err := db.query(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return false, err
 	}
@@ -427,7 +427,7 @@ func HasOrInsert(db Engine, wb *WhereBuilder, d any, extra ...*ExtraContext) (bo
 	//------------
 
 	ctx.query.Reset()
-	ctx.args = []any{}
+	ctx.originalArgs = []any{}
 	ctx.sqlType = sqltype.Insert
 	ctx.initColumnsValueSoftDel() // 软删除
 
@@ -445,7 +445,7 @@ func HasOrInsert(db Engine, wb *WhereBuilder, d any, extra ...*ExtraContext) (bo
 	}
 
 	if ctx.returnAutoPrimaryKey == pkQueryReturn {
-		rows, err = db.query(dialectSql, ctx.args...)
+		rows, err = db.query(dialectSql, ctx.originalArgs...)
 		if err != nil {
 			return false, err
 		}
@@ -456,7 +456,7 @@ func HasOrInsert(db Engine, wb *WhereBuilder, d any, extra ...*ExtraContext) (bo
 		return false, nil
 	}
 
-	exec, err := db.exec(dialectSql, ctx.args...)
+	exec, err := db.exec(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return false, err
 	}

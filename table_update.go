@@ -50,7 +50,7 @@ func Update(db Engine, dest any, wb *WhereBuilder, extra ...*ExtraContext) (int6
 		return 0, nil
 	}
 
-	exec, err := db.exec(dialectSql, ctx.args...)
+	exec, err := db.exec(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return 0, err
 	}
@@ -98,7 +98,7 @@ func UpdateByPrimaryKey(db Engine, dest any, extra ...*ExtraContext) (int64, err
 		return 0, nil
 	}
 
-	exec, err := db.exec(dialectSql, ctx.args...)
+	exec, err := db.exec(dialectSql, ctx.originalArgs...)
 	if err != nil {
 		return 0, err
 	}

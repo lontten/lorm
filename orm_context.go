@@ -131,7 +131,6 @@ type ormContext struct {
 	originalSql string           // 原始sql
 	dialectSql  string           // 方言 sql
 	//参数
-	args         []any
 	originalArgs []any // 原始参数
 
 	started bool
